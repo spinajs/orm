@@ -66,7 +66,6 @@
   },
   "dependencies": {
     "@spinajs/configuration": "^1.0.0",
-    "@spinajs/core": "^1.0.20",
     "@spinajs/di": "^1.0.2",
     "@spinajs/exceptions": "^1.0.0"
   }
