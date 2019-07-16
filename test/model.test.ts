@@ -2,7 +2,7 @@ import { Configuration } from "@spinajs/configuration";
 import { DI } from "@spinajs/di";
 import * as chai from 'chai';
 import 'mocha';
-import { Orm } from '../src';
+import { Orm } from '../src/orm';
 import { OrmConf } from './orm.conf';
 
 
