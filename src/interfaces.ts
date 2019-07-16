@@ -244,14 +244,14 @@ export interface IOrderByQueryBuilder {
     getSort: () => ISort;
 }
 
-export interface IColumnsQueryBuilder {
+export interface IColumnsBuilder {
     clearColumns: () => this;
     columns: (names: string[]) => this;
     getColumns: () => IQueryStatement[];
 }
 
  
-export interface ISelectQueryBuilder extends IColumnsQueryBuilder, IOrderByQueryBuilder, ILimitQueryBuilder, IWhereQueryBuilder {
+export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByQueryBuilder, ILimitQueryBuilder, IWhereQueryBuilder {
     min: (column: string, as?: string) => this;
     max: (column: string, as?: string) => this;
     count: (column: string, as?: string) => this;
@@ -280,3 +280,25 @@ export interface IWhereQueryBuilder {
     clearWhere: () => this;
 }
 
+export interface ICompilerOutput {
+    expression: string;
+    bindings: any[];
+}
+
+export interface IQueryCompiler{
+    compile(): ICompilerOutput
+}
+
+export interface IOrderByQueryCompiler
+{
+    sort(builder: IOrderByQueryBuilder) : ICompilerOutput;
+}
+
+export interface ILimitQueryCompiler{
+    limit(builder: ILimitQueryBuilder) : ICompilerOutput;
+}
+
+export interface IColumnsCompiler
+{
+    columns(builder : IColumnsBuilder) : ICompilerOutput;
+}

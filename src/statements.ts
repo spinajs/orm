@@ -63,7 +63,7 @@ export abstract class WhereStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
-export abstract class InQueryStatement implements IQueryStatement {
+export abstract class InStatement implements IQueryStatement {
 
     protected _val: any[];
     protected _not: boolean;
@@ -102,7 +102,7 @@ export abstract class ExistsQueryStatement extends SelectQueryStatement {
 }
 
 
-export abstract class InSetQueryStatement implements IQueryStatement {
+export abstract class InSetStatement implements IQueryStatement {
 
     protected _val: any[];
     protected _not: boolean;

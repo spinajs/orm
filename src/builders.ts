@@ -5,8 +5,8 @@ import * as _ from "lodash";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
 import { applyMixins } from "./helpers";
-import { IColumnsQueryBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
-import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InQueryStatement, InSetQueryStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
+import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
+import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InStatement, InSetStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
 
@@ -191,7 +191,7 @@ export class OrderByQueryBuilder implements IOrderByQueryBuilder {
 }
 
 
-export class ColumnsQueryBuilder implements IColumnsQueryBuilder {
+export class ColumnsBuilder implements IColumnsBuilder {
 
     protected _columns: IQueryStatement[];
 
@@ -401,12 +401,12 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
     }
 
     public whereIn(column: string, val: any[]): this {
-        this._statements.push(createStatement(InQueryStatement, column, val, false));
+        this._statements.push(createStatement(InStatement, column, val, false));
         return this;
     }
 
     public whereNotIn(column: string, val: any[]): this {
-        this._statements.push(createStatement(InQueryStatement, column, val, true));
+        this._statements.push(createStatement(InStatement, column, val, true));
         return this;
     }
 
@@ -431,12 +431,12 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
     }
 
     public whereInSet(column: string, val: any[]): this {
-        this._statements.push(createStatement(InSetQueryStatement, column, val, false));
+        this._statements.push(createStatement(InSetStatement, column, val, false));
         return this;
     }
 
     public whereNotInSet(column: string, val: any[]): this {
-        this._statements.push(createStatement(InSetQueryStatement, column, val, true));
+        this._statements.push(createStatement(InSetStatement, column, val, true));
         return this;
     }
 
@@ -595,7 +595,7 @@ export class UpdateQueryBuilder extends QueryBuilder implements IWhereQueryBuild
 
 }
 
-export class InsertQueryBuilder extends QueryBuilder implements IColumnsQueryBuilder {
+export class InsertQueryBuilder extends QueryBuilder implements IColumnsBuilder {
 
     public clearColumns: () => this;
     public columns: (names: string[]) => this;
@@ -836,10 +836,10 @@ export class SchemaQueryBuilder {
 }
 
 
-applyMixins(SelectQueryBuilder, [ColumnsQueryBuilder, OrderByQueryBuilder, LimitQueryBuilder, WhereQueryBuilder]);
+applyMixins(SelectQueryBuilder, [ColumnsBuilder, OrderByQueryBuilder, LimitQueryBuilder, WhereQueryBuilder]);
 applyMixins(DeleteQueryBuilder, [LimitQueryBuilder, WhereQueryBuilder]);
 applyMixins(UpdateQueryBuilder, [WhereQueryBuilder]);
-applyMixins(InsertQueryBuilder, [ColumnsQueryBuilder]);
+applyMixins(InsertQueryBuilder, [ColumnsBuilder]);
 
 Object.values(ColumnType).forEach(type => {
 
