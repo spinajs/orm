@@ -1,13 +1,13 @@
 import { Configuration } from "@spinajs/configuration";
 import { DI } from "@spinajs/di";
 import 'mocha';
-import { Orm } from '../src/orm';
+// import { Orm } from '../src/orm';
 import { OrmConf } from './orm.conf';
 
 
-async function db() {
-    return DI.resolve<Orm>(Orm);
-}
+// async function db() {
+//     return DI.resolve<Orm>(Orm);
+// }
 
 describe("Models test", () => {
 
