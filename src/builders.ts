@@ -338,12 +338,12 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
     }
 
 
-    orWhere(column: string | boolean | WhereFunction | {}, operator?: WhereOperators | any, value?: any) {
+    orWhere(column: string | boolean | WhereFunction | {}, ..._args : any[]) {
         this._boolean = WhereBoolean.OR;
         return this.where(column, ...(Array.from(arguments).slice(1)));
     }
 
-    andWhere(column: string | boolean | WhereFunction | {}, operator?: WhereOperators | any, value?: any) {
+    andWhere(column: string | boolean | WhereFunction | {}, ..._args : any[]) {
 
         this._boolean = WhereBoolean.AND;
         return this.where(column, ...(Array.from(arguments).slice(1)));
