@@ -57,7 +57,7 @@ export class QueryBuilder {
      * SQL schema/database name that query is executed on. 
      * 
      * @example
-     * SELECT * FROM `spine`.`users` as u
+     * SELECT * FROM `spinejs`.`users` as u
      */
     public get Schema() {
         return this._schema;

@@ -1,2 +1,2 @@
-# spine-orm
-Spine orm module
+# spinajs-orm
+Spinajs orm module
