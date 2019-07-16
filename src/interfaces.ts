@@ -1,5 +1,5 @@
 import { SORT_ORDER } from './enums';
-import { QueryStatement } from './statements';
+import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
 
 export interface IOrmOptions {
@@ -239,19 +239,18 @@ export interface ILimitQueryBuilder {
 }
 
 export interface IOrderByQueryBuilder {
-    orderBy: (column: string, order: SORT_ORDER) => this;
+    orderBy: (column: string) => this;
+    orderByDescending : (column : string) => this;
     getSort: () => ISort;
 }
 
 export interface IColumnsQueryBuilder {
     clearColumns: () => this;
     columns: (names: string[]) => this;
-    getColumns: () => QueryStatement[];
+    getColumns: () => IQueryStatement[];
 }
 
-export interface IRawQuery {
-}
-
+ 
 export interface ISelectQueryBuilder extends IColumnsQueryBuilder, IOrderByQueryBuilder, ILimitQueryBuilder, IWhereQueryBuilder {
     min: (column: string, as?: string) => this;
     max: (column: string, as?: string) => this;
@@ -263,7 +262,7 @@ export interface ISelectQueryBuilder extends IColumnsQueryBuilder, IOrderByQuery
 
 
 export interface IWhereQueryBuilder {
-    where: (column: string | boolean | {} | WhereFunction | IRawQuery, operator?: any, value?: any) => this;
+    where: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
     orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
     andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
     whereObject: (obj: any) => this;

@@ -1,8 +1,8 @@
-export interface CompilerOutput {
+export interface ICompilerOutput {
     expression: string;
     bindings: any[];
 }
 
-export interface QueryCompiler{
-    compile(): CompilerOutput
+export interface IQueryCompiler{
+    compile(): ICompilerOutput
 }

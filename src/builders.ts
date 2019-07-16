@@ -5,8 +5,8 @@ import * as _ from "lodash";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
 import { applyMixins } from "./helpers";
-import { IColumnsQueryBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, IRawQuery, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
-import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InQueryStatement, InSetQueryStatement, QueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
+import { IColumnsQueryBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
+import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InQueryStatement, InSetQueryStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
 
@@ -108,14 +108,20 @@ export class QueryBuilder {
 
 
 export class LimitQueryBuilder implements ILimitQueryBuilder {
-    
-    protected _fail = false;
-    protected _first = false;
 
-    protected _limit: IQueryLimit = {
-        limit: -1,
-        offset: -1
-    };
+    protected _fail: boolean;
+    protected _first: boolean;
+
+    protected _limit: IQueryLimit;
+
+    constructor() {
+        this._fail = false;
+        this._first = false;
+        this._limit = {
+            limit: -1,
+            offset: -1
+        };
+    }
 
     public take(count: number) {
         if (count <= 0) {
@@ -154,12 +160,27 @@ export class LimitQueryBuilder implements ILimitQueryBuilder {
 
 
 export class OrderByQueryBuilder implements IOrderByQueryBuilder {
-    protected _sort: ISort = null;
+    protected _sort: ISort;
 
-    public orderBy(column: string, order: SORT_ORDER) {
+    constructor() {
+        this._sort = {
+            column: "",
+            order: SORT_ORDER.ASC
+        };
+    }
+
+    public orderBy(column: string) {
         this._sort = {
             column,
-            order
+            order: SORT_ORDER.ASC
+        };
+        return this;
+    }
+
+    public orderByDescending(column: string) {
+        this._sort = {
+            column,
+            order: SORT_ORDER.DESC
         };
         return this;
     }
@@ -172,7 +193,11 @@ export class OrderByQueryBuilder implements IOrderByQueryBuilder {
 
 export class ColumnsQueryBuilder implements IColumnsQueryBuilder {
 
-    protected _columns: QueryStatement[] = [];
+    protected _columns: IQueryStatement[];
+
+    constructor() {
+        this._columns = [];
+    }
 
     /**
      * Clears all select clauses from the query.
@@ -226,9 +251,9 @@ export class RawQuery {
 
 export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilder {
 
-    protected _statements: QueryStatement[] = [];
+    protected _statements: IQueryStatement[];
 
-    protected _boolean: WhereBoolean = WhereBoolean.AND;
+    protected _boolean: WhereBoolean;
 
     protected _container: Container;
 
@@ -244,9 +269,11 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
         super(driver);
 
         this._container = container;
+        this._boolean = WhereBoolean.AND;
+        this._statements = [];
     }
 
-    public where(column: string | boolean | WhereFunction | IRawQuery | {}, operator?: WhereOperators | any, value?: any): this {
+    public where(column: string | boolean | WhereFunction | RawQuery| {}, operator?: WhereOperators | any, value?: any): this {
 
         const self = this;
 
@@ -339,12 +366,12 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
     }
 
 
-    public orWhere(column: string | boolean | WhereFunction | {}, ..._args : any[]) {
+    public orWhere(column: string | boolean | WhereFunction | {}, ..._args: any[]) {
         this._boolean = WhereBoolean.OR;
         return this.where(column, ...(Array.from(arguments).slice(1)));
     }
 
-    public andWhere(column: string | boolean | WhereFunction | {}, ..._args : any[]) {
+    public andWhere(column: string | boolean | WhereFunction | {}, ..._args: any[]) {
 
         this._boolean = WhereBoolean.AND;
         return this.where(column, ...(Array.from(arguments).slice(1)));
@@ -420,7 +447,7 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
 }
 
 export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuilder {
-    
+
 
     public where: (column: string | boolean | {} | WhereFunction | RawQuery, operator?: any, value?: any) => this;
     public orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
@@ -431,8 +458,8 @@ export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuil
     public whereNot: (column: string, val: any) => this;
     public whereIn: (column: string, val: any[]) => this;
     public whereNotIn: (column: string, val: any[]) => this;
-    public whereExist: (query: SelectQueryBuilder) => this;
-    public whereNotExists: (query: SelectQueryBuilder) => this;
+    public whereExist: (query: ISelectQueryBuilder) => this;
+    public whereNotExists: (query: ISelectQueryBuilder) => this;
     public whereBetween: (column: string, val: any[]) => this;
     public whereNotBetween: (column: string, val: any[]) => this;
     public whereInSet: (column: string, val: any[]) => this;
@@ -443,11 +470,12 @@ export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuil
     public first: () => this
     public firstOrFail: () => this
     public getLimits: () => IQueryLimit
-    public orderBy: (column: string, order: SORT_ORDER) => this;
+    public orderBy: (column: string) => this;
+    public orderByDescending: (column: string) => this;
     public getSort: () => ISort
     public clearColumns: () => this;
     public columns: (names: string[]) => this;
-    public getColumns: () => QueryStatement[];
+    public getColumns: () => IQueryStatement[];
 
     public min: (column: string, as?: string) => this;
     public max: (column: string, as?: string) => this;
@@ -455,15 +483,22 @@ export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuil
     public sum: (column: string, as?: string) => this;
     public avg: (column: string, as?: string) => this;
 
-    protected _distinct = false;
+    protected _distinct : boolean
 
-    protected _columns: QueryStatement[] = [];
+    protected _columns: IQueryStatement[];
 
-    public get Distinct() {
+    public get IsDistinct() {
         return this._distinct;
     }
 
-   
+    constructor(driver : OrmDriver){
+        super(driver)
+
+        this._distinct = false;
+        this._columns = [];
+        this._method = QueryMethod.SELECT;
+    }
+
     public distinct() {
         if (this._columns.length === 0 || (this._columns[0] as ColumnStatement).IsWildcard) {
             throw new InvalidOperationException("Cannot force DISTINCT on unknown column");
@@ -477,7 +512,7 @@ export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuil
 }
 
 export class DeleteQueryBuilder extends QueryBuilder implements IWhereQueryBuilder, ILimitQueryBuilder {
-    
+
     public where: (column: string | boolean | {} | WhereFunction | RawQuery, operator?: any, value?: any) => this;
     public orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
     public andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
@@ -499,8 +534,15 @@ export class DeleteQueryBuilder extends QueryBuilder implements IWhereQueryBuild
     public first: () => this
     public firstOrFail: () => this
     public getLimits: () => IQueryLimit
-    
-    protected _truncate = false;
+
+    protected _truncate : boolean;
+
+    constructor(driver : OrmDriver){
+        super(driver)
+
+        this._truncate = false;
+        this._method = QueryMethod.DELETE;
+    }
 
     get Truncate() {
         return this._truncate;
@@ -528,9 +570,16 @@ export class UpdateQueryBuilder extends QueryBuilder implements IWhereQueryBuild
     public whereNotInSet: (column: string, val: any[]) => this;
     public clearWhere: () => this;
 
-    protected _value: {} = null;
+    protected _value: {};
     public get Value(): {} {
         return this._value;
+    }
+
+    constructor(driver: OrmDriver) {
+        super(driver)
+
+        this._value = [];
+        this._method = QueryMethod.UPDATE;
     }
 
     public in(name: string) {
@@ -550,23 +599,25 @@ export class InsertQueryBuilder extends QueryBuilder implements IColumnsQueryBui
 
     public clearColumns: () => this;
     public columns: (names: string[]) => this;
-    public getColumns: () => QueryStatement[];
+    public getColumns: () => IQueryStatement[];
 
-    
-    protected _values: any[][] = [];
 
-    protected _columns: ColumnStatement[] = [];
+    protected _values: any[][];;
 
-    protected _onDuplicate: UpdateQueryBuilder = null;
+    protected _columns: ColumnStatement[];
+
+    protected _onDuplicate: UpdateQueryBuilder;
 
     get Values() {
         return this._values;
     }
-   
+
     constructor(driver: OrmDriver) {
         super(driver);
 
         this._method = QueryMethod.INSERT;
+        this._columns = [];
+        this._values = [];
     }
 
     public values(data: {} | Array<{}>) {
@@ -615,22 +666,32 @@ export class InsertQueryBuilder extends QueryBuilder implements IColumnsQueryBui
 export class ColumnQueryBuilder {
 
     protected _name: string;
-    protected _unique: boolean = false;
-    protected _unsigned: boolean = false;
-    protected _autoIncrement: boolean = false;
-    protected _default: string | RawQuery | number = null;
-    protected _primaryKey: boolean = false;
-    protected _comment: string = "";
-    protected _charset: string = "";
-    protected _collation: string = "";
-    protected _notNull: boolean = false;
-    protected _type: string = undefined;
-    protected _args: any[] = [];
+    protected _unique: boolean;
+    protected _unsigned: boolean;
+    protected _autoIncrement: boolean;
+    protected _default: string | RawQuery | number;
+    protected _primaryKey: boolean;
+    protected _comment: string;
+    protected _charset: string;
+    protected _collation: string;
+    protected _notNull: boolean;
+    protected _type: string;
+    protected _args: any[];
 
 
     constructor(name: string, type: string, ...args: any[]) {
         this._name = name;
         this._type = type;
+        this._charset = "";
+        this._args = [];
+        this._autoIncrement = false;
+        this._notNull = false;
+        this._default = "";
+        this._name = "";
+        this._collation = "";
+        this._comment = "";
+        this._unique = false;
+        this._unsigned = false;
 
         this._args.push(...args);
     }
@@ -722,14 +783,18 @@ export class TableQueryBuilder extends QueryBuilder {
         return this._columns;
     }
 
-    protected _columns: ColumnQueryBuilder[] = [];
+    protected _columns: ColumnQueryBuilder[];
 
-    protected _comment: string = "";
+    protected _comment: string;
 
-    protected _charset: string = "";
+    protected _charset: string;
 
     constructor(name: string, driver: OrmDriver) {
         super(driver);
+
+        this._charset = "";
+        this._comment = "";
+        this._columns = [];
 
         this.setTable(name);
     }
@@ -753,9 +818,9 @@ export class TableQueryBuilder extends QueryBuilder {
 
 export class SchemaQueryBuilder {
 
-    protected _builder: TableQueryBuilder = null;
+    protected _builder: TableQueryBuilder;
 
-    protected _driver: OrmDriver = null;
+    protected _driver: OrmDriver;
 
     constructor(driver: OrmDriver) {
         this._driver = driver;

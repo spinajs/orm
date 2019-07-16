@@ -1,44 +1,44 @@
-import { WhereOperators, ColumnMethods } from "./enums";
-import { WhereQueryBuilder, SelectQueryBuilder } from "./builders";
+import { SelectQueryBuilder, WhereQueryBuilder } from "./builders";
+import { ColumnMethods, WhereOperators } from "./enums";
 
-export interface QueryStatementResult {
+export interface IQueryStatementResult {
     Statements: string[];
     Bindings: any[];
 }
 
-export interface QueryStatement {
-    build(): QueryStatementResult;
+export interface IQueryStatement {
+    build(): IQueryStatementResult;
 }
 
-export abstract class RawQueryStatement implements QueryStatement {
+export abstract class RawQueryStatement implements IQueryStatement {
 
-    _query: string = "";
-    _bindings: any[] = [];
+    protected _query: string;
+    protected _bindings: any[];
 
     constructor(query: string, bindings?: any[]) {
-        this._query = query;
-        this._bindings = bindings;
+        this._query = query || "";
+        this._bindings = bindings || [];
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class BetweenStatement implements QueryStatement {
+export abstract class BetweenStatement implements IQueryStatement {
 
-    protected _val: any[] = [];
-    protected _not: boolean = false;
-    protected _column: string = "";
+    protected _val: any[];
+    protected _not: boolean;
+    protected _column: string;
 
     constructor(column: string, val: any[], not: boolean) {
-        this._val = val;
-        this._not = not;
-        this._column = column;
+        this._val = val || [];
+        this._not = not || false;
+        this._column = column || "";
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class WhereQueryStatement implements QueryStatement {
+export abstract class WhereQueryStatement implements IQueryStatement {
 
     protected _builder: WhereQueryBuilder;
 
@@ -46,10 +46,10 @@ export abstract class WhereQueryStatement implements QueryStatement {
         this._builder = builder;
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class WhereStatement implements QueryStatement {
+export abstract class WhereStatement implements IQueryStatement {
     protected _column: string;
     protected _operator: WhereOperators;
     protected _value: any;
@@ -60,71 +60,71 @@ export abstract class WhereStatement implements QueryStatement {
         this._value = value;
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class InQueryStatement implements QueryStatement {
+export abstract class InQueryStatement implements IQueryStatement {
 
-    _val: any[] = [];
-    _not: boolean = false;
-    _column: string = "";
+    protected _val: any[];
+    protected _not: boolean;
+    protected _column: string;
 
     constructor(column: string, val: any[], not: boolean) {
-        this._val = val;
-        this._not = not;
-        this._column = column;
+        this._val = val || [];
+        this._not = not || false;
+        this._column = column || "";
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class SelectQueryStatement implements QueryStatement {
+export abstract class SelectQueryStatement implements IQueryStatement {
 
     protected _builder: SelectQueryBuilder;
     constructor(builder: SelectQueryBuilder) {
         this._builder = builder;
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
 export abstract class ExistsQueryStatement extends SelectQueryStatement {
 
-    _not: boolean = false;
+    protected _not: boolean;
 
     constructor(builder: SelectQueryBuilder, not: boolean) {
         super(builder);
 
-        this._not = not;
+        this._not = not || false;
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
 
-export abstract class InSetQueryStatement implements QueryStatement {
+export abstract class InSetQueryStatement implements IQueryStatement {
 
-    _val: any[] = [];
-    _not: boolean = false;
-    _column: string = "";
+    protected _val: any[];
+    protected _not: boolean;
+    protected _column: string;
 
     constructor(column: string, val: any[], not: boolean) {
-        this._val = val;
-        this._not = not;
-        this._column = column;
+        this._val = val || [];
+        this._not = not || false;
+        this._column = column || "";
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
-export abstract class ColumnStatement implements QueryStatement {
+export abstract class ColumnStatement implements IQueryStatement {
 
-    _column: string = "";
-    _alias: string = "";
+    protected _column: string;
+    protected _alias: string;
 
     constructor(column: string, alias?: string) {
-        this._column = column;
-        this._alias = alias;
+        this._column = column || "";
+        this._alias = alias || "";
     }
 
     get Column() {
@@ -136,20 +136,20 @@ export abstract class ColumnStatement implements QueryStatement {
     }
 
     get IsWildcard() {
-        return this._column === "*";
+        return this._column && this._column.trim() === "*";
     }
 
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
 export abstract class ColumnMethodStatement extends ColumnStatement {
-    _method: ColumnMethods = null;
+    protected _method: ColumnMethods;
 
     constructor(column: string, method: ColumnMethods, alias?: string) {
         super(column, alias);
         this._method = method;
     }
  
-    public abstract build(): QueryStatementResult;
+    public abstract build(): IQueryStatementResult;
 }
 
