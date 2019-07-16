@@ -18,6 +18,9 @@
     "no-console": {
       "severity": "off"
     },
+    "variable-name":{
+      "severity": "off"
+    },
     "naming-convention": [
       true,
       {
@@ -91,6 +94,6 @@
         "type": "enumMember",
         "format": "PascalCase"
       }
-    ],
+    ]
   }
 }

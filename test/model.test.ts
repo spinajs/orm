@@ -1,9 +1,26 @@
 import { Configuration } from "@spinajs/configuration";
 import { DI } from "@spinajs/di";
+import * as _ from "lodash";
 import 'mocha';
+import { dir } from "./misc";
 // import { Orm } from '../src/orm';
-import { OrmConf } from './orm.conf';
+ 
 
+export class OrmConf extends Configuration {
+
+    private conf = {
+        system: {
+            dirs: {
+                models: [dir("./mocks/models")],
+            }
+        },
+ 
+    }
+ 
+    public get(path: string[], defaultValue?: any): any {
+        return _.get(this.conf, path, defaultValue);
+    }
+}
 
 // async function db() {
 //     return DI.resolve<Orm>(Orm);
