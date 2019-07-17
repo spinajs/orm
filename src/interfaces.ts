@@ -227,57 +227,53 @@ export interface ISort {
 }
 
 export interface ILimitQueryBuilder {
-    take: (count: number) => this;
-
-    skip: (count: number) => this;
-
-    first: () => this;
-
-    firstOrFail: () => this;
-
-    getLimits: () => IQueryLimit;
+    take(count: number): this;
+    skip(count: number): this;
+    first(): this;
+    firstOrFail(): this;
+    getLimits(): IQueryLimit;
 }
 
 export interface IOrderByQueryBuilder {
-    orderBy: (column: string) => this;
-    orderByDescending : (column : string) => this;
-    getSort: () => ISort;
+    orderBy(column: string): this;
+    orderByDescending(column: string): this;
+    getSort(): ISort;
 }
 
 export interface IColumnsBuilder {
-    clearColumns: () => this;
-    columns: (names: string[]) => this;
-    getColumns: () => IQueryStatement[];
+    clearColumns(): this;
+    columns(names: string[]): this;
+    getColumns(): IQueryStatement[];
 }
 
- 
+
 export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByQueryBuilder, ILimitQueryBuilder, IWhereQueryBuilder {
-    min: (column: string, as?: string) => this;
-    max: (column: string, as?: string) => this;
-    count: (column: string, as?: string) => this;
-    sum: (column: string, as?: string) => this;
-    avg: (column: string, as?: string) => this;
+    min(column: string, as?: string): this;
+    max(column: string, as?: string): this;
+    count(column: string, as?: string): this;
+    sum(column: string, as?: string): this;
+    avg(column: string, as?: string): this;
     distinct(): this;
 }
 
 
 export interface IWhereQueryBuilder {
-    where: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    whereObject: (obj: any) => this;
-    whereNotNull: (column: string) => this;
-    whereNull: (column: string) => this;
-    whereNot: (column: string, val: any) => this;
-    whereIn: (column: string, val: any[]) => this;
-    whereNotIn: (column: string, val: any[]) => this;
-    whereExist: (query: ISelectQueryBuilder) => this;
-    whereNotExists: (query: ISelectQueryBuilder) => this;
-    whereBetween: (column: string, val: any[]) => this;
-    whereNotBetween: (column: string, val: any[]) => this;
-    whereInSet: (column: string, val: any[]) => this;
-    whereNotInSet: (column: string, val: any[]) => this;
-    clearWhere: () => this;
+    where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
+    orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
+    andWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
+    whereObject(obj: any): this;
+    whereNotNull(column: string): this;
+    whereNull(column: string): this;
+    whereNot(column: string, val: any): this;
+    whereIn(column: string, val: any[]): this;
+    whereNotIn(column: string, val: any[]): this;
+    whereExist(query: ISelectQueryBuilder): this;
+    whereNotExists(query: ISelectQueryBuilder): this;
+    whereBetween(column: string, val: any[]): this;
+    whereNotBetween(column: string, val: any[]): this;
+    whereInSet(column: string, val: any[]): this;
+    whereNotInSet(column: string, val: any[]): this;
+    clearWhere(): this;
 }
 
 export interface ICompilerOutput {
@@ -285,20 +281,23 @@ export interface ICompilerOutput {
     bindings: any[];
 }
 
-export interface IQueryCompiler{
+export interface IQueryCompiler {
     compile(): ICompilerOutput
 }
 
-export interface IOrderByQueryCompiler
-{
-    sort(builder: IOrderByQueryBuilder) : ICompilerOutput;
+export interface IOrderByQueryCompiler {
+    sort(builder: IOrderByQueryBuilder): ICompilerOutput;
 }
 
-export interface ILimitQueryCompiler{
-    limit(builder: ILimitQueryBuilder) : ICompilerOutput;
+export interface ILimitQueryCompiler {
+    limit(builder: ILimitQueryBuilder): ICompilerOutput;
 }
 
-export interface IColumnsCompiler
-{
-    columns(builder : IColumnsBuilder) : ICompilerOutput;
+export interface IColumnsCompiler {
+    columns(builder: IColumnsBuilder): ICompilerOutput;
 }
+
+export interface IWhereQueryCompiler {
+    where(builder: IWhereQueryBuilder): ICompilerOutput;
+}
+

@@ -3,11 +3,11 @@ import { ArgumentException, InvalidOperationException } from "@spinajs/exception
 import { setMaxListeners } from "cluster";
 import * as _ from "lodash";
 import { isBoolean, isFunction, isObject, isString } from 'util';
-import { ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { applyMixins } from "./helpers";
+import { ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators, ColumnMethods } from "./enums";
 import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
-import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InStatement, InSetStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
+import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InStatement, InSetStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnMethodStatement } from "./statements";
 import { WhereFunction } from "./types";
+import { use } from "typescript-mix";
 
 
 function isWhereOperator(val: any) {
@@ -29,7 +29,6 @@ function createStatement(type: any, ..._args: any[]) {
  */
 export class QueryBuilder {
 
-    protected _driver: OrmDriver;
     protected _method: QueryMethod;
     private _table: string;
     private _tableAlias: string;
@@ -61,10 +60,6 @@ export class QueryBuilder {
      */
     public get Schema() {
         return this._schema;
-    }
-
-    constructor(driver: OrmDriver) {
-        this._driver = driver;
     }
 
     /**
@@ -249,7 +244,7 @@ export class RawQuery {
 }
 
 
-export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilder {
+export class WhereQueryBuilder implements IWhereQueryBuilder {
 
     protected _statements: IQueryStatement[];
 
@@ -265,15 +260,13 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
         return this._boolean;
     }
 
-    constructor(driver: OrmDriver, container: Container) {
-        super(driver);
-
+    constructor(container: Container) {
         this._container = container;
         this._boolean = WhereBoolean.AND;
         this._statements = [];
     }
 
-    public where(column: string | boolean | WhereFunction | RawQuery| {}, operator?: WhereOperators | any, value?: any): this {
+    public where(column: string | boolean | WhereFunction | RawQuery | {}, operator?: WhereOperators | any, value?: any): this {
 
         const self = this;
 
@@ -289,7 +282,7 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
 
         // handle nested where's
         if (isFunction(column)) {
-            const _builder = new WhereQueryBuilder(this._driver, this._container);
+            const _builder = new WhereQueryBuilder(this._container);
             (column as WhereFunction).call(_builder);
 
             this._statements.push(createStatement(WhereQueryStatement, _builder));
@@ -446,57 +439,58 @@ export class WhereQueryBuilder extends QueryBuilder implements IWhereQueryBuilde
     }
 }
 
-export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuilder {
+// tslint:disable-next-line
+export interface SelectQueryBuilder extends ISelectQueryBuilder { }
+export class SelectQueryBuilder extends QueryBuilder {
 
-
-    public where: (column: string | boolean | {} | WhereFunction | RawQuery, operator?: any, value?: any) => this;
-    public orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public whereObject: (obj: any) => this;
-    public whereNotNull: (column: string) => this;
-    public whereNull: (column: string) => this;
-    public whereNot: (column: string, val: any) => this;
-    public whereIn: (column: string, val: any[]) => this;
-    public whereNotIn: (column: string, val: any[]) => this;
-    public whereExist: (query: ISelectQueryBuilder) => this;
-    public whereNotExists: (query: ISelectQueryBuilder) => this;
-    public whereBetween: (column: string, val: any[]) => this;
-    public whereNotBetween: (column: string, val: any[]) => this;
-    public whereInSet: (column: string, val: any[]) => this;
-    public whereNotInSet: (column: string, val: any[]) => this;
-    public clearWhere: () => this;
-    public take: (count: number) => this;
-    public skip: (count: number) => this
-    public first: () => this
-    public firstOrFail: () => this
-    public getLimits: () => IQueryLimit
-    public orderBy: (column: string) => this;
-    public orderByDescending: (column: string) => this;
-    public getSort: () => ISort
-    public clearColumns: () => this;
-    public columns: (names: string[]) => this;
-    public getColumns: () => IQueryStatement[];
-
-    public min: (column: string, as?: string) => this;
-    public max: (column: string, as?: string) => this;
-    public count: (column: string, as?: string) => this;
-    public sum: (column: string, as?: string) => this;
-    public avg: (column: string, as?: string) => this;
-
-    protected _distinct : boolean
+    protected _distinct: boolean
 
     protected _columns: IQueryStatement[];
+
+    @use(WhereQueryBuilder, LimitQueryBuilder, OrderByQueryBuilder, ColumnsBuilder)
+    /// @ts-ignore
+    private this: this;
 
     public get IsDistinct() {
         return this._distinct;
     }
 
-    constructor(driver : OrmDriver){
-        super(driver)
+    constructor() {
+        super();
 
         this._distinct = false;
         this._columns = [];
         this._method = QueryMethod.SELECT;
+    }
+
+    public min(column: string, as?: string): this {
+        this._columns.push(createStatement(ColumnMethodStatement, column, ColumnMethods.MIN, as));
+        return this;
+
+    };
+
+    public max(column: string, as?: string): this {
+        this._columns.push(createStatement(ColumnMethodStatement, column, ColumnMethods.MAX, as));
+
+        return this;
+
+    }
+
+    public count(column: string, as?: string): this {
+        this._columns.push(createStatement(ColumnMethodStatement, column, ColumnMethods.COUNT, as));
+        return this;
+
+    }
+
+    public sum(column: string, as?: string): this {
+        this._columns.push(createStatement(ColumnMethodStatement, column, ColumnMethods.SUM, as));
+        return this;
+
+    }
+
+    public avg(column: string, as?: string): this {
+        this._columns.push(createStatement(ColumnMethodStatement, column, ColumnMethods.AVG, as));
+        return this;
     }
 
     public distinct() {
@@ -505,79 +499,47 @@ export class SelectQueryBuilder extends QueryBuilder implements ISelectQueryBuil
         }
 
         this._distinct = true;
-
         return this;
     }
 
 }
 
-export class DeleteQueryBuilder extends QueryBuilder implements IWhereQueryBuilder, ILimitQueryBuilder {
+// tslint:disable-next-line
+export interface DeleteQueryBuilder extends IWhereQueryBuilder, ILimitQueryBuilder { }
+export class DeleteQueryBuilder extends QueryBuilder {
 
-    public where: (column: string | boolean | {} | WhereFunction | RawQuery, operator?: any, value?: any) => this;
-    public orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public whereObject: (obj: any) => this;
-    public whereNotNull: (column: string) => this;
-    public whereNull: (column: string) => this;
-    public whereNot: (column: string, val: any) => this;
-    public whereIn: (column: string, val: any[]) => this;
-    public whereNotIn: (column: string, val: any[]) => this;
-    public whereExist: (query: SelectQueryBuilder) => this;
-    public whereNotExists: (query: SelectQueryBuilder) => this;
-    public whereBetween: (column: string, val: any[]) => this;
-    public whereNotBetween: (column: string, val: any[]) => this;
-    public whereInSet: (column: string, val: any[]) => this;
-    public whereNotInSet: (column: string, val: any[]) => this;
-    public clearWhere: () => this;
-    public take: (count: number) => this;
-    public skip: (count: number) => this
-    public first: () => this
-    public firstOrFail: () => this
-    public getLimits: () => IQueryLimit
-
-    protected _truncate : boolean;
-
-    constructor(driver : OrmDriver){
-        super(driver)
-
-        this._truncate = false;
-        this._method = QueryMethod.DELETE;
-    }
-
+    protected _truncate: boolean;
     get Truncate() {
         return this._truncate;
     }
 
+    @use(WhereQueryBuilder, LimitQueryBuilder)
+    /// @ts-ignore
+    private this: this;
 
+    constructor() {
+        super()
+
+        this._truncate = false;
+        this._method = QueryMethod.DELETE;
+    }
 }
 
+// tslint:disable-next-line
+export interface UpdateQueryBuilder extends IWhereQueryBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder implements IWhereQueryBuilder {
-
-    public where: (column: string | boolean | {} | WhereFunction | RawQuery, operator?: any, value?: any) => this;
-    public orWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public andWhere: (column: string | boolean | {} | WhereFunction, operator?: any, value?: any) => this;
-    public whereObject: (obj: any) => this;
-    public whereNotNull: (column: string) => this;
-    public whereNull: (column: string) => this;
-    public whereNot: (column: string, val: any) => this;
-    public whereIn: (column: string, val: any[]) => this;
-    public whereNotIn: (column: string, val: any[]) => this;
-    public whereExist: (query: SelectQueryBuilder) => this;
-    public whereNotExists: (query: SelectQueryBuilder) => this;
-    public whereBetween: (column: string, val: any[]) => this;
-    public whereNotBetween: (column: string, val: any[]) => this;
-    public whereInSet: (column: string, val: any[]) => this;
-    public whereNotInSet: (column: string, val: any[]) => this;
-    public clearWhere: () => this;
 
     protected _value: {};
     public get Value(): {} {
         return this._value;
     }
 
-    constructor(driver: OrmDriver) {
-        super(driver)
+    @use(WhereQueryBuilder)
+    /// @ts-ignore
+    private this: this;
 
+    constructor() {
+        super()
         this._value = [];
         this._method = QueryMethod.UPDATE;
     }
@@ -589,31 +551,31 @@ export class UpdateQueryBuilder extends QueryBuilder implements IWhereQueryBuild
 
     public update(value: {}) {
         this._value = value;
-
         return this;
     }
-
 }
 
-export class InsertQueryBuilder extends QueryBuilder implements IColumnsBuilder {
-
-    public clearColumns: () => this;
-    public columns: (names: string[]) => this;
-    public getColumns: () => IQueryStatement[];
-
-
+// tslint:disable-next-line
+export interface InsertQueryBuilder extends IColumnsBuilder{}
+export class InsertQueryBuilder extends QueryBuilder {
+ 
+    
     protected _values: any[][];;
 
     protected _columns: ColumnStatement[];
 
     protected _onDuplicate: UpdateQueryBuilder;
 
+    @use(ColumnsBuilder)
+    /// @ts-ignore
+    private this: this;
+
     get Values() {
         return this._values;
     }
 
-    constructor(driver: OrmDriver) {
-        super(driver);
+    constructor() {
+        super();
 
         this._method = QueryMethod.INSERT;
         this._columns = [];
@@ -656,7 +618,7 @@ export class InsertQueryBuilder extends QueryBuilder implements IColumnsBuilder 
     }
 
     public onDuplicate(callback: (this: UpdateQueryBuilder) => void): InsertQueryBuilder {
-        this._onDuplicate = new UpdateQueryBuilder(this._driver);
+        this._onDuplicate = new UpdateQueryBuilder();
         callback.call(this._onDuplicate);
 
         return this;
@@ -789,8 +751,8 @@ export class TableQueryBuilder extends QueryBuilder {
 
     protected _charset: string;
 
-    constructor(name: string, driver: OrmDriver) {
-        super(driver);
+    constructor(name: string) {
+        super();
 
         this._charset = "";
         this._comment = "";
@@ -819,27 +781,14 @@ export class TableQueryBuilder extends QueryBuilder {
 export class SchemaQueryBuilder {
 
     protected _builder: TableQueryBuilder;
-
-    protected _driver: OrmDriver;
-
-    constructor(driver: OrmDriver) {
-        this._driver = driver;
-    }
-
     public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
 
-        this._builder = new TableQueryBuilder(name, this._driver);
+        this._builder = new TableQueryBuilder(name);
 
         callback.call(null, this._builder);
         return this;
     }
 }
-
-
-applyMixins(SelectQueryBuilder, [ColumnsBuilder, OrderByQueryBuilder, LimitQueryBuilder, WhereQueryBuilder]);
-applyMixins(DeleteQueryBuilder, [LimitQueryBuilder, WhereQueryBuilder]);
-applyMixins(UpdateQueryBuilder, [WhereQueryBuilder]);
-applyMixins(InsertQueryBuilder, [ColumnsBuilder]);
 
 Object.values(ColumnType).forEach(type => {
 
