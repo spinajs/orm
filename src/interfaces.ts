@@ -228,10 +228,10 @@ export interface ISort {
 
 export interface IQueryBuilder{
 
-    Table() : string;
-    TableAlias() : string;
-    Schema() : string;
-    Schema(schema : string);
+    Table : string;
+    TableAlias : string;
+    Schema : string;
+    setSchema(schema : string) : IQueryBuilder;
 }
 
 export interface ILimitQueryBuilder {

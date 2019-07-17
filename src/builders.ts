@@ -5,7 +5,7 @@ import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
+import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
@@ -67,7 +67,7 @@ export class QueryBuilder implements IQueryBuilder {
      * 
      * @param schema - schema or database name in database
      */
-    public schema(schema: string) {
+    public setSchema(schema: string) {
 
         if (!schema) {
             throw new ArgumentException(`schema argument cannot be null or empty`)
