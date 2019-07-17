@@ -255,6 +255,9 @@ export interface IColumnsBuilder {
 }
 
 export interface IWhereBuilder {
+
+    Statements : IQueryStatement[];
+
     where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     andWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
