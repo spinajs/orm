@@ -2,12 +2,12 @@ import { Container } from "@spinajs/di";
 import { ArgumentException, InvalidOperationException } from "@spinajs/exceptions";
 import { setMaxListeners } from "cluster";
 import * as _ from "lodash";
-import { isBoolean, isFunction, isObject, isString } from 'util';
-import { ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators, ColumnMethods } from "./enums";
-import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder, OrmDriver } from "./interfaces";
-import { BetweenStatement, ColumnStatement, ExistsQueryStatement, InStatement, InSetStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnMethodStatement } from "./statements";
-import { WhereFunction } from "./types";
 import { use } from "typescript-mix";
+import { isBoolean, isFunction, isObject, isString } from 'util';
+import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
+import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
+import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
+import { WhereFunction } from "./types";
 
 
 function isWhereOperator(val: any) {
@@ -446,6 +446,7 @@ export class SelectQueryBuilder extends QueryBuilder {
     protected _distinct: boolean
 
     protected _columns: IQueryStatement[];
+
 
     @use(WhereQueryBuilder, LimitQueryBuilder, OrderByQueryBuilder, ColumnsBuilder)
     /// @ts-ignore
