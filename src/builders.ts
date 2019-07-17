@@ -27,7 +27,7 @@ function createStatement(type: any, ..._args: any[]) {
  * Base class for queires. Implements basic query functionality
  * 
  */
-export class QueryBuilder {
+export class QueryBuilder implements IQueryBuilder {
 
     protected _method: QueryMethod;
     private _table: string;

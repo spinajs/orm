@@ -226,6 +226,14 @@ export interface ISort {
     order: SORT_ORDER;
 }
 
+export interface IQueryBuilder{
+
+    Table() : string;
+    TableAlias() : string;
+    Schema() : string;
+    Schema(schema : string);
+}
+
 export interface ILimitQueryBuilder {
     take(count: number): this;
     skip(count: number): this;
