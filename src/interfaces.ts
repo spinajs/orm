@@ -1,4 +1,4 @@
-import { SORT_ORDER } from './enums';
+import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
 
@@ -257,6 +257,8 @@ export interface IColumnsBuilder {
 export interface IWhereBuilder {
 
     Statements : IQueryStatement[];
+
+    Op : WhereBoolean;
 
     where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
