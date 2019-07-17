@@ -1,6 +1,6 @@
 {
   "name": "@spinajs/orm",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "SpinaJS Orm module",
   "main": "lib/index.js",
   "private": false,
