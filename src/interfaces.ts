@@ -234,7 +234,7 @@ export interface IQueryBuilder{
     setSchema(schema : string) : IQueryBuilder;
 }
 
-export interface ILimitQueryBuilder {
+export interface ILimitBuilder {
     take(count: number): this;
     skip(count: number): this;
     first(): this;
@@ -242,7 +242,7 @@ export interface ILimitQueryBuilder {
     getLimits(): IQueryLimit;
 }
 
-export interface IOrderByQueryBuilder {
+export interface IOrderByBuilder {
     orderBy(column: string): this;
     orderByDescending(column: string): this;
     getSort(): ISort;
@@ -254,18 +254,7 @@ export interface IColumnsBuilder {
     getColumns(): IQueryStatement[];
 }
 
-
-export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByQueryBuilder, ILimitQueryBuilder, IWhereQueryBuilder {
-    min(column: string, as?: string): this;
-    max(column: string, as?: string): this;
-    count(column: string, as?: string): this;
-    sum(column: string, as?: string): this;
-    avg(column: string, as?: string): this;
-    distinct(): this;
-}
-
-
-export interface IWhereQueryBuilder {
+export interface IWhereBuilder {
     where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     andWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
@@ -284,6 +273,15 @@ export interface IWhereQueryBuilder {
     clearWhere(): this;
 }
 
+export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByBuilder, ILimitBuilder, IWhereBuilder {
+    min(column: string, as?: string): this;
+    max(column: string, as?: string): this;
+    count(column: string, as?: string): this;
+    sum(column: string, as?: string): this;
+    avg(column: string, as?: string): this;
+    distinct(): this;
+}
+
 export interface ICompilerOutput {
     expression: string;
     bindings: any[];
@@ -294,11 +292,11 @@ export interface IQueryCompiler {
 }
 
 export interface IOrderByQueryCompiler {
-    sort(builder: IOrderByQueryBuilder): ICompilerOutput;
+    sort(builder: IOrderByBuilder): ICompilerOutput;
 }
 
 export interface ILimitQueryCompiler {
-    limit(builder: ILimitQueryBuilder): ICompilerOutput;
+    limit(builder: ILimitBuilder): ICompilerOutput;
 }
 
 export interface IColumnsCompiler {

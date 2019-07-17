@@ -5,7 +5,7 @@ import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { IColumnsBuilder, ILimitQueryBuilder, IOrderByQueryBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
+import { IColumnsBuilder, ILimitBuilder, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
@@ -102,7 +102,7 @@ export class QueryBuilder implements IQueryBuilder {
 
 
 
-export class LimitQueryBuilder implements ILimitQueryBuilder {
+export class LimitQueryBuilder implements ILimitBuilder {
 
     protected _fail: boolean;
     protected _first: boolean;
@@ -154,7 +154,7 @@ export class LimitQueryBuilder implements ILimitQueryBuilder {
 
 
 
-export class OrderByQueryBuilder implements IOrderByQueryBuilder {
+export class OrderByQueryBuilder implements IOrderByBuilder {
     protected _sort: ISort;
 
     constructor() {
@@ -506,7 +506,7 @@ export class SelectQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface DeleteQueryBuilder extends IWhereQueryBuilder, ILimitQueryBuilder { }
+export interface DeleteQueryBuilder extends IWhereQueryBuilder, ILimitBuilder { }
 export class DeleteQueryBuilder extends QueryBuilder {
 
     protected _truncate: boolean;
