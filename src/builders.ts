@@ -102,7 +102,7 @@ export class QueryBuilder implements IQueryBuilder {
 
 
 
-export class LimitQueryBuilder implements ILimitBuilder {
+export class LimitBuilder implements ILimitBuilder {
 
     protected _fail: boolean;
     protected _first: boolean;
@@ -154,7 +154,7 @@ export class LimitQueryBuilder implements ILimitBuilder {
 
 
 
-export class OrderByQueryBuilder implements IOrderByBuilder {
+export class OrderByBuilder implements IOrderByBuilder {
     protected _sort: ISort;
 
     constructor() {
@@ -448,7 +448,7 @@ export class SelectQueryBuilder extends QueryBuilder {
     protected _columns: IQueryStatement[];
 
 
-    @use(WhereBuilder, LimitQueryBuilder, OrderByQueryBuilder, ColumnsBuilder)
+    @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder)
     /// @ts-ignore
     private this: this;
 
@@ -514,7 +514,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
         return this._truncate;
     }
 
-    @use(WhereBuilder, LimitQueryBuilder)
+    @use(WhereBuilder, LimitBuilder)
     /// @ts-ignore
     private this: this;
 
