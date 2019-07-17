@@ -291,11 +291,11 @@ export interface IQueryCompiler {
     compile(): ICompilerOutput
 }
 
-export interface IOrderByQueryCompiler {
+export interface IOrderByCompiler {
     sort(builder: IOrderByBuilder): ICompilerOutput;
 }
 
-export interface ILimitQueryCompiler {
+export interface ILimitCompiler {
     limit(builder: ILimitBuilder): ICompilerOutput;
 }
 
@@ -303,7 +303,7 @@ export interface IColumnsCompiler {
     columns(builder: IColumnsBuilder): ICompilerOutput;
 }
 
-export interface IWhereQueryCompiler {
-    where(builder: IWhereQueryBuilder): ICompilerOutput;
+export interface IWhereCompiler {
+    where(builder: IWhereBuilder): ICompilerOutput;
 }
 

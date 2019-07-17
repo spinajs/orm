@@ -1,4 +1,4 @@
-import { SelectQueryBuilder, WhereQueryBuilder } from "./builders";
+import { SelectQueryBuilder, WhereBuilder } from "./builders";
 import { ColumnMethods, WhereOperators } from "./enums";
 
 export interface IQueryStatementResult {
@@ -40,9 +40,9 @@ export abstract class BetweenStatement implements IQueryStatement {
 
 export abstract class WhereQueryStatement implements IQueryStatement {
 
-    protected _builder: WhereQueryBuilder;
+    protected _builder: WhereBuilder;
 
-    constructor(builder: WhereQueryBuilder) {
+    constructor(builder: WhereBuilder) {
         this._builder = builder;
     }
 

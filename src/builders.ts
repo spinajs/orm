@@ -5,7 +5,7 @@ import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { IColumnsBuilder, ILimitBuilder, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereQueryBuilder } from "./interfaces";
+import { IColumnsBuilder, ILimitBuilder, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
@@ -244,7 +244,7 @@ export class RawQuery {
 }
 
 
-export class WhereQueryBuilder implements IWhereQueryBuilder {
+export class WhereBuilder implements IWhereBuilder {
 
     protected _statements: IQueryStatement[];
 
@@ -282,7 +282,7 @@ export class WhereQueryBuilder implements IWhereQueryBuilder {
 
         // handle nested where's
         if (isFunction(column)) {
-            const _builder = new WhereQueryBuilder(this._container);
+            const _builder = new WhereBuilder(this._container);
             (column as WhereFunction).call(_builder);
 
             this._statements.push(createStatement(WhereQueryStatement, _builder));
@@ -448,7 +448,7 @@ export class SelectQueryBuilder extends QueryBuilder {
     protected _columns: IQueryStatement[];
 
 
-    @use(WhereQueryBuilder, LimitQueryBuilder, OrderByQueryBuilder, ColumnsBuilder)
+    @use(WhereBuilder, LimitQueryBuilder, OrderByQueryBuilder, ColumnsBuilder)
     /// @ts-ignore
     private this: this;
 
@@ -506,7 +506,7 @@ export class SelectQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface DeleteQueryBuilder extends IWhereQueryBuilder, ILimitBuilder { }
+export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder { }
 export class DeleteQueryBuilder extends QueryBuilder {
 
     protected _truncate: boolean;
@@ -514,7 +514,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
         return this._truncate;
     }
 
-    @use(WhereQueryBuilder, LimitQueryBuilder)
+    @use(WhereBuilder, LimitQueryBuilder)
     /// @ts-ignore
     private this: this;
 
@@ -527,15 +527,15 @@ export class DeleteQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface UpdateQueryBuilder extends IWhereQueryBuilder { }
-export class UpdateQueryBuilder extends QueryBuilder implements IWhereQueryBuilder {
+export interface UpdateQueryBuilder extends IWhereBuilder { }
+export class UpdateQueryBuilder extends QueryBuilder {
 
     protected _value: {};
     public get Value(): {} {
         return this._value;
     }
 
-    @use(WhereQueryBuilder)
+    @use(WhereBuilder)
     /// @ts-ignore
     private this: this;
 
