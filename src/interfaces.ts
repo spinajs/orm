@@ -251,12 +251,12 @@ export interface IOrderByBuilder {
 export interface IColumnsBuilder {
     clearColumns(): this;
     columns(names: string[]): this;
-    getColumns(): IQueryStatement[];
+    getColumns(): Array<Promise<IQueryStatement>>;
 }
 
 export interface IWhereBuilder {
 
-    Statements : IQueryStatement[];
+    Statements : Array<Promise<IQueryStatement>>;
 
     Op : WhereBoolean;
 
@@ -293,22 +293,51 @@ export interface ICompilerOutput {
 }
 
 export interface IQueryCompiler {
-    compile(): ICompilerOutput
+    compile(): Promise<ICompilerOutput>
 }
 
 export interface IOrderByCompiler {
-    sort(builder: IOrderByBuilder): ICompilerOutput;
+    sort(builder: IOrderByBuilder): Promise<ICompilerOutput>;
 }
 
 export interface ILimitCompiler {
-    limit(builder: ILimitBuilder): ICompilerOutput;
+    limit(builder: ILimitBuilder): Promise<ICompilerOutput>;
 }
 
 export interface IColumnsCompiler {
-    columns(builder: IColumnsBuilder): ICompilerOutput;
+    columns(builder: IColumnsBuilder): Promise<ICompilerOutput>;
 }
 
 export interface IWhereCompiler {
-    where(builder: IWhereBuilder): ICompilerOutput;
+    where(builder: IWhereBuilder): Promise<ICompilerOutput>;
 }
 
+
+/**
+ *  Definitions of query compiler are needed for DI resolving
+ * ==========================================================
+ */
+
+export abstract class SelectQueryCompiler implements IQueryCompiler{
+    public abstract compile(): Promise<ICompilerOutput>;
+}
+
+export abstract class DeleteQueryCompiler implements IQueryCompiler{
+    public abstract compile(): Promise<ICompilerOutput>;
+}
+
+export abstract class UpdateQueryCompiler implements IQueryCompiler{
+    public abstract compile(): Promise<ICompilerOutput>;
+}
+
+export abstract class InsertQueryCompiler implements IQueryCompiler{
+    public abstract compile(): Promise<ICompilerOutput>;
+}
+
+export abstract class TableQueryCompiler implements IQueryCompiler{
+    public abstract compile(): Promise<ICompilerOutput>;
+}
+
+/**
+ * ==========================================================
+ */
