@@ -1,4 +1,4 @@
-import { Container } from "@spinajs/di";
+import { Container, NewInstance } from "@spinajs/di";
 import { ArgumentException, InvalidOperationException, NotImplementedException } from "@spinajs/exceptions";
 import { setMaxListeners } from "cluster";
 import * as _ from "lodash";
@@ -18,6 +18,7 @@ function isWhereOperator(val: any) {
  * Base class for queires. Implements basic query functionality
  * 
  */
+@NewInstance()
 export class QueryBuilder implements IQueryBuilder {
 
     protected _method: QueryMethod;
@@ -114,7 +115,7 @@ export class QueryBuilder implements IQueryBuilder {
 }
 
 
-
+@NewInstance()
 export class LimitBuilder implements ILimitBuilder {
 
     protected _fail: boolean;
@@ -166,7 +167,7 @@ export class LimitBuilder implements ILimitBuilder {
 }
 
 
-
+@NewInstance()
 export class OrderByBuilder implements IOrderByBuilder {
     protected _sort: ISort;
 
@@ -199,6 +200,8 @@ export class OrderByBuilder implements IOrderByBuilder {
 }
 
 
+
+@NewInstance()
 export class ColumnsBuilder implements IColumnsBuilder {
 
     protected _container: Container;
@@ -235,6 +238,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
     }
 }
 
+@NewInstance()
 export class RawQuery {
 
     get Query() {
@@ -257,7 +261,7 @@ export class RawQuery {
     }
 }
 
-
+@NewInstance()
 export class WhereBuilder implements IWhereBuilder {
 
     protected _statements: Array<Promise<IQueryStatement>>;
