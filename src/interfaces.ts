@@ -251,12 +251,12 @@ export interface IOrderByBuilder {
 export interface IColumnsBuilder {
     clearColumns(): this;
     columns(names: string[]): this;
-    getColumns(): Array<Promise<IQueryStatement>>;
+    getColumns(): IQueryStatement[];
 }
 
 export interface IWhereBuilder {
 
-    Statements : Array<Promise<IQueryStatement>>;
+    Statements : IQueryStatement[];
 
     Op : WhereBoolean;
 
@@ -293,23 +293,23 @@ export interface ICompilerOutput {
 }
 
 export interface IQueryCompiler {
-    compile(): Promise<ICompilerOutput>
+    compile(): ICompilerOutput
 }
 
 export interface IOrderByCompiler {
-    sort(builder: IOrderByBuilder): Promise<ICompilerOutput>;
+    sort(builder: IOrderByBuilder): ICompilerOutput;
 }
 
 export interface ILimitCompiler {
-    limit(builder: ILimitBuilder): Promise<ICompilerOutput>;
+    limit(builder: ILimitBuilder): ICompilerOutput;
 }
 
 export interface IColumnsCompiler {
-    columns(builder: IColumnsBuilder): Promise<ICompilerOutput>;
+    columns(builder: IColumnsBuilder): ICompilerOutput;
 }
 
 export interface IWhereCompiler {
-    where(builder: IWhereBuilder): Promise<ICompilerOutput>;
+    where(builder: IWhereBuilder): ICompilerOutput;
 }
 
 
@@ -319,23 +319,23 @@ export interface IWhereCompiler {
  */
 
 export abstract class SelectQueryCompiler implements IQueryCompiler{
-    public abstract compile(): Promise<ICompilerOutput>;
+    public abstract compile(): ICompilerOutput;
 }
 
 export abstract class DeleteQueryCompiler implements IQueryCompiler{
-    public abstract compile(): Promise<ICompilerOutput>;
+    public abstract compile(): ICompilerOutput;
 }
 
 export abstract class UpdateQueryCompiler implements IQueryCompiler{
-    public abstract compile(): Promise<ICompilerOutput>;
+    public abstract compile(): ICompilerOutput;
 }
 
 export abstract class InsertQueryCompiler implements IQueryCompiler{
-    public abstract compile(): Promise<ICompilerOutput>;
+    public abstract compile(): ICompilerOutput;
 }
 
 export abstract class TableQueryCompiler implements IQueryCompiler{
-    public abstract compile(): Promise<ICompilerOutput>;
+    public abstract compile(): ICompilerOutput;
 }
 
 /**

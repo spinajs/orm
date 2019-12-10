@@ -1,17 +1,16 @@
-import { Container, NewInstance } from "@spinajs/di";
-import { ArgumentException, InvalidOperationException, NotImplementedException } from "@spinajs/exceptions";
-import { setMaxListeners } from "cluster";
+import { Container, Inject, NewInstance } from "@spinajs/di";
+import { ArgumentException, NotImplementedException } from "@spinajs/exceptions";
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { IColumnsBuilder, ILimitBuilder, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, OrmDriver, ICompilerOutput, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, TableQueryCompiler } from "./interfaces";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, OrmDriver, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
 import { WhereFunction } from "./types";
 
 
 function isWhereOperator(val: any) {
-    return isString(val) && Object.values(WhereOperators).includes(val.toLowerCase());
+    return isString(val) && Object.values(WhereOperators).includes((val as any).toLowerCase());
 }
 
 /**
@@ -19,6 +18,7 @@ function isWhereOperator(val: any) {
  * 
  */
 @NewInstance()
+@Inject(OrmDriver, Container)
 export class QueryBuilder implements IQueryBuilder {
 
     protected _method: QueryMethod;
@@ -80,14 +80,13 @@ export class QueryBuilder implements IQueryBuilder {
     /**
      * Builds query that is ready to use in DB 
      */
-    public async toDB(): Promise<ICompilerOutput> {
+    public toDB(): ICompilerOutput {
         throw new NotImplementedException();
     }
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
-        return this.toDB().then((result: ICompilerOutput) => {
-            this._driver.execute(result.expression, result.bindings).then(resolve, reject);
-        })
+        const compiled = this.toDB();
+        this._driver.execute(compiled.expression, compiled.bindings).then(resolve, reject);
     }
 
     /**
@@ -205,7 +204,7 @@ export class OrderByBuilder implements IOrderByBuilder {
 export class ColumnsBuilder implements IColumnsBuilder {
 
     protected _container: Container;
-    protected _columns: Array<Promise<IQueryStatement>>;
+    protected _columns: IQueryStatement[];
 
     constructor() {
         this._columns = [];
@@ -264,9 +263,9 @@ export class RawQuery {
 @NewInstance()
 export class WhereBuilder implements IWhereBuilder {
 
-    protected _statements: Array<Promise<IQueryStatement>>;
+    protected _statements: IQueryStatement[] = [];
 
-    protected _boolean: WhereBoolean;
+    protected _boolean: WhereBoolean = WhereBoolean.AND;
 
     protected _container: Container;
 
@@ -395,13 +394,13 @@ export class WhereBuilder implements IWhereBuilder {
     }
 
     public whereNotNull(column: string): this {
-        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement,[column, WhereOperators.NOT_NULL, column]));
- 
+        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL, column]));
+
         return this;
     }
 
     public whereNull(column: string): this {
-        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement,[column, WhereOperators.NULL, column]));
+        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NULL, column]));
         return this;
     }
 
@@ -410,42 +409,42 @@ export class WhereBuilder implements IWhereBuilder {
     }
 
     public whereIn(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<InStatement>(InStatement,[column, val, false]));
+        this._statements.push(this._container.resolve<InStatement>(InStatement, [column, val, false]));
         return this;
     }
 
     public whereNotIn(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<InStatement>(InStatement,[column, val, true]));
+        this._statements.push(this._container.resolve<InStatement>(InStatement, [column, val, true]));
         return this;
     }
 
     public whereExist(query: SelectQueryBuilder): this {
-        this._statements.push(this._container.resolve<ExistsQueryStatement>(ExistsQueryStatement,[query, false]));
+        this._statements.push(this._container.resolve<ExistsQueryStatement>(ExistsQueryStatement, [query, false]));
         return this;
     }
 
     public whereNotExists(query: SelectQueryBuilder): this {
-        this._statements.push(this._container.resolve<ExistsQueryStatement>(ExistsQueryStatement,[query, true]));
+        this._statements.push(this._container.resolve<ExistsQueryStatement>(ExistsQueryStatement, [query, true]));
         return this;
     }
 
     public whereBetween(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<BetweenStatement>(BetweenStatement,[column, val, false]));
+        this._statements.push(this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, false]));
         return this;
     }
 
     public whereNotBetween(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<BetweenStatement>(BetweenStatement,[column, val, true]));
+        this._statements.push(this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, true]));
         return this;
     }
 
     public whereInSet(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<InSetStatement>(InSetStatement,[column, val, false]));
+        this._statements.push(this._container.resolve<InSetStatement>(InSetStatement, [column, val, false]));
         return this;
     }
 
     public whereNotInSet(column: string, val: any[]): this {
-        this._statements.push(this._container.resolve<InSetStatement>(InSetStatement,[column, val, true]));
+        this._statements.push(this._container.resolve<InSetStatement>(InSetStatement, [column, val, true]));
         return this;
     }
 
@@ -457,12 +456,32 @@ export class WhereBuilder implements IWhereBuilder {
 
 // tslint:disable-next-line
 export interface SelectQueryBuilder extends ISelectQueryBuilder { }
+
 export class SelectQueryBuilder extends QueryBuilder {
 
+    /**
+     * column query props
+     */
     protected _distinct: boolean
+    protected _columns: IQueryStatement[];
 
-    protected _columns: Array<Promise<IQueryStatement>>;
+    /**
+     * limit query props
+     */
+    protected _fail: boolean;
+    protected _first: boolean;
+    protected _limit: IQueryLimit;
 
+    /**
+     * order by query props
+     */
+    protected _sort: ISort;
+
+    /**
+     * where query props
+     */
+    protected _statements: IQueryStatement[];
+    protected _boolean: WhereBoolean;
 
     @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder)
     /// @ts-ignore
@@ -478,34 +497,47 @@ export class SelectQueryBuilder extends QueryBuilder {
         this._distinct = false;
         this._columns = [];
         this._method = QueryMethod.SELECT;
+
+        this._boolean = WhereBoolean.AND;
+        this._statements = [];
+
+        this._sort = {
+            column: "",
+            order: SORT_ORDER.ASC
+        };
+        
+        this._limit = {
+            limit: -1,
+            offset: -1
+        };
     }
 
     public min(column: string, as?: string): this {
-        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement,[column, ColumnMethods.MIN, as]));
+        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MIN, as]));
         return this;
 
     };
 
     public max(column: string, as?: string): this {
-        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement,[column, ColumnMethods.MAX, as]));
+        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MAX, as]));
         return this;
 
     }
 
     public count(column: string, as?: string): this {
-        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement,[column, ColumnMethods.COUNT, as]));
+        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.COUNT, as]));
         return this;
 
     }
 
     public sum(column: string, as?: string): this {
-        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement,[column, ColumnMethods.SUM, as]));
+        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.SUM, as]));
         return this;
 
     }
 
     public avg(column: string, as?: string): this {
-        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement,[column, ColumnMethods.AVG, as]));
+        this._columns.push(this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.AVG, as]));
         return this;
     }
 
@@ -514,9 +546,9 @@ export class SelectQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public async toDB(): Promise<ICompilerOutput> {
-        const compiler = await this._container.resolve<SelectQueryCompiler>(SelectQueryCompiler);
-        return await compiler.compile();
+    public toDB(): ICompilerOutput {
+        const compiler = this._container.resolve<SelectQueryCompiler>(SelectQueryCompiler);
+        return compiler.compile();
     }
 }
 
@@ -540,9 +572,8 @@ export class DeleteQueryBuilder extends QueryBuilder {
         this._method = QueryMethod.DELETE;
     }
 
-    public async toDB(): Promise<ICompilerOutput> {
-        const compiler = await this._container.resolve<DeleteQueryCompiler>(DeleteQueryCompiler);
-        return await compiler.compile();
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<DeleteQueryCompiler>(DeleteQueryCompiler).compile();
     }
 }
 
@@ -575,9 +606,8 @@ export class UpdateQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public async toDB(): Promise<ICompilerOutput> {
-        const compiler = await this._container.resolve<UpdateQueryCompiler>(UpdateQueryCompiler);
-        return await compiler.compile();
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<UpdateQueryCompiler>(UpdateQueryCompiler).compile();
     }
 }
 
@@ -649,9 +679,8 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public async toDB(): Promise<ICompilerOutput> {
-        const compiler = await this._container.resolve<InsertQueryCompiler>(InsertQueryCompiler);
-        return await compiler.compile();
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<InsertQueryCompiler>(InsertQueryCompiler).compile();
     }
 }
 
@@ -807,9 +836,8 @@ export class TableQueryBuilder extends QueryBuilder {
         this._charset = charset;
     }
 
-    public async toDB(): Promise<ICompilerOutput> {
-        const compiler = await this._container.resolve<TableQueryCompiler>(TableQueryCompiler);
-        return await compiler.compile();
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<TableQueryCompiler>(TableQueryCompiler).compile();
     }
 }
 
