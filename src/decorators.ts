@@ -7,7 +7,7 @@ export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for("MODEL_DESCRIPTOR");
  * 
  * @param callback 
  */
-function Model(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void) : any {
+function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void): any {
     return (target: any, propertyKey: string | symbol, indexOrDescriptor: number | PropertyDescriptor) => {
 
         let metadata: IModelDescrtiptor = target[MODEL_DESCTRIPTION_SYMBOL];
@@ -17,10 +17,19 @@ function Model(callback: (model: IModelDescrtiptor, target: any, propertyKey: sy
                 Connection: null,
                 ConnectionName: "",
                 PrimaryKey: "",
-                SoftDelete: null,
+                SoftDelete: {
+                    DeletedAt: ""
+                },
+                Archived: {
+                    ArchivedAt: ""
+                },
                 TableName: "",
-                Timestamps: null,
+                Timestamps: {
+                    CreatedAt: "",
+                    UpdatedAt: ""
+                },
             };
+            target[MODEL_DESCTRIPTION_SYMBOL] = metadata;
         }
 
         if (callback) {
@@ -35,7 +44,7 @@ function Model(callback: (model: IModelDescrtiptor, target: any, propertyKey: sy
  * @param name connection name, must be avaible in db config
  */
 export function Connection(name: string) {
-    return Model((model: IModelDescrtiptor) => {
+    return _model((model: IModelDescrtiptor) => {
         model.ConnectionName = name;
     });
 }
@@ -45,41 +54,81 @@ export function Connection(name: string) {
  * 
  * @param name table name in database that is referred by this model
  */
-export function TableName(name: string) {
-    return Model((model: IModelDescrtiptor) => {
-        model.TableName = name;
+export function Model(tableName: string) {
+    return _model((model: IModelDescrtiptor) => {
+        model.TableName = tableName;
     });
 }
 
 
 /**
- * Set update & create timestamps feature to model. Proper columns must be avaible in database table.
+ * Set create timestamps feature to model. Proper columns must be avaible in database table.
  * It allow to track creation times & changes to model
- * 
- * @param createdColumn  created at column name in database. If not set defaults to `created_at`
- * @param updatedColumn  updated at column name in database. If not set defaults to `updated_at`
  */
-export function Timestamps(createdColumn?: string, updatedColumn?: string) {
-    return Model((model: IModelDescrtiptor) => {
-        
-        model.Timestamps  = {
-            CreatedAt: (createdColumn) ? createdColumn : "created_at",
-            UpdatedAt: (updatedColumn) ? updatedColumn : "updated_at"
-        };
+export function CreatedAt() {
+    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+
+        const type = Reflect.getMetadata('design:type', target, propertyKey);
+        if (type.name !== "Date") {
+            throw Error("Proprety CreatedAt must be Date type");
+        }
+
+        model.Timestamps.CreatedAt = propertyKey;
+    });
+}
+
+/**
+ * Set update timestamps feature to model. Proper columns must be avaible in database table.
+ * It allow to track creation times & changes to model
+ */
+export function UpdatedAt() {
+    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+
+        const type = Reflect.getMetadata('design:type', target, propertyKey);
+        if (type.name !== "Date") {
+            throw Error("Proprety UpdatedAt must be Date type");
+        }
+
+        model.Timestamps.CreatedAt = propertyKey;
     });
 }
 
 /**
  * Sets soft delete feature to model. Soft delete dont delete model, but sets deletion date and hides from 
  * select result by default.
- * 
- * @param deletedColumn deleted at column name in databse. If not set defaults to `deleted_at`
  */
-export function SoftDelete(deletedColumn?: string) {
-    return Model((model: IModelDescrtiptor) => {
-        model.SoftDelete = {
-            DeletedAt: (deletedColumn) ? deletedColumn : "deleted_at",
-        };
+export function SoftDelete() {
+    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+
+        const type = Reflect.getMetadata('design:type', target, propertyKey);
+        if (type.name !== "Date") {
+            throw Error("Proprety DeletedAt must be Date type");
+        }
+
+        model.SoftDelete.DeletedAt = propertyKey;
+    });
+}
+
+/**
+ * Enable archive mode for model. If enabled all changes creates new instance in DB and old have set archived field 
+ * and gets attached to new model. It enabled to track changes to model in DB and also preserve data in relations.
+ * 
+ */
+export function Archived() {
+    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+
+        const type = Reflect.getMetadata('design:type', target, propertyKey);
+        if (type.name !== "Date") {
+            throw Error("Proprety DeletedAt must be Date type");
+        }
+
+        model.Archived.ArchivedAt = propertyKey;
+    });
+}
+
+export function Primary() {
+    return _model((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+        model.PrimaryKey = propertyKey;
     });
 }
 
@@ -90,9 +139,9 @@ export function SoftDelete(deletedColumn?: string) {
  * @param keyName primary key name
  */
 export function PrimaryKey(keyName: string) {
-    return Model((model: IModelDescrtiptor) => {
+    return _model((model: IModelDescrtiptor) => {
         model.PrimaryKey = keyName;
     });
 }
 
- 
+

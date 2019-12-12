@@ -69,6 +69,8 @@
     "@spinajs/configuration": "^1.0.0",
     "@spinajs/di": "^1.0.3",
     "@spinajs/exceptions": "^1.0.0",
+    "@spinajs/log": "^1.0.0",
+    "@spinajs/reflection": "^1.0.0",
     "lodash": "^4.17.14",
     "typescript-mix": "^3.1.3"
   }

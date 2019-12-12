@@ -1,8 +1,8 @@
-import { Connection, PrimaryKey, SoftDelete, TableName, Timestamps } from "../../../src/decorators";
+import { Connection, PrimaryKey, SoftDelete, Model, Timestamps } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 
 @Connection("SampleConnection2")
-@TableName("Table2")
+@Model("Table2")
 @Timestamps("created","updated")
 @SoftDelete("deleted")
 @PrimaryKey("pkey")

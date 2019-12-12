@@ -2,40 +2,64 @@ import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
 
-export interface IOrmOptions {
+/**
+ * Configuration optiosn to set in configuration file and used in OrmDriver
+ */
+export interface IDriverOptions {
 
     /**
      * Database name associated with this connection
      */
-    Database: string;
+    Database?: string;
 
     /**
      * User associatet with this connection
      */
-    User: string;
+    User?: string;
 
     /**
      * DB Host 
      */
-    Host: string;
+    Host?: string;
 
     /**
      * Connection port
      */
-    Port: number;
+    Port?: number;
 
     /**
      * Connection encoding eg. utf-8
      */
-    Encoding: string;
+    Encoding?: string;
+
+    /**
+     * Database filename eg. for Sqlite driver
+     */
+    Filename?: string;
+
+    /**
+     * Driver name eg. mysql, sqlite, mssql etc.
+     */
+    Driver: string;
+
+    /**
+     * Connection name for identification
+     */
+    Name: string;
 }
 
 export abstract class OrmDriver {
 
+    public static DBDriver: string;
+
     /**
      * Connection options
      */
-    public Options: IOrmOptions;
+    public Options: IDriverOptions;
+
+    constructor(options: IDriverOptions) {
+        this.Options = options;
+    }
 
     /**
      * Executes query on database
@@ -49,13 +73,13 @@ export abstract class OrmDriver {
      * Checks if database is avaible
      * @throws {OrmException} if no connection to databse is avaible
      */
-    public abstract ping(): void;
+    public abstract ping(): Promise<void>;
 
     /**
      * Connects to database
      * @throws {OrmException} if can't connec to to database
      */
-    public abstract connect(): void;
+    public abstract connect(): Promise<void>;
 
     /**
      * Disconnects from database
@@ -91,12 +115,17 @@ export interface IModelDescrtiptor {
     /**
      * Optional, describes timestamps in model
      */
-    Timestamps?: IModelTimestampDescriptor;
+    Timestamps: IModelTimestampDescriptor;
 
     /**
      * Optional, describes soft delete
      */
-    SoftDelete?: IModelSoftDeleteDescriptor;
+    SoftDelete: IModelSoftDeleteDescriptor;
+
+    /**
+     * Optional, is archive mode enabled 
+     */
+    Archived: IModelArchivedDescriptor;
 
 
     /**
@@ -148,7 +177,7 @@ export interface IColumnDescriptor {
     /**
      * Is column primary key
      */
-    PrimaryKey: string;
+    PrimaryKey: boolean;
 
     /**
      * Is column auto increment
@@ -161,7 +190,7 @@ export interface IColumnDescriptor {
     Name: string;
 
     /**
-     * Value converte between database & model
+     * Value converter between database & model
      */
     Converter: IValueConverter;
 
@@ -216,6 +245,16 @@ export interface IModelSoftDeleteDescriptor {
     DeletedAt: string;
 }
 
+/**
+ * Model archived description
+ */
+export interface IModelArchivedDescriptor {
+    /**
+     * Archived at column name
+     */
+    ArchivedAt: string;
+}
+
 export interface IQueryLimit {
     limit?: number;
     offset?: number;
@@ -226,12 +265,12 @@ export interface ISort {
     order: SORT_ORDER;
 }
 
-export interface IQueryBuilder{
+export interface IQueryBuilder {
 
-    Table : string;
-    TableAlias : string;
-    Schema : string;
-    setSchema(schema : string) : IQueryBuilder;
+    Table: string;
+    TableAlias: string;
+    Schema: string;
+    setSchema(schema: string): IQueryBuilder;
 }
 
 export interface ILimitBuilder {
@@ -256,9 +295,9 @@ export interface IColumnsBuilder {
 
 export interface IWhereBuilder {
 
-    Statements : IQueryStatement[];
+    Statements: IQueryStatement[];
 
-    Op : WhereBoolean;
+    Op: WhereBoolean;
 
     where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
     orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
@@ -318,23 +357,23 @@ export interface IWhereCompiler {
  * ==========================================================
  */
 
-export abstract class SelectQueryCompiler implements IQueryCompiler{
+export abstract class SelectQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export abstract class DeleteQueryCompiler implements IQueryCompiler{
+export abstract class DeleteQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export abstract class UpdateQueryCompiler implements IQueryCompiler{
+export abstract class UpdateQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export abstract class InsertQueryCompiler implements IQueryCompiler{
+export abstract class InsertQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export abstract class TableQueryCompiler implements IQueryCompiler{
+export abstract class TableQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
