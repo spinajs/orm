@@ -24,6 +24,9 @@
     "object-literal-sort-keys":{
       "severity": "off"
     },
+    "ordered-imports": {
+      "severity": "off"
+    },
     "naming-convention": [
       true,
       {

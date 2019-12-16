@@ -18,6 +18,11 @@ export interface IDriverOptions {
     User?: string;
 
     /**
+     * Password to database
+     */
+    Password?:string;
+
+    /**
      * DB Host 
      */
     Host?: string;
@@ -49,8 +54,6 @@ export interface IDriverOptions {
 }
 
 export abstract class OrmDriver {
-
-    public static DBDriver: string;
 
     /**
      * Connection options
@@ -100,17 +103,12 @@ export interface IModelDescrtiptor {
     /**
      * Connection name, must be avaible in db config
      */
-    ConnectionName: string;
+    Connection: string;
 
     /**
      * Table name in database for this model
      */
     TableName: string;
-
-    /**
-     * Physical database connection
-     */
-    Connection: OrmDriver;
 
     /**
      * Optional, describes timestamps in model

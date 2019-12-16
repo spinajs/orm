@@ -1,12 +1,23 @@
-import { Connection, PrimaryKey, SoftDelete, Model, Timestamps } from "../../../src/decorators";
+import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 
 @Connection("SampleConnection2")
-@Model("Table2")
-@Timestamps("created","updated")
-@SoftDelete("deleted")
-@PrimaryKey("pkey")
+@Model("TestTable2")
+// @ts-ignore
 export class Model2 extends ModelBase
 {
+    @Primary()
+    public Id: number;
 
+    @Archived()
+    public ArchivedAt : Date;
+
+    @CreatedAt()
+    public CreatedAt : Date;
+
+    @UpdatedAt()
+    public UpdatedAt : Date;
+
+    @SoftDelete()
+    public DeletedAt : Date;
 }

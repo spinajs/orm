@@ -1,4 +1,5 @@
 import { IModelDescrtiptor } from "./interfaces";
+import "reflect-metadata";
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for("MODEL_DESCRIPTOR");
 
@@ -7,15 +8,20 @@ export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for("MODEL_DESCRIPTOR");
  * 
  * @param callback 
  */
-function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void): any {
+function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void, base = false): any {
     return (target: any, propertyKey: string | symbol, indexOrDescriptor: number | PropertyDescriptor) => {
 
-        let metadata: IModelDescrtiptor = target[MODEL_DESCTRIPTION_SYMBOL];
+        let metadata: IModelDescrtiptor = null;
+        if (!base) {
+            metadata = target.constructor[MODEL_DESCTRIPTION_SYMBOL];
+        } else {
+            metadata = target[MODEL_DESCTRIPTION_SYMBOL];
+        }
+
         if (!metadata) {
             metadata = {
                 Columns: [],
                 Connection: null,
-                ConnectionName: "",
                 PrimaryKey: "",
                 SoftDelete: {
                     DeletedAt: ""
@@ -29,7 +35,12 @@ function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: s
                     UpdatedAt: ""
                 },
             };
-            target[MODEL_DESCTRIPTION_SYMBOL] = metadata;
+
+            if (!base) {
+                target.constructor[MODEL_DESCTRIPTION_SYMBOL] = metadata;
+            } else {
+                target[MODEL_DESCTRIPTION_SYMBOL] = metadata;
+            }
         }
 
         if (callback) {
@@ -45,8 +56,8 @@ function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: s
  */
 export function Connection(name: string) {
     return _model((model: IModelDescrtiptor) => {
-        model.ConnectionName = name;
-    });
+        model.Connection = name;
+    }, true);
 }
 
 /**
@@ -57,7 +68,7 @@ export function Connection(name: string) {
 export function Model(tableName: string) {
     return _model((model: IModelDescrtiptor) => {
         model.TableName = tableName;
-    });
+    }, true);
 }
 
 
@@ -89,7 +100,7 @@ export function UpdatedAt() {
             throw Error("Proprety UpdatedAt must be Date type");
         }
 
-        model.Timestamps.CreatedAt = propertyKey;
+        model.Timestamps.UpdatedAt = propertyKey;
     });
 }
 
@@ -131,17 +142,3 @@ export function Primary() {
         model.PrimaryKey = propertyKey;
     });
 }
-
-/**
- * Explicit set of primary key name for this model. Use it for eg. if you want to override key name fetch from database or
- * created model on table view.
- * 
- * @param keyName primary key name
- */
-export function PrimaryKey(keyName: string) {
-    return _model((model: IModelDescrtiptor) => {
-        model.PrimaryKey = keyName;
-    });
-}
-
-

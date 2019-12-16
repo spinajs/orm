@@ -2,15 +2,20 @@ import { Configuration } from '@spinajs/configuration';
 import { AsyncResolveStrategy, IContainer } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
-import { ClassInfo, FromFiles } from "@spinajs/reflection";
+import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
 import { IDriverOptions, OrmDriver } from "./interfaces";
-import { Model } from "./model";
+import { ModelBase } from "./model";
+
+/**
+ * Used to exclude sensitive data to others. eg. removed password field from cfg
+ */
+const CFG_PROPS = ["Database", "User", "Host", "Port", "Filename", "Driver", "Name"];
 
 export class Orm extends AsyncResolveStrategy {
 
-    @FromFiles("/**/*.{ts,js}", "system.dirs.models")
-    public Models: Array<ClassInfo<Model>>;
+    @ListFromFiles("/**/*.{ts,js}", "system.dirs.models")
+    public Models: Array<ClassInfo<ModelBase>>;
 
     public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
 
@@ -22,27 +27,23 @@ export class Orm extends AsyncResolveStrategy {
 
     public async resolveAsync(container: IContainer): Promise<void> {
 
-        // do not allow to write password to log
-        const cfgProps = ["Database", "User", "Host", "Port", "Filename", "Driver", "Name"];
-
-        const drivers = container.Registry.get(OrmDriver) as Array<Constructor<OrmDriver>>;
-        const connections = this.Configuration.get<IDriverOptions[]>("db.connections",[]);
-
-        connections.forEach(c => {
-            this.Log.info("Found ORM connection", _.pick(c, cfgProps));
-        });
+        const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
 
         for (const c of connections) {
 
-            const driver = drivers.find(d => (d as any).DbDriver === c.Driver);
+            const driver = container.resolve<OrmDriver>(c.Driver, [c]);
             if (!driver) {
-                this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, cfgProps));
+                this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, CFG_PROPS));
                 continue;
             }
 
-            this.Connections.set(c.Name, new driver(c));
+            this.Connections.set(c.Name, driver);
         }
- 
-        await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => d.connect()))
+
+        await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => {
+            d.connect();
+
+            this.Log.info("ORM connected",  _.pick(d.Options, CFG_PROPS));
+        }))
     }
 }

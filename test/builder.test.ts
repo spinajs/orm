@@ -1,8 +1,8 @@
-import { DI } from "@spinajs/di";
+//import { DI } from "@spinajs/di";
 // import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
-import * as sinon from "sinon";
+//import * as sinon from "sinon";
 // import { OrmDriver, SelectQueryCompiler } from "./../src";
 // import { SelectQueryBuilder } from './../src/builders';
 
@@ -13,8 +13,7 @@ import * as sinon from "sinon";
 describe("Models test", () => {
  
     afterEach(async ()=>{
-        DI.clear();
-        sinon.restore();
+ 
     });
     
     it("Inject compiler", async () => {
