@@ -6,6 +6,7 @@ export * from "./model";
 export * from "./orm";
 export * from "./types";
 export * from "./decorators";
+export * from "./hydrators";
 
 
 

@@ -1,10 +1,10 @@
-import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete } from "../../../src/decorators";
+import { Connection, Primary,  Archived, CreatedAt, UpdatedAt, SoftDelete, Model } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 
-@Connection("sqlite")
-@Model("TestTable1")
+@Connection("SampleConnectionNotExists")
+@Model("test_model")
 // @ts-ignore
-export class Model1 extends ModelBase<Model1>
+export class ModelNoConnection extends ModelBase
 {
     @Primary()
     public Id: number;

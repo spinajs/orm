@@ -18,7 +18,7 @@ function isWhereOperator(val: any) {
  * 
  */
 @NewInstance()
-@Inject(OrmDriver, Container)
+@Inject(Container)
 export class QueryBuilder implements IQueryBuilder {
 
     protected _method: QueryMethod;
@@ -27,10 +27,12 @@ export class QueryBuilder implements IQueryBuilder {
     protected _schema: string;
     protected _driver: OrmDriver;
     protected _container: Container;
+    protected _model: Constructor<any>;
 
-    constructor(driver: OrmDriver, container: Container) {
+    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
         this._driver = driver;
         this._container = container;
+        this._model = model;
     }
 
 
@@ -86,11 +88,19 @@ export class QueryBuilder implements IQueryBuilder {
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
         const compiled = this.toDB();
-        this._driver.execute(compiled.expression, compiled.bindings).then(resolve, reject);
+        this._driver.execute(compiled.expression, compiled.bindings).then((result: any[]) => {
+            if (this._model) {
+                resolve(result.map(r => {
+                    return new this._model(r);
+                }));
+            } else {
+                resolve(result);
+            }
+        }, reject);
     }
 
     /**
-     * Sets table that query is executed on. Declared as protected becouse different queries have different aliases
+     * Sets table that query is executed on
      * 
      * @param table - sql table name
      * @param alias - sql table alias
@@ -100,14 +110,16 @@ export class QueryBuilder implements IQueryBuilder {
      * this.setTable("user","u") 
      * 
      */
-    protected setTable(table: string, alias?: string) {
+    public setTable(table: string, alias?: string) {
 
         if (!table) {
             throw new ArgumentException("table name is empty");
         }
 
         this._table = table;
-        this._tableAlias = alias;
+        this._tableAlias = alias ? alias : table.charAt(0);
+
+        return this;
     }
 
 
@@ -311,7 +323,7 @@ export class WhereBuilder implements IWhereBuilder {
             return this.whereObject(column);
         }
 
-        if (arguments.length === 2) {
+        if (typeof value === 'undefined') {
             return _handleForTwo.call(this, column, operator);
         }
 
@@ -491,8 +503,8 @@ export class SelectQueryBuilder extends QueryBuilder {
         return this._distinct;
     }
 
-    constructor(driver: OrmDriver, container: Container) {
-        super(driver, container);
+    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+        super(container, driver, model);
 
         this._distinct = false;
         this._columns = [];
@@ -505,7 +517,8 @@ export class SelectQueryBuilder extends QueryBuilder {
             column: "",
             order: SORT_ORDER.ASC
         };
-        
+
+        this._first = false;
         this._limit = {
             limit: -1,
             offset: -1
@@ -547,8 +560,23 @@ export class SelectQueryBuilder extends QueryBuilder {
     }
 
     public toDB(): ICompilerOutput {
-        const compiler = this._container.resolve<SelectQueryCompiler>(SelectQueryCompiler);
+        const compiler = this._container.resolve<SelectQueryCompiler>(SelectQueryCompiler, [this]);
         return compiler.compile();
+    }
+
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
+        super.then((result: any[]) => {
+            if (this._first) {
+                if (this._fail && result.length === 0) {
+                    reject(new Error("empty results"));
+                } else {
+                    resolve(result[0])
+                }
+
+            } else {
+                resolve(result);
+            }
+        }, reject)
     }
 }
 
@@ -565,15 +593,15 @@ export class DeleteQueryBuilder extends QueryBuilder {
     /// @ts-ignore
     private this: this;
 
-    constructor(driver: OrmDriver, container: Container) {
-        super(driver, container);
+    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+        super(container, driver, model);
 
         this._truncate = false;
         this._method = QueryMethod.DELETE;
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<DeleteQueryCompiler>(DeleteQueryCompiler).compile();
+        return this._container.resolve<DeleteQueryCompiler>(DeleteQueryCompiler, [this]).compile();
     }
 }
 
@@ -590,8 +618,8 @@ export class UpdateQueryBuilder extends QueryBuilder {
     /// @ts-ignore
     private this: this;
 
-    constructor(driver: OrmDriver, container: Container) {
-        super(driver, container);
+    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+        super(container, driver, model);
         this._value = [];
         this._method = QueryMethod.UPDATE;
     }
@@ -607,7 +635,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<UpdateQueryCompiler>(UpdateQueryCompiler).compile();
+        return this._container.resolve<UpdateQueryCompiler>(UpdateQueryCompiler, [this]).compile();
     }
 }
 
@@ -629,8 +657,8 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this._values;
     }
 
-    constructor(driver: OrmDriver, container: Container) {
-        super(driver, container);
+    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+        super(container, driver, model);
 
         this._method = QueryMethod.INSERT;
         this._columns = [];
@@ -673,14 +701,14 @@ export class InsertQueryBuilder extends QueryBuilder {
     }
 
     public onDuplicate(callback: (this: UpdateQueryBuilder) => void): InsertQueryBuilder {
-        this._onDuplicate = new UpdateQueryBuilder(this._driver, this._container);
+        this._onDuplicate = new UpdateQueryBuilder(this._container, this._driver, this._model);
         callback.call(this._onDuplicate);
 
         return this;
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<InsertQueryCompiler>(InsertQueryCompiler).compile();
+        return this._container.resolve<InsertQueryCompiler>(InsertQueryCompiler, [this]).compile();
     }
 }
 
@@ -810,8 +838,8 @@ export class TableQueryBuilder extends QueryBuilder {
 
     protected _charset: string;
 
-    constructor(name: string, driver: OrmDriver, container: Container) {
-        super(driver, container);
+    constructor(container: Container, driver: OrmDriver, name: string) {
+        super(container, driver, null);
 
         this._charset = "";
         this._comment = "";
@@ -848,7 +876,7 @@ export class SchemaQueryBuilder {
 
     public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
 
-        const builder = new TableQueryBuilder(name, this.driver, this.container);
+        const builder = new TableQueryBuilder(this.container, this.driver, name);
         callback.call(this, builder);
 
         return this;

@@ -1,6 +1,7 @@
 import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
+import { Container } from '@spinajs/di';
 
 /**
  * Configuration optiosn to set in configuration file and used in OrmDriver
@@ -60,8 +61,11 @@ export abstract class OrmDriver {
      */
     public Options: IDriverOptions;
 
-    constructor(options: IDriverOptions) {
+    public Container : Container;
+
+    constructor(container : Container, options: IDriverOptions) {
         this.Options = options;
+        this.Container =  container;
     }
 
     /**
@@ -70,7 +74,7 @@ export abstract class OrmDriver {
      * @param stmt query string or query objects that is executed in database
      * @param params binding parameters
      */
-    public abstract execute(stmt: string | object, params?: any[]): Promise<any[]>;
+    public abstract execute(stmt: string | object, params?: any[]): Promise<any[] | any>;
 
     /**
      * Checks if database is avaible

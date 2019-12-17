@@ -1,5 +1,6 @@
 import { SelectQueryBuilder, WhereBuilder } from "./builders";
 import { ColumnMethods, WhereOperators } from "./enums";
+import { NewInstance } from "@spinajs/di";
 
 export interface IQueryStatementResult {
     Statements: string[];
@@ -10,6 +11,7 @@ export interface IQueryStatement {
     build(): IQueryStatementResult;
 }
 
+@NewInstance()
 export abstract class RawQueryStatement implements IQueryStatement {
 
     protected _query: string;
@@ -23,6 +25,7 @@ export abstract class RawQueryStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
+@NewInstance()
 export abstract class BetweenStatement implements IQueryStatement {
 
     protected _val: any[];
@@ -37,7 +40,7 @@ export abstract class BetweenStatement implements IQueryStatement {
 
     public abstract build(): IQueryStatementResult;
 }
-
+@NewInstance()
 export abstract class WhereQueryStatement implements IQueryStatement {
 
     protected _builder: WhereBuilder;
@@ -49,6 +52,8 @@ export abstract class WhereQueryStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
+
+@NewInstance()
 export abstract class WhereStatement implements IQueryStatement {
     protected _column: string;
     protected _operator: WhereOperators;
@@ -63,6 +68,7 @@ export abstract class WhereStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
+@NewInstance()
 export abstract class InStatement implements IQueryStatement {
 
     protected _val: any[];
@@ -78,6 +84,7 @@ export abstract class InStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
+@NewInstance()
 export abstract class SelectQueryStatement implements IQueryStatement {
 
     protected _builder: SelectQueryBuilder;
@@ -88,6 +95,7 @@ export abstract class SelectQueryStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
+@NewInstance()
 export abstract class ExistsQueryStatement extends SelectQueryStatement {
 
     protected _not: boolean;
@@ -101,7 +109,7 @@ export abstract class ExistsQueryStatement extends SelectQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
-
+@NewInstance()
 export abstract class InSetStatement implements IQueryStatement {
 
     protected _val: any[];
@@ -116,7 +124,7 @@ export abstract class InSetStatement implements IQueryStatement {
 
     public abstract build(): IQueryStatementResult;
 }
-
+@NewInstance()
 export abstract class ColumnStatement implements IQueryStatement {
 
     protected _column: string;
@@ -141,7 +149,7 @@ export abstract class ColumnStatement implements IQueryStatement {
 
     public abstract build(): IQueryStatementResult;
 }
-
+@NewInstance()
 export abstract class ColumnMethodStatement extends ColumnStatement {
     protected _method: ColumnMethods;
 

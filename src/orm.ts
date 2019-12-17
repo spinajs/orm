@@ -1,11 +1,11 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncResolveStrategy, IContainer } from "@spinajs/di";
+import { AsyncResolveStrategy, Container } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
 import { IDriverOptions, OrmDriver } from "./interfaces";
-import { ModelBase } from "./model";
+import { ModelBase, MODEL_STATIC_MIXINS } from "./model";
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -15,9 +15,11 @@ const CFG_PROPS = ["Database", "User", "Host", "Port", "Filename", "Driver", "Na
 export class Orm extends AsyncResolveStrategy {
 
     @ListFromFiles("/**/*.{ts,js}", "system.dirs.models")
-    public Models: Array<ClassInfo<ModelBase>>;
+    public Models: Array<ClassInfo<ModelBase<any>>>;
 
     public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
+
+    public Container: Container;
 
     @Logger({ module: "ORM" })
     private Log: Log;
@@ -25,25 +27,36 @@ export class Orm extends AsyncResolveStrategy {
     @Autoinject()
     private Configuration: Configuration;
 
-    public async resolveAsync(container: IContainer): Promise<void> {
+
+
+    public async resolveAsync(container: Container): Promise<void> {
 
         const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
+        try {
+            for (const c of connections) {
 
-        for (const c of connections) {
+                const driver = container.resolve<OrmDriver>(c.Driver, [c]);
+                if (!driver) {
+                    this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, CFG_PROPS));
+                    continue;
+                }
 
-            const driver = container.resolve<OrmDriver>(c.Driver, [c]);
-            if (!driver) {
-                this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, CFG_PROPS));
-                continue;
+                this.Connections.set(c.Name, driver);
             }
 
-            this.Connections.set(c.Name, driver);
+
+            await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => {
+                d.connect();
+            }));
+
+            this.Models.forEach((m: ClassInfo<ModelBase<any>>) => {
+                // tslint:disable-next-line: forin
+                for (const mixin in MODEL_STATIC_MIXINS) {
+                    m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
+                }
+            })
+        } catch (err) {
+            this.Log.error("Cannot initialize ORM module", err);
         }
-
-        await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => {
-            d.connect();
-
-            this.Log.info("ORM connected",  _.pick(d.Options, CFG_PROPS));
-        }))
     }
 }
