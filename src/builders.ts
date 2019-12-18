@@ -28,11 +28,13 @@ export class QueryBuilder implements IQueryBuilder {
     protected _driver: OrmDriver;
     protected _container: Container;
     protected _model: Constructor<any>;
+    protected _nonSelect : boolean;
 
     constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
         this._driver = driver;
         this._container = container;
         this._model = model;
+        this._nonSelect = true;
     }
 
 
@@ -89,7 +91,7 @@ export class QueryBuilder implements IQueryBuilder {
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
         const compiled = this.toDB();
         this._driver.execute(compiled.expression, compiled.bindings).then((result: any[]) => {
-            if (this._model) {
+            if (this._model && !this._nonSelect) {
                 resolve(result.map(r => {
                     return new this._model(r);
                 }));
@@ -523,6 +525,8 @@ export class SelectQueryBuilder extends QueryBuilder {
             limit: -1,
             offset: -1
         };
+
+        this._nonSelect = false;
     }
 
     public min(column: string, as?: string): this {
@@ -584,6 +588,12 @@ export class SelectQueryBuilder extends QueryBuilder {
 export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder { }
 export class DeleteQueryBuilder extends QueryBuilder {
 
+    /**
+     * where query props
+     */
+    protected _statements: IQueryStatement[];
+    protected _boolean: WhereBoolean;
+
     protected _truncate: boolean;
     get Truncate() {
         return this._truncate;
@@ -598,6 +608,8 @@ export class DeleteQueryBuilder extends QueryBuilder {
 
         this._truncate = false;
         this._method = QueryMethod.DELETE;
+        this._statements = [];
+        this._boolean = WhereBoolean.AND;
     }
 
     public toDB(): ICompilerOutput {
@@ -608,6 +620,13 @@ export class DeleteQueryBuilder extends QueryBuilder {
 // tslint:disable-next-line
 export interface UpdateQueryBuilder extends IWhereBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder {
+
+    
+    /**
+     * where query props
+     */
+    protected _statements: IQueryStatement[];
+    protected _boolean: WhereBoolean;
 
     protected _value: {};
     public get Value(): {} {
@@ -622,6 +641,8 @@ export class UpdateQueryBuilder extends QueryBuilder {
         super(container, driver, model);
         this._value = [];
         this._method = QueryMethod.UPDATE;
+        this._boolean = WhereBoolean.AND;
+        this._statements = [];
     }
 
     public in(name: string) {

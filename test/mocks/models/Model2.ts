@@ -1,7 +1,7 @@
 import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 
-@Connection("SampleConnection2")
+@Connection("SampleConnection1")
 @Model("TestTable2")
 // @ts-ignore
 export class Model2 extends ModelBase

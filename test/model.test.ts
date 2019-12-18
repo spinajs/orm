@@ -1,9 +1,9 @@
 import { PropertyHydrator, ModelHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
-import { SelectQueryBuilder } from './../src/builders';
+import { SelectQueryBuilder, InsertQueryBuilder, UpdateQueryBuilder } from './../src/builders';
 import { Model1 } from './mocks/models/Model1';
-import { MODEL_DESCTRIPTION_SYMBOL, Model } from './../src/decorators';
+import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
 import { DI, Inject, Container } from "@spinajs/di";
 import * as chai from 'chai';
@@ -11,10 +11,11 @@ import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
 import { dir } from "./misc";
-import { IModelDescrtiptor, OrmDriver, SelectQueryCompiler, ICompilerOutput } from '../src/interfaces';
+import { IModelDescrtiptor, OrmDriver, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import { RawModel } from './mocks/models/RawModel';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -77,6 +78,30 @@ class FakeSelectQueryCompiler extends SelectQueryCompiler {
 
 }
 
+class FakeDeleteQueryCompiler extends DeleteQueryCompiler {
+
+    public compile(): ICompilerOutput {
+        return null;
+    }
+
+}
+
+class FakeInsertQueryCompiler extends InsertQueryBuilder {
+
+    public compile(): ICompilerOutput {
+        return null;
+    }
+
+}
+
+class FakeUpdateQueryCompiler extends UpdateQueryBuilder {
+
+    public compile(): ICompilerOutput {
+        return null;
+    }
+
+}
+
 describe("Find models test", () => {
 
     beforeEach(() => {
@@ -84,6 +109,11 @@ describe("Find models test", () => {
         DI.register(SpinaJsDefaultLog).as(LogModule);
         DI.register(FakeSqliteDriver).as("sqlite");
         DI.register(FakeSelectQueryCompiler).as(SelectQueryCompiler);
+        DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
+        DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
+        DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+
+
         DI.register(PropertyHydrator).as(ModelHydrator);
 
 
@@ -101,7 +131,7 @@ describe("Find models test", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        expect(models.length).to.eq(4);
+        expect(models.length).to.eq(5);
         expect(models[0].name).to.eq("Model1");
         expect(models[1].name).to.eq("Model2");
         expect(models[0].type.name).to.eq("Model1");
@@ -274,16 +304,70 @@ describe("Find models test", () => {
     })
 
     it("destroy mixin should work", async () => {
-        
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        await RawModel.destroy(1);
+        expect(execute.calledOnce).to.be.true;
     })
 
     it("firstOrCreate mixin should work", async () => {
+        // @ts-ignore
+        const orm = await db();
 
+        sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+
+        const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
+            res([]);
+        })).onCall(1).returns(new Promise((res) => {
+            res([1]);
+        }));
+
+        const result = await Model1.firstOrCreate<Model1>(1);
+        expect(execute.calledTwice).to.be.true;
+        expect(result).to.be.not.null;
+        expect(result).instanceOf(Model1);
+        expect(result.PrimaryKeyValue).to.eq(1);
     })
 
     it("firstOrNew should work", async () => {
+        // @ts-ignore
+        const orm = await db();
 
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const result = await Model1.firstOrNew<Model1>(1);
+        expect(execute.calledOnce).to.be.true;
+        expect(result).to.be.not.null;
+        expect(result).instanceOf(Model1);
+        expect(result.PrimaryKeyValue).to.be.undefined;
     })
+
 
     it("Models should have proper properties", async () => {
 
@@ -314,7 +398,7 @@ describe("Find models test", () => {
         descriptor = (toCheck.type)[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
 
         expect(descriptor).to.deep.include({
-            Connection: "SampleConnection2",
+            Connection: "SampleConnection1",
             TableName: "TestTable2",
             SoftDelete: {
                 DeletedAt: "DeletedAt"

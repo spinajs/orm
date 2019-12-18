@@ -1,7 +1,7 @@
 import { MODEL_DESCTRIPTION_SYMBOL } from "./decorators";
 import { IModelDescrtiptor } from "./interfaces";
 import { WhereFunction } from './types';
-import { RawQuery, UpdateQueryBuilder, QueryBuilder, SelectQueryBuilder, DeleteQueryBuilder } from './builders';
+import { RawQuery, UpdateQueryBuilder, QueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder } from './builders';
 import { WhereOperators } from './enums';
 import { DI } from '@spinajs/di';
 import { Orm } from './orm';
@@ -19,6 +19,14 @@ export abstract class ModelBase<T> {
 
     public get PrimaryKeyName() {
         return this.ModelDescriptor.PrimaryKey;
+    }
+
+    public get PrimaryKeyValue() {
+        return (this as any)[this.PrimaryKeyName];
+    }
+
+    public set PrimaryKeyValue(newVal: any) {
+        (this as any)[this.PrimaryKeyName] = newVal;
     }
 
     public static async all<U>(): Promise<U[]> {
@@ -43,18 +51,32 @@ export abstract class ModelBase<T> {
         throw Error("Not implemented");
     }
 
-    // @ts-ignore
-    public static firstOrCreate<U>(pk: any, model: U): Promise<U> {
+    /**
+     * 
+     * Checks if model with pk key exists and if not creates one and saves to db
+     * 
+     * @param pk key to check
+     */
+    public static firstOrCreate<U>(_pk: any): Promise<U> {
         throw Error("Not implemented");
     }
 
-    // @ts-ignore
-    public static firstOrNew<U>(pk: any, model: U): Promise<U> {
+    /**
+     * 
+     * Checks if model with pk key exists and if not creates one AND NOT save in db
+     * 
+     * @param pk key to check
+     */
+    public static firstOrNew<U>(_pk: any): Promise<U> {
         throw Error("Not implemented");
     }
 
-    // @ts-ignore
-    public static destroy(pk: any | any[]): Promise<void> {
+    /**
+     * Deletes model from db
+     * 
+     * @param pk 
+     */
+    public static destroy(_pk: any | any[]): Promise<void> {
         throw Error("Not implemented");
     }
 
@@ -81,9 +103,38 @@ export abstract class ModelBase<T> {
         DI.resolve(Array.ofType(ModelHydrator)).forEach(h => h.hydrate(this, data));
     }
 
-    public async abstract delete(): Promise<void>;
+    public dehydrate() {
 
-    public async abstract save(): Promise<void>;
+        const obj = {};
+
+        this.ModelDescriptor.Columns.forEach(c => {
+            (obj as any)[c.Name] = (this as any)[c.Name];
+        });
+
+        return obj;
+    }
+
+    public async delete() {
+
+        if (!this.PrimaryKeyValue) {
+            return;
+        }
+        await ModelBase.destroy(this.PrimaryKeyValue);
+    }
+
+    public async save() {
+        if (this.PrimaryKeyValue) {
+
+            const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
+            await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
+        } else {
+
+            const { query } = _createQuery(this.constructor, InsertQueryBuilder);
+            const id = await query.values(this.dehydrate());
+
+            this.PrimaryKeyValue = id[0];
+        }
+    }
 
     public async abstract fresh(): Promise<T>;
 
@@ -96,10 +147,6 @@ export abstract class ModelBase<T> {
             (this as any)[c.Name] = c.DefaultValue;
         })
     }
-
-
-
-
 
 
 }
@@ -180,15 +227,9 @@ export const MODEL_STATIC_MIXINS = {
     async destroy(pks: any | any[]): Promise<void> {
 
         const description = _descriptor(this as any);
-        const modelName = (this as any).name;
 
-        if (description.SoftDelete) {
-
-            if (!description.SoftDelete?.DeletedAt) {
-                throw new Error(`Soft delete column not defined in model ${modelName}`);
-            }
-
-            const result = await (this as any).findOrFail(pks);
+        if (description.SoftDelete?.DeletedAt) {
+            const result = await (this as any).find(pks);
             const data = Array.isArray(result) ? result : [result];
 
             const { query } = _createQuery(this as any, UpdateQueryBuilder);
