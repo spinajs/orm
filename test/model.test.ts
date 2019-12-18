@@ -5,7 +5,7 @@ import { SelectQueryBuilder, QueryBuilder } from './../src/builders';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
-import { DI, Inject, Container } from "@spinajs/di";
+import { DI, IContainer } from "@spinajs/di";
 import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
@@ -51,7 +51,6 @@ export class ModelConf extends Configuration {
     }
 }
 
-@Inject(Container)
 // @ts-ignore
 class FakeSqliteDriver extends OrmDriver {
 
@@ -74,6 +73,11 @@ class FakeSqliteDriver extends OrmDriver {
 
     public tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
         return null;
+    }
+
+    // tslint:disable-next-line: no-empty
+    public resolve(_container: IContainer): void {
+
     }
 }
 

@@ -72,6 +72,8 @@ describe("Orm general", () => {
         sqliteDriver.tableInfo = sinon.stub<any, any>().resolves();
         mysqlDriver.connect = sinon.stub<any, any>().resolves();
         mysqlDriver.tableInfo = sinon.stub<any, any>().resolves();
+        mysqlDriver.resolve = sinon.stub<any, any>().resolves();
+
 
 
         DI.register(() => {

@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncResolveStrategy, Container } from "@spinajs/di";
+import { AsyncResolveStrategy, IContainer } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
@@ -20,7 +20,7 @@ export class Orm extends AsyncResolveStrategy {
 
     public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
 
-    public Container: Container;
+    public Container: IContainer;
 
     @Logger({ module: "ORM" })
     private Log: Log;
@@ -30,13 +30,13 @@ export class Orm extends AsyncResolveStrategy {
 
 
 
-    public async resolveAsync(container: Container): Promise<void> {
+    public async resolveAsync(container: IContainer): Promise<void> {
 
         const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
         try {
             for (const c of connections) {
 
-                const driver = container.resolve<OrmDriver>(c.Driver, [c]);
+                const driver = container.resolve<OrmDriver>(c.Driver, [container, c]);
                 if (!driver) {
                     this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, CFG_PROPS));
                     continue;

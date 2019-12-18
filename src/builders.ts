@@ -119,7 +119,7 @@ export class QueryBuilder implements IQueryBuilder {
         }
 
         this._table = table;
-        this._tableAlias = alias ? alias : table.charAt(0);
+        this._tableAlias = alias ? alias : null;
 
         return this;
     }
@@ -210,7 +210,7 @@ export class OrderByBuilder implements IOrderByBuilder {
     }
 
     public getSort() {
-        return this._sort;
+        return this._sort.column.trim() !== "" ? this._sort : null;
     }
 }
 
@@ -681,7 +681,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
 export interface InsertQueryBuilder extends IColumnsBuilder { }
 export class InsertQueryBuilder extends QueryBuilder {
 
-    protected _values: any[][];;
+    protected _values: any[][];
 
     protected _columns: ColumnStatement[];
 

@@ -2,7 +2,7 @@ import { RawQuery } from './builders';
 import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
-import { Container } from '@spinajs/di';
+import { ResolveStrategy, IContainer } from '@spinajs/di';
 
 /**
  * Configuration optiosn to set in configuration file and used in OrmDriver
@@ -55,16 +55,18 @@ export interface IDriverOptions {
     Name: string;
 }
 
-export abstract class OrmDriver {
+export abstract class OrmDriver extends ResolveStrategy {
 
     /**
      * Connection options
      */
     public Options: IDriverOptions;
 
-    public Container: Container;
+    public Container: IContainer;
 
-    constructor(container: Container, options: IDriverOptions) {
+    constructor(container: IContainer, options: IDriverOptions) {
+        super();
+
         this.Options = options;
         this.Container = container;
     }
@@ -95,6 +97,8 @@ export abstract class OrmDriver {
     public abstract disconnect(): void;
 
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
+
+    public abstract resolve(container: IContainer): void;
 }
 
 /**
