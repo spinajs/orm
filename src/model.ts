@@ -176,7 +176,7 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
     }
 
     const cnt = driver.Container;
-    const qr = cnt.resolve<T>(query, [driver, model]) as T;
+    const qr = cnt.resolve<T>(query, [driver, model]);
 
     qr.setTable(dsc.TableName);
 

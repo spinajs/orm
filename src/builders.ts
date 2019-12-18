@@ -27,10 +27,10 @@ export class QueryBuilder implements IQueryBuilder {
     protected _schema: string;
     protected _driver: OrmDriver;
     protected _container: Container;
-    protected _model: Constructor<any>;
-    protected _nonSelect : boolean;
+    protected _model?: Constructor<any>;
+    protected _nonSelect: boolean;
 
-    constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+    constructor(container: Container, driver: OrmDriver, model?: Constructor<any>) {
         this._driver = driver;
         this._container = container;
         this._model = model;
@@ -70,7 +70,7 @@ export class QueryBuilder implements IQueryBuilder {
      * 
      * @param schema - schema or database name in database
      */
-    public setSchema(schema: string) {
+    public schema(schema: string) {
 
         if (!schema) {
             throw new ArgumentException(`schema argument cannot be null or empty`)
@@ -242,6 +242,12 @@ export class ColumnsBuilder implements IColumnsBuilder {
         this._columns = names.map(n => {
             return this._container.resolve<ColumnStatement>(ColumnStatement, [n]);
         });
+
+        return this;
+    }
+
+    public select(name: string) {
+        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [name]));
 
         return this;
     }
@@ -582,6 +588,10 @@ export class SelectQueryBuilder extends QueryBuilder {
             }
         }, reject)
     }
+
+    public from(table: string, alias?: string): this {
+        return this.setTable(table, alias);
+    }
 }
 
 // tslint:disable-next-line
@@ -621,7 +631,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
 export interface UpdateQueryBuilder extends IWhereBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder {
 
-    
+
     /**
      * where query props
      */

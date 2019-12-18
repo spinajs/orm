@@ -93,7 +93,7 @@ export abstract class OrmDriver {
      */
     public abstract disconnect(): void;
 
-    public abstract tableInfo(name: string, schema?: string) : Promise<IColumnDescriptor[]>;
+    public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 }
 
 /**
@@ -274,7 +274,7 @@ export interface IQueryBuilder {
     Table: string;
     TableAlias: string;
     Schema: string;
-    setSchema(schema: string): IQueryBuilder;
+    schema(schema: string): IQueryBuilder;
 }
 
 export interface ILimitBuilder {
@@ -295,6 +295,7 @@ export interface IColumnsBuilder {
     clearColumns(): this;
     columns(names: string[]): this;
     getColumns(): IQueryStatement[];
+    select(column: string): this;
 }
 
 export interface IWhereBuilder {
@@ -328,6 +329,7 @@ export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByBuilder, I
     sum(column: string, as?: string): this;
     avg(column: string, as?: string): this;
     distinct(): this;
+    from(table: string, alias?: string) : this;
 }
 
 export interface ICompilerOutput {
