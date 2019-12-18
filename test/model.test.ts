@@ -1,7 +1,7 @@
 import { PropertyHydrator, ModelHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
-import { SelectQueryBuilder, InsertQueryBuilder, UpdateQueryBuilder } from './../src/builders';
+import { SelectQueryBuilder, QueryBuilder } from './../src/builders';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
@@ -11,7 +11,7 @@ import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
 import { dir } from "./misc";
-import { IModelDescrtiptor, OrmDriver, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler } from '../src/interfaces';
+import { IModelDescrtiptor, OrmDriver, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, IColumnDescriptor } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -68,6 +68,10 @@ class FakeSqliteDriver extends OrmDriver {
 
     public disconnect(): void {
     }
+
+    public tableInfo(_table : string, _schema : string) : Promise<IColumnDescriptor[]>{
+        return null;
+    }
 }
 
 class FakeSelectQueryCompiler extends SelectQueryCompiler {
@@ -86,7 +90,7 @@ class FakeDeleteQueryCompiler extends DeleteQueryCompiler {
 
 }
 
-class FakeInsertQueryCompiler extends InsertQueryBuilder {
+class FakeInsertQueryCompiler extends InsertQueryCompiler {
 
     public compile(): ICompilerOutput {
         return null;
@@ -94,7 +98,12 @@ class FakeInsertQueryCompiler extends InsertQueryBuilder {
 
 }
 
-class FakeUpdateQueryCompiler extends UpdateQueryBuilder {
+class FakeUpdateQueryCompiler extends UpdateQueryCompiler {
+
+    // @ts-ignore
+    constructor(private _builder: QueryBuilder) {
+        super()
+    }
 
     public compile(): ICompilerOutput {
         return null;
@@ -102,7 +111,7 @@ class FakeUpdateQueryCompiler extends UpdateQueryBuilder {
 
 }
 
-describe("Find models test", () => {
+describe("General model tests", () => {
 
     beforeEach(() => {
         DI.register(ModelConf).as(Configuration);
@@ -368,6 +377,140 @@ describe("Find models test", () => {
         expect(result.PrimaryKeyValue).to.be.undefined;
     })
 
+    it("Model save should set updated_at", async () => {
+
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeUpdateQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const model = new Model1();
+        model.PrimaryKeyValue = 1;
+
+        await model.save();
+
+        expect(model.UpdatedAt).to.be.not.null;
+    })
+
+    it("destroy should update deleted_at", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        const df = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const uf = sinon.stub(FakeUpdateQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
+            res([{ Id: 1 }]);
+        })).onCall(1).returns(new Promise((res) => {
+            res([1]);
+        }));
+
+        await Model1.destroy(1);
+
+        expect(df.calledOnce).to.be.false;
+        expect(uf.calledOnce).to.be.true;
+
+    })
+
+    it("Model save should update created_at", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const model = new Model1();
+        await model.save();
+
+        expect(model.CreatedAt).to.be.not.null;
+    })
+
+    it("Model delete should delete if no soft delete", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        const del = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const model = new RawModel();
+        model.PrimaryKeyValue = 1;
+
+        await model.destroy();
+
+        expect(del.calledOnce).to.be.true;
+    })
+
+    it("Model delete should soft delete", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        const del = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const up = sinon.stub(FakeUpdateQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const model = new Model1();
+        model.PrimaryKeyValue = 1;
+
+        await model.destroy();
+
+        expect(del.calledOnce).to.be.false;
+        expect(up.calledOnce).to.be.true;
+        expect(model.DeletedAt).to.be.not.null;
+
+
+    })
+
+    it("dehydrate should call converter if avaible", async () => {
+
+    })
+
+    it("hydrate should call converter if avaible", async () => {
+
+    })
+
+    it("TableQueryBuilder should have methods", () => {
+
+    })
+
+    it("Orm should load column info for models", async () => {
+
+    })
 
     it("Models should have proper properties", async () => {
 
@@ -386,7 +529,7 @@ describe("Find models test", () => {
             Archived: {
                 ArchivedAt: "ArchivedAt"
             },
-            Columns: [],
+            Columns: null,
             Timestamps: {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"
@@ -406,7 +549,7 @@ describe("Find models test", () => {
             Archived: {
                 ArchivedAt: "ArchivedAt"
             },
-            Columns: [],
+            Columns: null,
             Timestamps: {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"

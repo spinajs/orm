@@ -11,7 +11,7 @@ import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 
 
 const expect = chai.expect;
- 
+
 async function db() {
     return await DI.resolve(Orm);
 }
@@ -69,14 +69,16 @@ describe("Orm general", () => {
         const mysqlDriver = sinon.createStubInstance(OrmDriver);
 
         sqliteDriver.connect = sinon.stub<any, any>().resolves();
+        sqliteDriver.tableInfo = sinon.stub<any, any>().resolves();
         mysqlDriver.connect = sinon.stub<any, any>().resolves();
+        mysqlDriver.tableInfo = sinon.stub<any, any>().resolves();
 
 
-        DI.register(()=>{
+        DI.register(() => {
             return sqliteDriver;
         }).as("sqlite");
 
-        DI.register(()=>{
+        DI.register(() => {
             return mysqlDriver;
         }).as("mysql");
 
@@ -90,9 +92,6 @@ describe("Orm general", () => {
         expect(orm.Connections).to.be.an("Map").that.have.length(2);
         expect(orm.Connections.get("main_connection")).to.be.not.null;
         expect(orm.Connections.get("cache")).to.be.not.null;
-
-
-
     })
 
 

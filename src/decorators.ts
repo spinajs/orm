@@ -20,7 +20,7 @@ function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: s
 
         if (!metadata) {
             metadata = {
-                Columns: [],
+                Columns: null,
                 Connection: null,
                 PrimaryKey: "",
                 SoftDelete: {

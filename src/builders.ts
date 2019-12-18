@@ -639,7 +639,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
 
     constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
         super(container, driver, model);
-        this._value = [];
+        this._value = {};
         this._method = QueryMethod.UPDATE;
         this._boolean = WhereBoolean.AND;
         this._statements = [];

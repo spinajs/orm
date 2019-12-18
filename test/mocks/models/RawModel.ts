@@ -4,7 +4,7 @@ import { ModelBase } from "../../../src/model";
 @Connection("sqlite")
 @Model("TestTable2")
 // @ts-ignore
-export class RawModel extends ModelBase
+export class RawModel extends ModelBase<RawModel>
 {
     @Primary()
     public Id: number;

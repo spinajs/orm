@@ -4,8 +4,9 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
-import { IDriverOptions, OrmDriver } from "./interfaces";
+import { IDriverOptions, OrmDriver, IModelDescrtiptor } from "./interfaces";
 import { ModelBase, MODEL_STATIC_MIXINS } from "./model";
+import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -49,12 +50,25 @@ export class Orm extends AsyncResolveStrategy {
                 d.connect();
             }));
 
-            this.Models.forEach((m: ClassInfo<ModelBase<any>>) => {
+            for (const m of this.Models) {
+
                 // tslint:disable-next-line: forin
                 for (const mixin in MODEL_STATIC_MIXINS) {
                     m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
+
+                    const descriptor = m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
+
+                    if (descriptor) {
+                        const connection = this.Connections.get(descriptor.Connection);
+
+                        if (connection) {
+                            descriptor.Columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
+                        }
+                    }
+
+
                 }
-            })
+            }
         } catch (err) {
             this.Log.error("Cannot initialize ORM module", err);
         }

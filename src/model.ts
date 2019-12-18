@@ -80,11 +80,7 @@ export abstract class ModelBase<T> {
         throw Error("Not implemented");
     }
 
-    public CreatedAt?: Date;
-    public UpdatedAt?: Date;
-    public DeletedAt?: Date;
-
-    constructor(data: any) {
+    constructor(data?: any) {
 
         this.defaults();
 
@@ -107,30 +103,35 @@ export abstract class ModelBase<T> {
 
         const obj = {};
 
-        this.ModelDescriptor.Columns.forEach(c => {
-            (obj as any)[c.Name] = (this as any)[c.Name];
+        this.ModelDescriptor.Columns?.forEach(c => {
+            const val = (this as any)[c.Name];
+            (obj as any)[c.Name] = c.Converter ? c.Converter.toDB(val) : val;
         });
 
         return obj;
     }
 
-    public async delete() {
+    public async destroy() {
 
         if (!this.PrimaryKeyValue) {
             return;
         }
-        await ModelBase.destroy(this.PrimaryKeyValue);
+        await (this.constructor as any).destroy(this.PrimaryKeyValue);
     }
 
     public async save() {
         if (this.PrimaryKeyValue) {
-
             const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
             await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
+
         } else {
 
             const { query } = _createQuery(this.constructor, InsertQueryBuilder);
             const id = await query.values(this.dehydrate());
+
+            if (this.ModelDescriptor.Timestamps.UpdatedAt) {
+                (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
+            }
 
             this.PrimaryKeyValue = id[0];
         }
@@ -143,9 +144,13 @@ export abstract class ModelBase<T> {
      */
     protected defaults() {
 
-        this.ModelDescriptor.Columns.forEach(c => {
+        this.ModelDescriptor.Columns?.forEach(c => {
             (this as any)[c.Name] = c.DefaultValue;
-        })
+        });
+
+        if (this.ModelDescriptor.Timestamps.CreatedAt) {
+            (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
+        }
     }
 
 
@@ -229,15 +234,13 @@ export const MODEL_STATIC_MIXINS = {
         const description = _descriptor(this as any);
 
         if (description.SoftDelete?.DeletedAt) {
-            const result = await (this as any).find(pks);
-            const data = Array.isArray(result) ? result : [result];
-
+            const data = Array.isArray(pks) ? pks : [pks];
             const { query } = _createQuery(this as any, UpdateQueryBuilder);
-            await query.whereIn(description.PrimaryKey, data).update({
+            await query.whereIn(description.PrimaryKey, data.map(d => d.PrimaryKeyValue)).update({
                 [description.SoftDelete.DeletedAt]: new Date()
             });
-        } else {
 
+        } else {
             const { query } = _createQuery(this as any, DeleteQueryBuilder);
             await query.whereIn(description.PrimaryKey, Array.isArray(pks) ? pks : [pks]);
         }

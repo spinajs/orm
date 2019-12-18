@@ -21,7 +21,7 @@ export interface IDriverOptions {
     /**
      * Password to database
      */
-    Password?:string;
+    Password?: string;
 
     /**
      * DB Host 
@@ -61,11 +61,11 @@ export abstract class OrmDriver {
      */
     public Options: IDriverOptions;
 
-    public Container : Container;
+    public Container: Container;
 
-    constructor(container : Container, options: IDriverOptions) {
+    constructor(container: Container, options: IDriverOptions) {
         this.Options = options;
-        this.Container =  container;
+        this.Container = container;
     }
 
     /**
@@ -92,6 +92,8 @@ export abstract class OrmDriver {
      * Disconnects from database
      */
     public abstract disconnect(): void;
+
+    public abstract tableInfo(name: string, schema?: string) : Promise<IColumnDescriptor[]>;
 }
 
 /**
