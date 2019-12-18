@@ -27,7 +27,8 @@ export class PropertyHydrator extends ModelHydrator {
 
 @Injectable(ModelHydrator)
 export class JoinHydrator extends ModelHydrator {
+    // tslint:disable-next-line: no-empty
     public hydrate(_target: any, _values: any): void {
-
+        // todo: implement with relations
     }
 }
