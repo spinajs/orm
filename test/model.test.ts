@@ -69,7 +69,7 @@ class FakeSqliteDriver extends OrmDriver {
     public disconnect(): void {
     }
 
-    public tableInfo(_table : string, _schema : string) : Promise<IColumnDescriptor[]>{
+    public tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
         return null;
     }
 }
@@ -91,6 +91,12 @@ class FakeDeleteQueryCompiler extends DeleteQueryCompiler {
 }
 
 class FakeInsertQueryCompiler extends InsertQueryCompiler {
+
+    // @ts-ignore
+    constructor(private _builder: QueryBuilder) {
+        super()
+    }
+
 
     public compile(): ICompilerOutput {
         return null;
@@ -498,18 +504,106 @@ describe("General model tests", () => {
 
     it("dehydrate should call converter if avaible", async () => {
 
+        const converterStub = {
+            fromDB(val: any): any { return val; },
+            toDB(val: any): any { return val; }
+        };
+        const toDB = sinon.stub(converterStub, "toDB").returns("1234/12/12 12:12");
+
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const compiler = sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
+            res([{
+                Type: "TIMESTAMP",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "TIMESTAMP",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: false,
+                AutoIncrement: false,
+                Name: "CreatedAt",
+                Converter: converterStub,
+                Schema: "test"
+            }]);
+        }));
+
+        // @ts-ignore
+        const orm = await db();
+        const model = new Model1();
+
+        await model.save();
+
+        expect(toDB.calledOnce).to.be.true;
+        expect(compiler.calledOnce).to.be.true;
     })
 
     it("hydrate should call converter if avaible", async () => {
 
-    })
+        const converterStub = {
+            fromDB(val: any): any { return val; },
+            toDB(val: any): any { return val; }
+        };
+        const fromDB = sinon.stub(converterStub, "fromDB").withArgs("1234/12/13 13:13").returns(new Date());
 
-    it("TableQueryBuilder should have methods", () => {
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
 
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([{
+                CreatedAt: "1234/12/13 13:13"
+            }]);
+        }));
+
+        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
+            res([{
+                Type: "TIMESTAMP",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "TIMESTAMP",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: false,
+                AutoIncrement: false,
+                Name: "CreatedAt",
+                Converter: converterStub,
+                Schema: "test"
+            }]);
+        }));
+
+        // @ts-ignore
+        const orm = await db();
+        const model = await Model1.find<Model1>(1);
+
+        expect(fromDB.calledOnce).to.be.true;
+        expect(model).instanceOf(Model1);
+        expect(model.CreatedAt).instanceOf(Date);
     })
 
     it("Orm should load column info for models", async () => {
+        const tb = sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
+            res([]);
+        }));
 
+        // @ts-ignore
+        const orm = await db();
+        expect(tb.called).to.be.true;
     })
 
     it("Models should have proper properties", async () => {

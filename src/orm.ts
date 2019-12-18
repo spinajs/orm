@@ -55,18 +55,15 @@ export class Orm extends AsyncResolveStrategy {
                 // tslint:disable-next-line: forin
                 for (const mixin in MODEL_STATIC_MIXINS) {
                     m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
+                }
 
-                    const descriptor = m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
+                const descriptor = m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
+                if (descriptor) {
+                    const connection = this.Connections.get(descriptor.Connection);
 
-                    if (descriptor) {
-                        const connection = this.Connections.get(descriptor.Connection);
-
-                        if (connection) {
-                            descriptor.Columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
-                        }
+                    if (connection) {
+                        descriptor.Columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
                     }
-
-
                 }
             }
         } catch (err) {
