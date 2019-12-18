@@ -1,4 +1,4 @@
-import { SelectQueryBuilder, WhereBuilder } from "./builders";
+import { SelectQueryBuilder, WhereBuilder, RawQuery } from "./builders";
 import { ColumnMethods, WhereOperators } from "./enums";
 import { NewInstance } from "@spinajs/di";
 
@@ -127,10 +127,10 @@ export abstract class InSetStatement implements IQueryStatement {
 @NewInstance()
 export abstract class ColumnStatement implements IQueryStatement {
 
-    protected _column: string;
+    protected _column: string | RawQuery;
     protected _alias: string;
 
-    constructor(column: string, alias?: string) {
+    constructor(column: string | RawQuery, alias?: string) {
         this._column = column || "";
         this._alias = alias || "";
     }
@@ -144,6 +144,11 @@ export abstract class ColumnStatement implements IQueryStatement {
     }
 
     get IsWildcard() {
+
+        if (this._column instanceof RawQuery) {
+            return false;
+        }
+
         return this._column && this._column.trim() === "*";
     }
 
@@ -157,7 +162,7 @@ export abstract class ColumnMethodStatement extends ColumnStatement {
         super(column, alias);
         this._method = method;
     }
- 
+
     public abstract build(): IQueryStatementResult;
 }
 

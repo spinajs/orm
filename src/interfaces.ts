@@ -1,3 +1,4 @@
+import { RawQuery } from './builders';
 import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
@@ -275,6 +276,7 @@ export interface IQueryBuilder {
     TableAlias: string;
     Schema: string;
     schema(schema: string): IQueryBuilder;
+    from(table: string, alias?: string) : this;
 }
 
 export interface ILimitBuilder {
@@ -295,7 +297,7 @@ export interface IColumnsBuilder {
     clearColumns(): this;
     columns(names: string[]): this;
     getColumns(): IQueryStatement[];
-    select(column: string): this;
+    select(column: string | RawQuery, alias? : string): this;
 }
 
 export interface IWhereBuilder {
@@ -329,7 +331,6 @@ export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByBuilder, I
     sum(column: string, as?: string): this;
     avg(column: string, as?: string): this;
     distinct(): this;
-    from(table: string, alias?: string) : this;
 }
 
 export interface ICompilerOutput {

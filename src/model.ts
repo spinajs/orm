@@ -181,7 +181,7 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
     qr.setTable(dsc.TableName);
 
     if (driver.Options.Database) {
-        qr.setSchema(driver.Options.Database);
+        qr.schema(driver.Options.Database);
     }
 
     return {

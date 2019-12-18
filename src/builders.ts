@@ -124,7 +124,9 @@ export class QueryBuilder implements IQueryBuilder {
         return this;
     }
 
-
+    public from(table: string, alias?: string): this {
+        return this.setTable(table, alias);
+    }
 }
 
 
@@ -246,8 +248,9 @@ export class ColumnsBuilder implements IColumnsBuilder {
         return this;
     }
 
-    public select(name: string) {
-        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [name]));
+    public select(column: string | RawQuery, alias?: string) {
+
+        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias]));
 
         return this;
     }
@@ -588,10 +591,6 @@ export class SelectQueryBuilder extends QueryBuilder {
             }
         }, reject)
     }
-
-    public from(table: string, alias?: string): this {
-        return this.setTable(table, alias);
-    }
 }
 
 // tslint:disable-next-line
@@ -605,9 +604,11 @@ export class DeleteQueryBuilder extends QueryBuilder {
     protected _boolean: WhereBoolean;
 
     protected _truncate: boolean;
-    get Truncate() {
+
+    public get Truncate() {
         return this._truncate;
     }
+
 
     @use(WhereBuilder, LimitBuilder)
     /// @ts-ignore
@@ -624,6 +625,12 @@ export class DeleteQueryBuilder extends QueryBuilder {
 
     public toDB(): ICompilerOutput {
         return this._container.resolve<DeleteQueryCompiler>(DeleteQueryCompiler, [this]).compile();
+    }
+
+    public truncate() {
+        this.this._truncate = true;
+
+        return this;
     }
 }
 
@@ -714,9 +721,9 @@ export class InsertQueryBuilder extends QueryBuilder {
         function _addData(d: any) {
             const binding: any[] = [];
 
-            self._columns.map(c => {
+            self._columns.filter(c => !(c.Column instanceof RawQuery)).map(c => {
                 return (c as ColumnStatement).Column
-            }).forEach(c => {
+            }).forEach((c: string) => {
                 binding.push(d[c]);
             });
 
@@ -902,7 +909,7 @@ export class TableQueryBuilder extends QueryBuilder {
 
 export class SchemaQueryBuilder {
 
-    constructor(protected driver: OrmDriver, protected container: Container) {
+    constructor(protected container: Container, protected driver: OrmDriver) {
     }
 
     public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
@@ -910,7 +917,7 @@ export class SchemaQueryBuilder {
         const builder = new TableQueryBuilder(this.container, this.driver, name);
         callback.call(this, builder);
 
-        return this;
+        return builder;
     }
 }
 
