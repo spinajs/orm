@@ -573,7 +573,7 @@ export class SelectQueryBuilder extends QueryBuilder {
 
     public distinct() {
 
-        if (this._columns.length == 0 || (this._columns[0] as ColumnStatement).IsWildcard) {
+        if (this._columns.length === 0 || (this._columns[0] as ColumnStatement).IsWildcard) {
             throw new InvalidOperationException("Cannot force DISTINCT on unknown column");
         }
 
