@@ -154,6 +154,16 @@ export abstract class ColumnStatement implements IQueryStatement {
 
     public abstract build(): IQueryStatementResult;
 }
+
+export abstract class ColumnRawStatement implements IQueryStatement{
+
+    constructor(public RawQuery : RawQuery){
+
+    }
+
+    public abstract build(): IQueryStatementResult;
+}
+
 @NewInstance()
 export abstract class ColumnMethodStatement extends ColumnStatement {
     protected _method: ColumnMethods;

@@ -5,7 +5,7 @@ import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
 import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, OrmDriver, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler } from "./interfaces";
-import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement } from "./statements";
+import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
 import { WhereFunction } from "./types";
 
 
@@ -250,7 +250,11 @@ export class ColumnsBuilder implements IColumnsBuilder {
 
     public select(column: string | RawQuery, alias?: string) {
 
-        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias]));
+        if(column instanceof RawQuery){
+            this._columns.push(this._container.resolve<ColumnRawStatement>(ColumnRawStatement, [column]));
+        }else{
+            this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias]));
+        }
 
         return this;
     }
