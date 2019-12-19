@@ -783,7 +783,6 @@ export class ColumnQueryBuilder {
         this.AutoIncrement = false;
         this.NotNull = false;
         this.Default = "";
-        this.Name = "";
         this.Collation = "";
         this.Comment = "";
         this.Unique = false;
