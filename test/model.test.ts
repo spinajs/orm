@@ -59,7 +59,8 @@ class FakeSqliteDriver extends OrmDriver {
     }
 
     // tslint:disable-next-line: no-empty
-    public async ping(): Promise<void> {
+    public async ping(): Promise<boolean> {
+        return true;
     }
 
     // tslint:disable-next-line: no-empty
@@ -68,10 +69,10 @@ class FakeSqliteDriver extends OrmDriver {
     }
 
     // tslint:disable-next-line: no-empty
-    public disconnect(): void {
+    public async disconnect(): Promise<void> {
     }
 
-    public tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
+    public async tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
         return null;
     }
 

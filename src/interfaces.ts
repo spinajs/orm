@@ -81,9 +81,9 @@ export abstract class OrmDriver extends ResolveStrategy {
 
     /**
      * Checks if database is avaible
-     * @throws {OrmException} if no connection to databse is avaible
+     * @returns false if cannot reach database
      */
-    public abstract ping(): Promise<void>;
+    public abstract ping(): Promise<boolean>;
 
     /**
      * Connects to database
@@ -94,7 +94,7 @@ export abstract class OrmDriver extends ResolveStrategy {
     /**
      * Disconnects from database
      */
-    public abstract disconnect(): void;
+    public abstract disconnect(): Promise<void>;
 
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 
