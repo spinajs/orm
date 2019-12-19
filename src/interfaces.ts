@@ -2,7 +2,8 @@ import { RawQuery } from './builders';
 import { SORT_ORDER, WhereBoolean } from './enums';
 import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
-import { ResolveStrategy, IContainer } from '@spinajs/di';
+import { OrmDriver } from './driver';
+import { NewInstance } from '@spinajs/di';
 
 /**
  * Configuration optiosn to set in configuration file and used in OrmDriver
@@ -55,50 +56,12 @@ export interface IDriverOptions {
     Name: string;
 }
 
-export abstract class OrmDriver extends ResolveStrategy {
-
+export interface IMigrationDescriptor
+{
     /**
-     * Connection options
+     * Whitch connection migration will be executed
      */
-    public Options: IDriverOptions;
-
-    public Container: IContainer;
-
-    constructor(container: IContainer, options: IDriverOptions) {
-        super();
-
-        this.Options = options;
-        this.Container = container;
-    }
-
-    /**
-     * Executes query on database
-     * 
-     * @param stmt query string or query objects that is executed in database
-     * @param params binding parameters
-     */
-    public abstract execute(stmt: string | object, params?: any[]): Promise<any[] | any>;
-
-    /**
-     * Checks if database is avaible
-     * @returns false if cannot reach database
-     */
-    public abstract ping(): Promise<boolean>;
-
-    /**
-     * Connects to database
-     * @throws {OrmException} if can't connec to to database
-     */
-    public abstract connect(): Promise<void>;
-
-    /**
-     * Disconnects from database
-     */
-    public abstract disconnect(): Promise<void>;
-
-    public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
-
-    public abstract resolve(container: IContainer): void;
+    Connection : string;
 }
 
 /**
@@ -254,6 +217,12 @@ export interface IModelSoftDeleteDescriptor {
     DeletedAt: string;
 }
 
+@NewInstance()
+export abstract class OrmMigration {
+    public abstract up(connection: OrmDriver): Promise<void>
+    public abstract down(connection: OrmDriver): Promise<void>
+}
+
 /**
  * Model archived description
  */
@@ -280,7 +249,7 @@ export interface IQueryBuilder {
     TableAlias: string;
     Schema: string;
     schema(schema: string): IQueryBuilder;
-    from(table: string, alias?: string) : this;
+    from(table: string, alias?: string): this;
 }
 
 export interface ILimitBuilder {
@@ -301,7 +270,7 @@ export interface IColumnsBuilder {
     clearColumns(): this;
     columns(names: string[]): this;
     getColumns(): IQueryStatement[];
-    select(column: string | RawQuery, alias? : string): this;
+    select(column: string | RawQuery, alias?: string): this;
 }
 
 export interface IWhereBuilder {
@@ -388,7 +357,7 @@ export abstract class TableQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export declare abstract class ColumnQueryCompiler implements IQueryCompiler {
+export  abstract class ColumnQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 

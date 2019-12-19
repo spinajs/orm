@@ -1,7 +1,9 @@
-import { IModelDescrtiptor } from "./interfaces";
+import { IModelDescrtiptor, IMigrationDescriptor } from "./interfaces";
 import "reflect-metadata";
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for("MODEL_DESCRIPTOR");
+export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for("MIGRATION_DESCRIPTOR");
+
 
 /**
  * Helper func to create model metadata
@@ -46,6 +48,26 @@ function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: s
         if (callback) {
             callback(metadata, target, propertyKey, indexOrDescriptor);
         }
+    }
+}
+
+/**
+ * Sets migration option
+ * 
+ * @param connection connection name, must exists in configuration file
+ */
+export function Migration(connection: string) {
+    return (target: any) => {
+        let metadata = target[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
+        
+        if(!metadata){
+            metadata = {
+                Connection : ""
+            }
+            target[MIGRATION_DESCRIPTION_SYMBOL] = metadata;
+        }
+
+        metadata.Connection = connection;
     }
 }
 

@@ -7,6 +7,8 @@ export * from "./orm";
 export * from "./types";
 export * from "./decorators";
 export * from "./hydrators";
+export * from "./driver";
+
 
 
 

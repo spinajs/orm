@@ -4,22 +4,28 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
-import { IDriverOptions, OrmDriver, IModelDescrtiptor } from "./interfaces";
+import { IDriverOptions, IModelDescrtiptor, IMigrationDescriptor, OrmMigration } from "./interfaces";
 import { ModelBase, MODEL_STATIC_MIXINS } from "./model";
-import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
+import { MODEL_DESCTRIPTION_SYMBOL, MIGRATION_DESCRIPTION_SYMBOL } from './decorators';
+import { OrmDriver } from './driver';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
  */
 const CFG_PROPS = ["Database", "User", "Host", "Port", "Filename", "Driver", "Name"];
 
+
 export class Orm extends AsyncResolveStrategy {
 
     @ListFromFiles("/**/*.{ts,js}", "system.dirs.models")
     public Models: Array<ClassInfo<ModelBase<any>>>;
 
+    @ListFromFiles("/**/*.{ts,js}", "system.dirs.migrations")
+    public Migrations: Array<ClassInfo<OrmMigration>>;
+
     public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
 
+    @Autoinject()
     public Container: IContainer;
 
     @Logger({ module: "ORM" })
@@ -29,10 +35,23 @@ export class Orm extends AsyncResolveStrategy {
     private Configuration: Configuration;
 
 
+    public async migrateUp(name?: string) {
+        const migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
+
+        for (const m of migrations) {
+
+            const md = (m as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
+            const cn = this.Connections.get(md.Connection);
+            const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
+
+            migration.up(cn)
+        }
+    }
 
     public async resolveAsync(container: IContainer): Promise<void> {
 
         const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
+
         try {
             for (const c of connections) {
 

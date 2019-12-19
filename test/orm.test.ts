@@ -5,7 +5,7 @@ import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
 import { dir } from "./misc";
-import { OrmDriver } from '../src/interfaces';
+import { OrmDriver } from '../src/driver';
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 
