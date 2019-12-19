@@ -912,7 +912,7 @@ export class TableQueryBuilder extends QueryBuilder {
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<TableQueryCompiler>(TableQueryCompiler).compile();
+        return this._container.resolve<TableQueryCompiler>(TableQueryCompiler, [this]).compile();
     }
 }
 
