@@ -763,7 +763,7 @@ export class ColumnQueryBuilder {
 
     public Name: string;
     public Unique: boolean;
-    public Unsigner: boolean;
+    public Unsigned: boolean;
     public AutoIncrement: boolean;
     public Default: string | RawQuery | number;
     public PrimaryKey: boolean;
@@ -787,7 +787,7 @@ export class ColumnQueryBuilder {
         this.Collation = "";
         this.Comment = "";
         this.Unique = false;
-        this.Unsigner = false;
+        this.Unsigned = false;
 
         this.Args.push(...args);
     }
@@ -805,7 +805,7 @@ export class ColumnQueryBuilder {
     }
 
     public unsigned() {
-        this.Unsigner = true;
+        this.Unsigned = true;
 
         return this;
     }
