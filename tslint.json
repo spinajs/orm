@@ -26,6 +26,9 @@
     },
     "variable-name":{
       "severity": "off"
+    },
+    "object-literal-sort-keys":{
+      "severity": "off"
     }
   }
 }
