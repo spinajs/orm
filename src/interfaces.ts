@@ -389,7 +389,7 @@ export abstract class TableQueryCompiler implements IQueryCompiler {
 }
 
 export declare abstract class ColumnQueryCompiler implements IQueryCompiler {
-    abstract compile(): ICompilerOutput;
+    public abstract compile(): ICompilerOutput;
 }
 
 
