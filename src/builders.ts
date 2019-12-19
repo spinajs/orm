@@ -114,7 +114,7 @@ export class QueryBuilder implements IQueryBuilder {
      */
     public setTable(table: string, alias?: string) {
 
-        if (!table) {
+        if (!table.trim()) {
             throw new ArgumentException("table name is empty");
         }
 
@@ -605,6 +605,8 @@ export class DeleteQueryBuilder extends QueryBuilder {
 
     protected _truncate: boolean;
 
+    protected _limit: IQueryLimit;
+
     public get Truncate() {
         return this._truncate;
     }
@@ -621,6 +623,11 @@ export class DeleteQueryBuilder extends QueryBuilder {
         this._method = QueryMethod.DELETE;
         this._statements = [];
         this._boolean = WhereBoolean.AND;
+
+        this._limit = {
+            limit: -1,
+            offset: -1
+        };
     }
 
     public toDB(): ICompilerOutput {
@@ -628,7 +635,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
     }
 
     public truncate() {
-        this.this._truncate = true;
+        this._truncate = true;
 
         return this;
     }
@@ -907,9 +914,12 @@ export class TableQueryBuilder extends QueryBuilder {
     }
 }
 
+@NewInstance()
+@Inject(Container)
 export class SchemaQueryBuilder {
 
     constructor(protected container: Container, protected driver: OrmDriver) {
+ 
     }
 
     public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
