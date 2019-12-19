@@ -1,5 +1,5 @@
 import { Container, Inject, NewInstance } from "@spinajs/di";
-import { ArgumentException, NotImplementedException } from "@spinajs/exceptions";
+import { ArgumentException, NotImplementedException, InvalidOperationException } from "@spinajs/exceptions";
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
@@ -250,9 +250,9 @@ export class ColumnsBuilder implements IColumnsBuilder {
 
     public select(column: string | RawQuery, alias?: string) {
 
-        if(column instanceof RawQuery){
+        if (column instanceof RawQuery) {
             this._columns.push(this._container.resolve<ColumnRawStatement>(ColumnRawStatement, [column]));
-        }else{
+        } else {
             this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias]));
         }
 
@@ -572,6 +572,11 @@ export class SelectQueryBuilder extends QueryBuilder {
     }
 
     public distinct() {
+
+        if (this._columns.length == 0 || (this._columns[0] as ColumnStatement).IsWildcard) {
+            throw new InvalidOperationException("Cannot force DISTINCT on unknown column");
+        }
+
         this._distinct = true;
         return this;
     }
@@ -924,7 +929,7 @@ export class TableQueryBuilder extends QueryBuilder {
 export class SchemaQueryBuilder {
 
     constructor(protected container: Container, protected driver: OrmDriver) {
- 
+
     }
 
     public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
