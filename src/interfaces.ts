@@ -388,6 +388,11 @@ export abstract class TableQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+export declare abstract class ColumnQueryCompiler implements IQueryCompiler {
+    abstract compile(): ICompilerOutput;
+}
+
+
 /**
  * ==========================================================
  */

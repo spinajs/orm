@@ -757,88 +757,90 @@ export class InsertQueryBuilder extends QueryBuilder {
     }
 }
 
+@NewInstance()
+@Inject(Container)
 export class ColumnQueryBuilder {
 
-    protected _name: string;
-    protected _unique: boolean;
-    protected _unsigned: boolean;
-    protected _autoIncrement: boolean;
-    protected _default: string | RawQuery | number;
-    protected _primaryKey: boolean;
-    protected _comment: string;
-    protected _charset: string;
-    protected _collation: string;
-    protected _notNull: boolean;
-    protected _type: string;
-    protected _args: any[];
+    public Name: string;
+    public Unique: boolean;
+    public Unsigner: boolean;
+    public AutoIncrement: boolean;
+    public Default: string | RawQuery | number;
+    public PrimaryKey: boolean;
+    public Comment: string;
+    public Charset: string;
+    public Collation: string;
+    public NotNull: boolean;
+    public Type: string;
+    public Args: any[];
 
 
     constructor(name: string, type: string, ...args: any[]) {
-        this._name = name;
-        this._type = type;
-        this._charset = "";
-        this._args = [];
-        this._autoIncrement = false;
-        this._notNull = false;
-        this._default = "";
-        this._name = "";
-        this._collation = "";
-        this._comment = "";
-        this._unique = false;
-        this._unsigned = false;
+        this.Name = name;
+        this.Type = type;
+        this.Charset = "";
+        this.Args = [];
+        this.AutoIncrement = false;
+        this.NotNull = false;
+        this.Default = "";
+        this.Name = "";
+        this.Collation = "";
+        this.Comment = "";
+        this.Unique = false;
+        this.Unsigner = false;
 
-        this._args.push(...args);
+        this.Args.push(...args);
     }
 
     public notNull() {
-        this._notNull = true;
+        this.NotNull = true;
 
         return this;
     }
 
     public unique() {
-        this._unique = true;
+        this.Unique = true;
 
         return this;
     }
 
     public unsigned() {
-        this._unsigned = true;
+        this.Unsigner = true;
 
         return this;
     }
 
     public autoIncrement() {
-        this._autoIncrement = true;
+        this.AutoIncrement = true;
 
         return this;
     }
 
     public default(val: string | RawQuery | number) {
-        this._default = val;
+        this.Default = val;
 
         return this;
     }
 
     public primaryKey() {
-        this._primaryKey = true;
+        this.PrimaryKey = true;
         return this;
     }
 
     public comment(comment: string) {
-        this._comment = comment;
+        this.Comment = comment;
 
         return this;
     }
 
     public charset(charset: string) {
-        this._charset = charset;
+        this.Charset = charset;
 
         return this;
     }
 
     public collation(collation: string) {
-        this._collation = collation;
+        this.Collation = collation;
 
         return this;
     }
