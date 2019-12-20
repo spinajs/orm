@@ -92,7 +92,7 @@ export class QueryBuilder implements IQueryBuilder {
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
         const compiled = this.toDB();
-        this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
+        return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
             if (this._model && !this._nonSelect) {
                 resolve(result.map(r => {
                     return new this._model(r);
