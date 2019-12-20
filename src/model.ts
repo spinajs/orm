@@ -137,7 +137,12 @@ export abstract class ModelBase<T> {
         }
     }
 
-    public async abstract fresh(): Promise<T>;
+    /**
+     * Gets model data from database and returns as fresh instance.
+     */
+    public async fresh(): Promise<T> {
+        return (this.constructor as any).find(this.PrimaryKeyValue);
+    }
 
     /**
      * sets default values for model. values are taken from DB default column prop
