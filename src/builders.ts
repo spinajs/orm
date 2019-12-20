@@ -641,7 +641,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
             offset: -1
         };
 
-        this.this._queryContext = QueryContext.Delete;
+        this._queryContext = QueryContext.Delete;
     }
 
     public toDB(): ICompilerOutput {
