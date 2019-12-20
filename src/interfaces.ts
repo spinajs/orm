@@ -344,26 +344,32 @@ export interface IWhereCompiler {
  * ==========================================================
  */
 
+@NewInstance()
 export abstract class SelectQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+@NewInstance()
 export abstract class DeleteQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+@NewInstance()
 export abstract class UpdateQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+@NewInstance()
 export abstract class InsertQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+@NewInstance()
 export abstract class TableQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
+@NewInstance()
 export abstract class ColumnQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
