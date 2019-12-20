@@ -595,7 +595,7 @@ export class SelectQueryBuilder extends QueryBuilder {
                 if (this._fail && result.length === 0) {
                     reject(new Error("empty results"));
                 } else {
-                    resolve(result[0])
+                    resolve(result ? result[0] : null)
                 }
 
             } else {
