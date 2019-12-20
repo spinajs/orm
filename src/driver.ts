@@ -1,3 +1,4 @@
+import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder } from ".";
 import { UpdateQueryBuilder } from "./builders";
@@ -23,8 +24,9 @@ export abstract class OrmDriver extends ResolveStrategy {
      * 
      * @param stmt query string or query objects that is executed in database
      * @param params binding parameters
+     * @param context query context to optimize queries sent to DB
      */
-    public abstract execute(stmt: string | object, params?: any[]): Promise<any[] | any>;
+    public abstract execute(stmt: string | object, params: any[], context : QueryContext): Promise<any[] | any>;
 
     /**
      * Checks if database is avaible

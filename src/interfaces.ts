@@ -5,6 +5,14 @@ import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { NewInstance } from '@spinajs/di';
 
+export enum QueryContext {
+    Insert,
+    Select,
+    Update,
+    Delete,
+    Schema
+}
+
 /**
  * Configuration optiosn to set in configuration file and used in OrmDriver
  */
@@ -56,12 +64,11 @@ export interface IDriverOptions {
     Name: string;
 }
 
-export interface IMigrationDescriptor
-{
+export interface IMigrationDescriptor {
     /**
      * Whitch connection migration will be executed
      */
-    Connection : string;
+    Connection: string;
 }
 
 /**
@@ -357,7 +364,7 @@ export abstract class TableQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
-export  abstract class ColumnQueryCompiler implements IQueryCompiler {
+export abstract class ColumnQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 

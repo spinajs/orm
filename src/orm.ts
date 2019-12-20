@@ -44,7 +44,7 @@ export class Orm extends AsyncResolveStrategy {
             const cn = this.Connections.get(md.Connection);
             const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
 
-            migration.up(cn)
+            await migration.up(cn)
         }
     }
 
@@ -66,7 +66,7 @@ export class Orm extends AsyncResolveStrategy {
 
 
             await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => {
-                d.connect();
+                return d.connect();
             }));
 
             for (const m of this.Models) {

@@ -4,7 +4,7 @@ import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler } from "./interfaces";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
 import { WhereFunction } from "./types";
 import { OrmDriver } from "./driver";
@@ -30,6 +30,7 @@ export class QueryBuilder implements IQueryBuilder {
     protected _container: Container;
     protected _model?: Constructor<any>;
     protected _nonSelect: boolean;
+    protected _queryContext: QueryContext;
 
     constructor(container: Container, driver: OrmDriver, model?: Constructor<any>) {
         this._driver = driver;
@@ -91,7 +92,7 @@ export class QueryBuilder implements IQueryBuilder {
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
         const compiled = this.toDB();
-        this._driver.execute(compiled.expression, compiled.bindings).then((result: any[]) => {
+        this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
             if (this._model && !this._nonSelect) {
                 resolve(result.map(r => {
                     return new this._model(r);
@@ -541,6 +542,7 @@ export class SelectQueryBuilder extends QueryBuilder {
         };
 
         this._nonSelect = false;
+        this.this._queryContext = QueryContext.Select;
     }
 
     public min(column: string, as?: string): this {
@@ -588,7 +590,7 @@ export class SelectQueryBuilder extends QueryBuilder {
     }
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
-        super.then((result: any[]) => {
+        return super.then((result: any[]) => {
             if (this._first) {
                 if (this._fail && result.length === 0) {
                     reject(new Error("empty results"));
@@ -638,6 +640,8 @@ export class DeleteQueryBuilder extends QueryBuilder {
             limit: -1,
             offset: -1
         };
+
+        this.this._queryContext = QueryContext.Delete;
     }
 
     public toDB(): ICompilerOutput {
@@ -677,6 +681,8 @@ export class UpdateQueryBuilder extends QueryBuilder {
         this._method = QueryMethod.UPDATE;
         this._boolean = WhereBoolean.AND;
         this._statements = [];
+
+        this._queryContext = QueryContext.Update;
     }
 
     public in(name: string) {
@@ -718,6 +724,8 @@ export class InsertQueryBuilder extends QueryBuilder {
         this._method = QueryMethod.INSERT;
         this._columns = [];
         this._values = [];
+
+        this._queryContext = QueryContext.Insert;
     }
 
     public values(data: {} | Array<{}>) {
@@ -902,6 +910,8 @@ export class TableQueryBuilder extends QueryBuilder {
         this._columns = [];
 
         this.setTable(name);
+
+        this._queryContext = QueryContext.Schema;
     }
 
     public increments(name: string) {
