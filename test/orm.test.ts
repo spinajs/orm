@@ -4,8 +4,7 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { dir } from "./misc";
-import { OrmDriver } from '../src/driver';
+import { ConnectionConf, FakeSqliteDriver, FakeMysqlDriver } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 
@@ -16,84 +15,41 @@ async function db() {
     return await DI.resolve(Orm);
 }
 
-export class ConnectionConf extends Configuration {
 
-    protected conf = {
-        system: {
-            dirs: {
-                models: [dir("./mocks/models")],
-            }
-        },
-        db: {
-            connections: [
-                {
-                    Driver: "sqlite",
-                    Filename: "foo.sqlite",
-                    Name: "cache"
-                },
-                {
-                    Driver: "mysql",
-                    Database: "foo",
-                    User: "root",
-                    Password: "root",
-                    Host: "localhost",
-                    Port: 1234,
-                    Name: "main_connection"
-                }
-            ]
-        }
-    }
-
-    public get(path: string[], defaultValue?: any): any {
-        return _.get(this.conf, path, defaultValue);
-    }
-}
 
 describe("Orm general", () => {
 
     beforeEach(() => {
         DI.register(ConnectionConf).as(Configuration);
         DI.register(SpinaJsDefaultLog).as(LogModule);
+        DI.register(FakeSqliteDriver).as("sqlite");
+        DI.register(FakeMysqlDriver).as("mysql");
+
 
         DI.resolve(LogModule);
     });
 
     afterEach(async () => {
+        sinon.restore();
         DI.clear();
     });
 
 
     it("ORM should create connections", async () => {
 
-        const sqliteDriver = sinon.createStubInstance(OrmDriver);
-        const mysqlDriver = sinon.createStubInstance(OrmDriver);
-
-        sqliteDriver.connect = sinon.stub<any, any>().resolves();
-        sqliteDriver.tableInfo = sinon.stub<any, any>().resolves();
-        mysqlDriver.connect = sinon.stub<any, any>().resolves();
-        mysqlDriver.tableInfo = sinon.stub<any, any>().resolves();
-        mysqlDriver.resolve = sinon.stub<any, any>().resolves();
-
-
-
-        DI.register(() => {
-            return sqliteDriver;
-        }).as("sqlite");
-
-        DI.register(() => {
-            return mysqlDriver;
-        }).as("mysql");
+        const connect1 = sinon.stub(FakeSqliteDriver.prototype, "connect");
+        const connect2 = sinon.stub(FakeMysqlDriver.prototype, "connect");
 
         // @ts-ignore
         const orm = await db();
 
 
-        expect(sqliteDriver.connect.calledOnce).to.be.true;
-        expect(mysqlDriver.connect.calledOnce).to.be.true;
+        expect(connect1.calledOnce).to.be.true;
+        expect(connect2.calledOnce).to.be.true;
 
         expect(orm.Connections).to.be.an("Map").that.have.length(2);
         expect(orm.Connections.get("main_connection")).to.be.not.null;
-        expect(orm.Connections.get("cache")).to.be.not.null;
+        expect(orm.Connections.get("sqlite")).to.be.not.null;
     })
 
 

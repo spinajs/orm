@@ -10,7 +10,7 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { dir, FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler } from "./misc";
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
 import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
@@ -25,39 +25,15 @@ async function db() {
     return await DI.resolve(Orm);
 }
 
-export class ModelConf extends Configuration {
-
-    protected conf = {
-        system: {
-            dirs: {
-                models: [dir("./mocks/models")],
-            }
-        },
-        db: {
-            connections: [
-                {
-                    Driver: "sqlite",
-                    Filename: ":memory",
-                    Name: "sqlite"
-                },
-            ]
-        }
-
-
-    }
-
-    public get(path: string[], defaultValue?: any): any {
-        return _.get(this.conf, path, defaultValue);
-    }
-}
-
 
 describe("General model tests", () => {
 
     beforeEach(() => {
-        DI.register(ModelConf).as(Configuration);
+        DI.register(ConnectionConf).as(Configuration);
         DI.register(SpinaJsDefaultLog).as(LogModule);
         DI.register(FakeSqliteDriver).as("sqlite");
+        DI.register(FakeMysqlDriver).as("mysql");
+
         DI.register(FakeSelectQueryCompiler).as(SelectQueryCompiler);
         DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
         DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
@@ -101,12 +77,18 @@ describe("General model tests", () => {
 
     it("Model should throw if no description", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
         expect(() => {
             ModelNoDescription.where(1, 1);
         }).to.throw("model ModelNoDescription does not have model descriptor. Use @model decorator on class");
     })
 
     it("Model should throw if invalid connection", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         expect(() => {
             ModelNoConnection.where(1, 1);
@@ -115,6 +97,8 @@ describe("General model tests", () => {
 
 
     it("Where mixin should work", async () => {
+        // @ts-ignore
+        const orm = await db();
 
         let query = Model1.where("id", 1);
         expect(query instanceof SelectQueryBuilder).to.be.true;
@@ -134,6 +118,9 @@ describe("General model tests", () => {
     })
 
     it("All mixin should work", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         const compile = sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "SELECT * FROM model1",
@@ -157,6 +144,9 @@ describe("General model tests", () => {
 
     it("Find mixin should work for single val", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
         const compile = sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
@@ -176,6 +166,9 @@ describe("General model tests", () => {
     })
 
     it("Find mixin should work for multiple vals", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         const compile = sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -201,6 +194,9 @@ describe("General model tests", () => {
 
     it("FindOrFail mixin should work", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
 
         const compile = sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -222,6 +218,9 @@ describe("General model tests", () => {
 
     it("FindOrFail mixin should fail", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
 
         sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -237,6 +236,10 @@ describe("General model tests", () => {
 
     it("destroy mixin should work", async () => {
 
+
+        // @ts-ignore
+        const orm = await db();
+
         sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
@@ -251,6 +254,9 @@ describe("General model tests", () => {
     })
 
     it("firstOrCreate mixin should work", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -278,6 +284,9 @@ describe("General model tests", () => {
 
     it("firstOrNew should work", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
         sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
@@ -295,6 +304,9 @@ describe("General model tests", () => {
     })
 
     it("Model save should set updated_at", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
 
         sinon.stub(FakeUpdateQueryCompiler.prototype, "compile").returns({
@@ -315,6 +327,9 @@ describe("General model tests", () => {
     })
 
     it("destroy should update deleted_at", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         const df = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -341,6 +356,9 @@ describe("General model tests", () => {
 
     it("Model save should update created_at", async () => {
 
+        // @ts-ignore
+        const orm = await db();
+
         sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
@@ -357,6 +375,9 @@ describe("General model tests", () => {
     })
 
     it("Model delete should delete if no soft delete", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         const del = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -376,6 +397,9 @@ describe("General model tests", () => {
     })
 
     it("Model delete should soft delete", async () => {
+
+        // @ts-ignore
+        const orm = await db();
 
         const del = sinon.stub(FakeDeleteQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -404,6 +428,8 @@ describe("General model tests", () => {
     })
 
     it("dehydrate should call converter if avaible", async () => {
+
+
 
         const converterStub = {
             fromDB(val: any): any { return val; },
@@ -442,6 +468,8 @@ describe("General model tests", () => {
             }]);
         }));
 
+        // @ts-ignore
+        const orm = await db();
         const model = new Model1();
 
         await model.save();
@@ -451,6 +479,7 @@ describe("General model tests", () => {
     })
 
     it("hydrate should call converter if avaible", async () => {
+
 
         const converterStub = {
             fromDB(val: any): any { return val; },
@@ -486,6 +515,8 @@ describe("General model tests", () => {
             }]);
         }));
 
+        // @ts-ignore
+        const orm = await db();
         const model = await Model1.find<Model1>(1);
 
         expect(fromDB.calledOnce).to.be.true;
@@ -497,6 +528,9 @@ describe("General model tests", () => {
         const tb = sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
             res([]);
         }));
+
+        // @ts-ignore
+        const orm = await db();
 
         expect(tb.called).to.be.true;
     })

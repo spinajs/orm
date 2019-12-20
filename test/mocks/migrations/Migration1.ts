@@ -1,6 +1,8 @@
-import { OrmMigration } from "../../../src";
+import { OrmMigration, Migration } from "../../../src";
 import { OrmDriver } from "../../../src/driver";
 
+@Migration("sqlite")
+// @ts-ignore
 export class Migration1 extends OrmMigration {
 
     // tslint:disable-next-line: no-empty

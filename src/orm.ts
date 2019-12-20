@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncResolveStrategy, IContainer } from "@spinajs/di";
+import { AsyncResolveStrategy, Container, IContainer } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
@@ -26,7 +26,7 @@ export class Orm extends AsyncResolveStrategy {
     public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
 
     @Autoinject()
-    public Container: IContainer;
+    public Container: Container;
 
     @Logger({ module: "ORM" })
     private Log: Log;
@@ -40,7 +40,7 @@ export class Orm extends AsyncResolveStrategy {
 
         for (const m of migrations) {
 
-            const md = (m as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
+            const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
             const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
 
