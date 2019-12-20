@@ -542,7 +542,7 @@ export class SelectQueryBuilder extends QueryBuilder {
         };
 
         this._nonSelect = false;
-        this.this._queryContext = QueryContext.Select;
+        this._queryContext = QueryContext.Select;
     }
 
     public min(column: string, as?: string): this {
