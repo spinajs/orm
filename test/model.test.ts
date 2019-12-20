@@ -429,8 +429,6 @@ describe("General model tests", () => {
 
     it("dehydrate should call converter if avaible", async () => {
 
-
-
         const converterStub = {
             fromDB(val: any): any { return val; },
             toDB(val: any): any { return val; }

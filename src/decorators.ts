@@ -10,7 +10,7 @@ export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for("MIGRATION_DESCRIPTOR");
  * 
  * @param callback 
  */
-function _model(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void, base = false): any {
+export function extractModelDescriptor(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void, base = false): any {
     return (target: any, propertyKey: string | symbol, indexOrDescriptor: number | PropertyDescriptor) => {
 
         let metadata: IModelDescrtiptor = null;
@@ -77,7 +77,7 @@ export function Migration(connection: string) {
  * @param name connection name, must be avaible in db config
  */
 export function Connection(name: string) {
-    return _model((model: IModelDescrtiptor) => {
+    return extractModelDescriptor((model: IModelDescrtiptor) => {
         model.Connection = name;
     }, true);
 }
@@ -88,7 +88,7 @@ export function Connection(name: string) {
  * @param name table name in database that is referred by this model
  */
 export function Model(tableName: string) {
-    return _model((model: IModelDescrtiptor) => {
+    return extractModelDescriptor((model: IModelDescrtiptor) => {
         model.TableName = tableName;
     }, true);
 }
@@ -99,7 +99,7 @@ export function Model(tableName: string) {
  * It allow to track creation times & changes to model
  */
 export function CreatedAt() {
-    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    return extractModelDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
         const type = Reflect.getMetadata('design:type', target, propertyKey);
         if (type.name !== "Date") {
@@ -115,7 +115,7 @@ export function CreatedAt() {
  * It allow to track creation times & changes to model
  */
 export function UpdatedAt() {
-    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    return extractModelDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
         const type = Reflect.getMetadata('design:type', target, propertyKey);
         if (type.name !== "Date") {
@@ -131,7 +131,7 @@ export function UpdatedAt() {
  * select result by default.
  */
 export function SoftDelete() {
-    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    return extractModelDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
         const type = Reflect.getMetadata('design:type', target, propertyKey);
         if (type.name !== "Date") {
@@ -148,7 +148,7 @@ export function SoftDelete() {
  * 
  */
 export function Archived() {
-    return _model((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    return extractModelDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
         const type = Reflect.getMetadata('design:type', target, propertyKey);
         if (type.name !== "Date") {
@@ -160,7 +160,7 @@ export function Archived() {
 }
 
 export function Primary() {
-    return _model((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+    return extractModelDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
         model.PrimaryKey = propertyKey;
     });
 }
