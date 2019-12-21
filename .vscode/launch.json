@@ -4,7 +4,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Framework test",
+            "name": "ORM test",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "args": [
                 "-r",
