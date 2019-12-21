@@ -50,6 +50,7 @@ describe("General model tests", () => {
         DI.clear();
 
         sinon.restore();
+        (Model1 as any)[MODEL_DESCTRIPTION_SYMBOL].Columns = [] as any;
     });
 
     it("Load models from dirs", async () => {
@@ -550,7 +551,7 @@ describe("General model tests", () => {
             Archived: {
                 ArchivedAt: "ArchivedAt"
             },
-            Columns: null,
+            Columns: [],
             Timestamps: {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"
@@ -570,7 +571,7 @@ describe("General model tests", () => {
             Archived: {
                 ArchivedAt: "ArchivedAt"
             },
-            Columns: null,
+            Columns: [],
             Timestamps: {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"

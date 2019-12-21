@@ -61,7 +61,9 @@ export class Orm extends AsyncResolveStrategy {
                 if (connection) {
                     const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
 
-                    m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), "Name");
+                    if(columns){
+                        m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), "Name");
+                    }
                 }
             }
         }
