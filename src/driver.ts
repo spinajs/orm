@@ -80,7 +80,7 @@ export abstract class OrmDriver extends ResolveStrategy {
     /**
      * Creates update query builder associated with this connection.
      * This can be used to execute raw queries to db without orm model layer
-    */
+     */
     public update(): UpdateQueryBuilder {
         return this.Container.resolve(UpdateQueryBuilder, [this]);
     }
