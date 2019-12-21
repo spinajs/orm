@@ -4,9 +4,9 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
-import { IDriverOptions, IModelDescrtiptor, IMigrationDescriptor, OrmMigration } from "./interfaces";
-import { ModelBase, MODEL_STATIC_MIXINS } from "./model";
-import { MODEL_DESCTRIPTION_SYMBOL, MIGRATION_DESCRIPTION_SYMBOL } from './decorators';
+import { IDriverOptions, IMigrationDescriptor, OrmMigration } from "./interfaces";
+import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from "./model";
+import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
 
 /**
@@ -48,11 +48,31 @@ export class Orm extends AsyncResolveStrategy {
         }
     }
 
+    /**
+     * This function is exposed mainly for unit testing purposes. It reloads table information for models
+     * ORM always try to load table at resolve time
+     */
+    public async reloadTableInfo() {
+        for (const m of this.Models) {
+            const descriptor = extractModelDescriptor(m.type);
+            if (descriptor) {
+                const connection = this.Connections.get(descriptor.Connection);
+
+                if (connection) {
+                    const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
+
+                    m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), "Name");
+                }
+            }
+        }
+    }
+
     public async resolveAsync(container: IContainer): Promise<void> {
 
         const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
 
         try {
+
             for (const c of connections) {
 
                 const driver = container.resolve<OrmDriver>(c.Driver, [container, c]);
@@ -75,18 +95,13 @@ export class Orm extends AsyncResolveStrategy {
                 for (const mixin in MODEL_STATIC_MIXINS) {
                     m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
                 }
-
-                const descriptor = m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
-                if (descriptor) {
-                    const connection = this.Connections.get(descriptor.Connection);
-
-                    if (connection) {
-                        descriptor.Columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
-                    }
-                }
             }
+
+            await this.reloadTableInfo();
         } catch (err) {
             this.Log.error("Cannot initialize ORM module", err);
         }
     }
+
+    
 }

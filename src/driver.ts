@@ -2,6 +2,7 @@ import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder } from ".";
 import { UpdateQueryBuilder } from "./builders";
+import { ModelHydrator, PropertyHydrator, JoinHydrator } from './hydrators';
 
 export abstract class OrmDriver extends ResolveStrategy {
 
@@ -47,7 +48,10 @@ export abstract class OrmDriver extends ResolveStrategy {
 
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 
-    public abstract resolve(container: IContainer): void;
+    public resolve(container: IContainer){
+        container.register(PropertyHydrator).as(ModelHydrator);
+        container.register(JoinHydrator).as(ModelHydrator);
+    }
 
     /**
      * Creates select query builder associated with this connection.

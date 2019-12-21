@@ -6,6 +6,39 @@ import { WhereOperators } from './enums';
 import { DI } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from "./hydrators";
+import * as _ from "lodash";
+
+export function extractModelDescriptor(target: any): IModelDescrtiptor {
+    const descriptor: any = {};
+
+    _reduce(target);
+    return descriptor;
+
+
+    function _reduce(t: any) {
+        if (!t) {
+            return;
+        }
+
+        if (t[MODEL_DESCTRIPTION_SYMBOL]) {
+            _.mergeWith(descriptor, t[MODEL_DESCTRIPTION_SYMBOL], (a: any, b: any) => {
+                if (!a) {
+                    return b;
+                }
+
+                if (Array.isArray(a)) {
+                    return a.concat(b);
+                }
+
+                return a;
+            });
+
+        }
+
+        _reduce(t.prototype);
+        _reduce(t.__proto__);
+    }
+}
 
 export abstract class ModelBase<T> {
 
@@ -14,7 +47,7 @@ export abstract class ModelBase<T> {
      * db table attached, column information and others.
      */
     public get ModelDescriptor() {
-        return (this.constructor as any)[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
+        return extractModelDescriptor(this.constructor);
     }
 
     public get PrimaryKeyName() {
