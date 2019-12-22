@@ -51,6 +51,4 @@ describe("Orm general", () => {
         expect(orm.Connections.get("main_connection")).to.be.not.null;
         expect(orm.Connections.get("sqlite")).to.be.not.null;
     })
-
-
 });

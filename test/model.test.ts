@@ -16,6 +16,8 @@ import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { RawModel } from './mocks/models/RawModel';
+import {   Model, Connection } from '../src/decorators';
+import { ModelBase } from "./../src/model";
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -578,6 +580,32 @@ describe("General model tests", () => {
             },
             PrimaryKey: "Id"
         });
+
+    })
+
+    it("Should register model programatically", async () => {
+        @Connection("sqlite")
+        @Model("TestTable1")
+        // @ts-ignore
+        class Test extends ModelBase<Test>{
+
+        }
+
+        class FakeOrm extends Orm {
+            constructor() {
+                super();
+
+                this.registerModel(Test);
+            }
+        }
+
+        const container = DI.child();
+        container.register(FakeOrm).as(Orm);
+
+        const orm = await container.resolve(Orm);
+        const models = await orm.Models;
+
+        expect(models.find(m => m.name === "Test.registered")).to.be.not.null;
 
     })
 });

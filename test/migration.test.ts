@@ -7,7 +7,7 @@ import { Orm } from '../src/orm';
 import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
-import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator } from "../src";
+import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1";
 
 
@@ -55,7 +55,7 @@ describe("Orm migrations", () => {
     })
 
     it("ORM should run migration by name", async () => {
-       
+
         const orm = await db();
 
         const up = sinon.stub(Migration1.prototype, "up");
@@ -65,12 +65,37 @@ describe("Orm migrations", () => {
     })
 
     it("ORM should run all migrations", async () => {
-         // @ts-ignore
-         const orm = await db();
+        // @ts-ignore
+        const orm = await db();
 
-         const up = sinon.stub(Migration1.prototype, "up");
-         await orm.migrateUp();
- 
-         expect(up.calledOnceWith(orm.Connections.get("sqlite")));
+        const up = sinon.stub(Migration1.prototype, "up");
+        await orm.migrateUp();
+
+        expect(up.calledOnceWith(orm.Connections.get("sqlite")));
+    })
+
+    it("Should register model programatically", async () => {
+        @Migration("sqlite")
+        // @ts-ignore
+        class Test extends OrmMigration {
+
+        }
+
+        class FakeOrm extends Orm {
+            constructor() {
+                super();
+
+                this.registerMigration(Test);
+            }
+        }
+
+        const container = DI.child();
+        container.register(FakeOrm).as(Orm);
+
+        const orm = await container.resolve(Orm);
+        const migrations = await orm.Migrations;
+
+        expect(migrations.find(m => m.name === "Test.registered")).to.be.not.null;
+
     })
 });
