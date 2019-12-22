@@ -37,8 +37,8 @@ describe("Orm general", () => {
 
     it("ORM should create connections", async () => {
 
-        const connect1 = sinon.stub(FakeSqliteDriver.prototype, "connect");
-        const connect2 = sinon.stub(FakeMysqlDriver.prototype, "connect");
+        const connect1 = sinon.stub(FakeSqliteDriver.prototype, "connect").returnsThis();
+        const connect2 = sinon.stub(FakeMysqlDriver.prototype, "connect").returnsThis();
 
         // @ts-ignore
         const orm = await db();

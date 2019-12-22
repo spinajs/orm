@@ -39,12 +39,12 @@ export abstract class OrmDriver extends ResolveStrategy {
      * Connects to database
      * @throws {OrmException} if can't connec to to database
      */
-    public abstract connect(): Promise<void>;
+    public abstract connect(): Promise<OrmDriver>;
 
     /**
      * Disconnects from database
      */
-    public abstract disconnect(): Promise<void>;
+    public abstract disconnect(): Promise<OrmDriver>;
 
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 

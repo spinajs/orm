@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncResolveStrategy, Container, IContainer } from "@spinajs/di";
+import { AsyncResolveStrategy, Container } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
@@ -29,10 +29,10 @@ export class Orm extends AsyncResolveStrategy {
     public Container: Container;
 
     @Logger({ module: "ORM" })
-    private Log: Log;
+    protected Log: Log;
 
     @Autoinject()
-    private Configuration: Configuration;
+    protected Configuration: Configuration;
 
 
     public async migrateUp(name?: string) {
@@ -61,7 +61,7 @@ export class Orm extends AsyncResolveStrategy {
                 if (connection) {
                     const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
 
-                    if(columns){
+                    if (columns) {
                         m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), "Name");
                     }
                 }
@@ -69,41 +69,71 @@ export class Orm extends AsyncResolveStrategy {
         }
     }
 
-    public async resolveAsync(container: IContainer): Promise<void> {
+    public async resolveAsync(): Promise<void> {
 
-        const connections = this.Configuration.get<IDriverOptions[]>("db.connections", []);
+        await this.createConnections();
+        await this.reloadTableInfo();
 
-        try {
-
-            for (const c of connections) {
-
-                const driver = container.resolve<OrmDriver>(c.Driver, [container, c]);
-                if (!driver) {
-                    this.Log.warn(`No Orm driver was found for DB ${c.Driver}, connection: ${c.Name}`, _.pick(c, CFG_PROPS));
-                    continue;
-                }
-
-                this.Connections.set(c.Name, driver);
-            }
-
-
-            await Promise.all(Array.from(this.Connections.values()).map((d: OrmDriver) => {
-                return d.connect();
-            }));
-
-            for (const m of this.Models) {
-
-                // tslint:disable-next-line: forin
-                for (const mixin in MODEL_STATIC_MIXINS) {
-                    m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
-                }
-            }
-
-            await this.reloadTableInfo();
-        } catch (err) {
-            this.Log.error("Cannot initialize ORM module", err);
-        }
+        this.applyModelMixins();
     }
 
-    
+    /**
+     * 
+     * Register model to ORM programatically so ORM can see it and use it. Sometimes dynamical model discovery is not possible eg. 
+     * in webpack evnironment. In such case we must tell ORM manually what to load.
+     * 
+     * NOTE: use it in ORM constructor before ORM is resolved & model list used.
+     * 
+     * @param model model to register
+     */
+    protected registerModel<T extends ModelBase<any>>(model: Class<T>) {
+        this.Models.push({
+            file: `${model.name}.registered`,
+            name: model.name,
+            type: model,
+        });
+    }
+
+    /**
+     * 
+     * Register migration to ORM programatically so ORM can see it and use it. Sometimes dynamical migration discovery is not possible eg. 
+     * in webpack evnironment. In such case we must tell ORM manually what to load.
+     * 
+     * NOTE: use it in ORM constructor before ORM is resolved & migrate function used.
+     * 
+     * @param model model to register
+     */
+    protected registerMigration<T extends OrmMigration>(migration: Class<T>) {
+        this.Migrations.push({
+            file: `${migration.name}.registered`,
+            name: migration.name,
+            type: migration,
+        });
+    }
+
+    private async createConnections() {
+        const connections = await Promise.all(
+            this.Configuration.get<IDriverOptions[]>("db.connections", [])
+                .map((c) => {
+                    return this.Container.resolve<OrmDriver>(c.Driver, [this.Container, c]);
+                })
+                .filter(c => c !== null)
+                .map(c => c.connect())
+        );
+
+        connections.forEach(c => {
+            this.Connections.set(c.Options.Name, c);
+            this.Log.info(`Found ORM driver ${c.Options.Name} with parameters ${_.pick(c.Options, CFG_PROPS)}`);
+        });
+    }
+
+    private applyModelMixins(){
+        this.Models.forEach((m) => {
+
+            // tslint:disable-next-line: forin
+            for (const mixin in MODEL_STATIC_MIXINS) {
+                m.type[mixin] = ((MODEL_STATIC_MIXINS as any)[mixin]).bind(m.type);
+            }
+        });
+    }
 }

@@ -12,6 +12,13 @@ export function dir(path: string) {
 export class ConnectionConf extends Configuration {
 
     protected conf = {
+        log: {
+            name: 'spine-framework',
+            /**
+             * streams to log to. See more on bunyan docs
+             */
+            streams: null as any
+        },
         system: {
             dirs: {
                 migrations: [dir("./mocks/migrations")],
@@ -59,12 +66,13 @@ export class FakeSqliteDriver extends OrmDriver {
     }
 
     // tslint:disable-next-line: no-empty
-    public async connect(): Promise<void> {
-
+    public async connect(): Promise<OrmDriver> {
+        return this;
     }
 
     // tslint:disable-next-line: no-empty
-    public async disconnect(): Promise<void> {
+    public async disconnect(): Promise<OrmDriver> {
+        return this;
     }
 
     public async tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
@@ -89,12 +97,14 @@ export class FakeMysqlDriver extends OrmDriver {
     }
 
     // tslint:disable-next-line: no-empty
-    public async connect(): Promise<void> {
+    public async connect(): Promise<OrmDriver> {
+        return this;
 
     }
 
     // tslint:disable-next-line: no-empty
-    public async disconnect(): Promise<void> {
+    public async disconnect(): Promise<OrmDriver> {
+        return this;
     }
 
     public async tableInfo(_table: string, _schema: string): Promise<IColumnDescriptor[]> {
