@@ -13,7 +13,7 @@ import { OrmDriver } from './driver';
  * Used to exclude sensitive data to others. eg. removed password field from cfg
  */
 const CFG_PROPS = ["Database", "User", "Host", "Port", "Filename", "Driver", "Name"];
-
+const MIGRATION_TABLE_NAME = "spinajs_migration";
 
 export class Orm extends AsyncResolveStrategy {
 
@@ -42,11 +42,40 @@ export class Orm extends AsyncResolveStrategy {
 
             const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
-            const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
 
-            await migration.up(cn)
+            const migrationTableName = cn.Options.MigrationTable || MIGRATION_TABLE_NAME;
+            const migrationTable = await cn.tableInfo(migrationTableName);
+            if (!migrationTable) {
+                await _buildSchemaTable(cn, migrationTableName);
+            }
+
+            const exists = await cn.select().from(migrationTableName).where({ Migration: m.name }).first();
+            if (exists) {
+                this.Log.debug(`Migration ${m.name} already exists in migration table. Migration has been skipped`);
+                continue;
+            }
+
+            const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
+            try {
+                await migration.up(cn);
+                await cn.insert().into(migrationTableName).values({
+                    Migration: m.name,
+                    CreatedAt: new Date()
+                });
+                this.Log.info(`Migration ${m.name} from file ${m.file} applied succesyfull`);
+            } catch (ex) {
+                this.Log.error(ex, `Cannot execute migration ${m.name} from file ${m.file}`);
+            }
         }
-    }
+
+        async function _buildSchemaTable(connection: OrmDriver, mTableName: string) {
+            await connection.schema().createTable(mTableName, (table) => {
+                table.int("Id").autoIncrement().primaryKey();
+                table.string("Migration").notNull();
+                table.dateTime("CreatedAt").notNull();
+            });
+        }
+     }
 
     /**
      * This function is exposed mainly for unit testing purposes. It reloads table information for models
@@ -57,10 +86,8 @@ export class Orm extends AsyncResolveStrategy {
             const descriptor = extractModelDescriptor(m.type);
             if (descriptor) {
                 const connection = this.Connections.get(descriptor.Connection);
-
                 if (connection) {
                     const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
-
                     if (columns) {
                         m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), "Name");
                     }
@@ -123,11 +150,11 @@ export class Orm extends AsyncResolveStrategy {
 
         connections.forEach(c => {
             this.Connections.set(c.Options.Name, c);
-            this.Log.info(`Found ORM driver ${c.Options.Name} with parameters ${_.pick(c.Options, CFG_PROPS)}`);
+            this.Log.info(`Found ORM driver ${c.Options.Name} with parameters ${JSON.stringify(_.pick(c.Options, CFG_PROPS))}`);
         });
     }
 
-    private applyModelMixins(){
+    private applyModelMixins() {
         this.Models.forEach((m) => {
 
             // tslint:disable-next-line: forin

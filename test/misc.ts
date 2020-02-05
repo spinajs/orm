@@ -120,7 +120,10 @@ export class FakeMysqlDriver extends OrmDriver {
 export class FakeSelectQueryCompiler extends SelectQueryCompiler {
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 
 }
@@ -169,7 +172,10 @@ export class FakeTableQueryCompiler extends TableQueryCompiler {
     }
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 }
 
@@ -181,7 +187,10 @@ export class FakeColumnQueryCompiler extends ColumnQueryCompiler {
     }
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 
 }

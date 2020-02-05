@@ -1,7 +1,7 @@
 import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
-import { IDriverOptions, IColumnDescriptor, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder } from ".";
-import { UpdateQueryBuilder } from "./builders";
+import { IDriverOptions, IColumnDescriptor } from ".";
+import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder } from "./builders";
 import { ModelHydrator, PropertyHydrator, JoinHydrator } from './hydrators';
 
 export abstract class OrmDriver extends ResolveStrategy {

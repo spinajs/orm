@@ -4,10 +4,10 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeTableQueryCompiler, FakeColumnQueryCompiler } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
-import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration } from "../src";
+import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1";
 
 
@@ -31,10 +31,10 @@ describe("Orm migrations", () => {
         DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
         DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
         DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
-
+        DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
+        DI.register(FakeColumnQueryCompiler).as(ColumnQueryCompiler);
 
         DI.register(PropertyHydrator).as(ModelHydrator);
-
 
         DI.resolve(LogModule);
     });
@@ -55,7 +55,7 @@ describe("Orm migrations", () => {
     })
 
     it("ORM should run migration by name", async () => {
-
+ 
         const orm = await db();
 
         const up = sinon.stub(Migration1.prototype, "up");
@@ -74,7 +74,7 @@ describe("Orm migrations", () => {
         expect(up.calledOnceWith(orm.Connections.get("sqlite")));
     })
 
-    it("Should register model programatically", async () => {
+    it("Should register migration programatically", async () => {
         @Migration("sqlite")
         // @ts-ignore
         class Test extends OrmMigration {
@@ -95,7 +95,7 @@ describe("Orm migrations", () => {
         const orm = await container.resolve(Orm);
         const migrations = await orm.Migrations;
 
-        expect(migrations.find(m => m.name === "Test.registered")).to.be.not.null;
+        expect(migrations.find(m => m.name === "Test")).to.be.not.null;
 
-    })
+    });
 });

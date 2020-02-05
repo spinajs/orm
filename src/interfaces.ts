@@ -62,6 +62,11 @@ export interface IDriverOptions {
      * Connection name for identification
      */
     Name: string;
+
+    /**
+     * Migration table name, if not set default is spinajs_orm_migrations
+     */
+    MigrationTable: string;
 }
 
 export interface IMigrationDescriptor {
