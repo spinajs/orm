@@ -1,7 +1,7 @@
 import { join, normalize, resolve } from 'path';
-import { IColumnDescriptor, ColumnQueryCompiler, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, InsertQueryCompiler, UpdateQueryCompiler, TableQueryCompiler } from '../src';
+import { IColumnDescriptor, ColumnQueryCompiler, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, InsertQueryCompiler, UpdateQueryCompiler, TableQueryCompiler, QueryBuilder } from '../src';
 import { IContainer } from '@spinajs/di';
-import { OrmDriver } from "./../src/driver";
+import { OrmDriver, TransactionCallback } from "./../src/driver";
 import { Configuration } from '@spinajs/configuration';
 import _ from 'lodash';
 
@@ -83,6 +83,11 @@ export class FakeSqliteDriver extends OrmDriver {
     public resolve(_container: IContainer): void {
 
     }
+
+    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void>
+    {
+        return;
+    }
 }
 
 export class FakeMysqlDriver extends OrmDriver {
@@ -114,6 +119,11 @@ export class FakeMysqlDriver extends OrmDriver {
     // tslint:disable-next-line: no-empty
     public resolve(_container: IContainer): void {
 
+    }
+
+    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void>
+    {
+        return;
     }
 }
 

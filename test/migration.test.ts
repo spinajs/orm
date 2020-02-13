@@ -4,10 +4,10 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeTableQueryCompiler, FakeColumnQueryCompiler } from "./misc";
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeTableQueryCompiler, FakeColumnQueryCompiler, dir } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
-import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler } from "../src";
+import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1";
 
 
@@ -55,13 +55,58 @@ describe("Orm migrations", () => {
     })
 
     it("ORM should run migration by name", async () => {
- 
+
         const orm = await db();
 
         const up = sinon.stub(Migration1.prototype, "up");
         await orm.migrateUp("Migration1");
 
-        expect(up.calledOnceWith(orm.Connections.get("sqlite")));
+        expect(up.calledOnceWith(orm.Connections.get("sqlite"))).to.be.true;
+    })
+
+    it("ORM should run migration in transaction scope", async () => {
+        // @ts-ignore
+
+        class FakeTransactionConf extends ConnectionConf {
+            protected conf = {
+                log: {
+                    name: 'spine-framework',
+                    /**
+                     * streams to log to. See more on bunyan docs
+                     */
+                    streams: null as any
+                },
+                system: {
+                    dirs: {
+                        migrations: [dir("./mocks/migrations")],
+                        models: [dir("./mocks/models")],
+        
+                    }
+                },
+                db: {
+                    connections: [
+                        {
+                            Driver: "sqlite",
+                            Filename: "foo.sqlite",
+                            Name: "sqlite",
+                            Migration: {
+                                TransactionMode: MigrationTransactionMode.PerFile
+                            }
+                        },
+                    ]
+                }
+            }
+        }
+
+        const container = DI.child();
+        container.register(FakeTransactionConf).as(Configuration);
+
+        const orm = await container.resolve(Orm);
+
+        const tr = sinon.stub(FakeSqliteDriver.prototype, "transaction");
+        await orm.migrateUp();
+
+        expect(tr.calledOnce).to.be.true;
     })
 
     it("ORM should run all migrations", async () => {
@@ -71,7 +116,7 @@ describe("Orm migrations", () => {
         const up = sinon.stub(Migration1.prototype, "up");
         await orm.migrateUp();
 
-        expect(up.calledOnceWith(orm.Connections.get("sqlite")));
+        expect(up.calledOnceWith(orm.Connections.get("sqlite"))).to.be.true;
     })
 
     it("Should register migration programatically", async () => {
