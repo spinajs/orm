@@ -30,7 +30,7 @@ export enum MigrationTransactionMode {
 }
 
 /**
- * Configuration optiosn to set in configuration file and used in OrmDriver
+ * Configuration options to set in configuration file and used in OrmDriver
  */
 export interface IDriverOptions {
 
@@ -81,22 +81,24 @@ export interface IDriverOptions {
 
     Migration?: {
 
+
+        /**
+         * Migration table name, if not set default is spinajs_orm_migrations
+         */
+        Table?: string,
+
         /**
          * Migration transaction options
          */
         Transaction?: {
 
-            /**
-             * Migration table name, if not set default is spinajs_orm_migrations
-             */
-            Table?: string,
 
             /**
              * How to run migration - with or without transaction
              */
             Mode?: MigrationTransactionMode
         }
-   
+
     }
 
     /**

@@ -42,7 +42,7 @@ export class Orm extends AsyncResolveStrategy {
 
             const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
-            const migrationTableName = cn.Options.Migration!.Transaction!.Table || MIGRATION_TABLE_NAME;
+            const migrationTableName = cn.Options.Migration!.Table || MIGRATION_TABLE_NAME;
 
             await _ensureMigrationTable(cn, migrationTableName);
 
