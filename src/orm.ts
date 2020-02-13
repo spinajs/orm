@@ -42,7 +42,7 @@ export class Orm extends AsyncResolveStrategy {
 
             const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
-            const migrationTableName = cn.Options.Migration?.Table || MIGRATION_TABLE_NAME;
+            const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
 
             await _ensureMigrationTable(cn, migrationTableName);
 
@@ -71,8 +71,6 @@ export class Orm extends AsyncResolveStrategy {
                 }
 
                 this.Log.info(`Migration ${m.name} from file ${m.file} applied succesyfull`);
-
-                return true;
             } catch (ex) {
 
                 this.Log.error(ex, `Cannot execute migration ${m.name} from file ${m.file}`);
@@ -80,6 +78,7 @@ export class Orm extends AsyncResolveStrategy {
             }
         }
 
+        return true;
         async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
             const migrationTable = await connection.tableInfo(tableName);
             if (!migrationTable) {
