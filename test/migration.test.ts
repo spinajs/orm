@@ -90,7 +90,7 @@ describe("Orm migrations", () => {
                             Filename: "foo.sqlite",
                             Name: "sqlite",
                             Migration: {
-                                TransactionMode: MigrationTransactionMode.PerFile
+                                TransactionMode: MigrationTransactionMode.PerMigration
                             }
                         },
                     ]

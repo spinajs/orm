@@ -17,17 +17,16 @@ export enum QueryContext {
 /**
  * Transaction mode when migration DB
  */
-export enum MigrationTransactionMode
-{
+export enum MigrationTransactionMode {
     /**
      * Migration is run whithout transaction
      */
     None,
 
     /**
-     * Transaction per migration file.
+     * On transaction for one migration - every migration has its own
      */
-    PerFile,
+    PerMigration,
 }
 
 /**
@@ -80,16 +79,24 @@ export interface IDriverOptions {
      */
     Name: string;
 
-    Migration: {
-        /**
-         * Migration table name, if not set default is spinajs_orm_migrations
-         */
-        MigrationTable: string;
+    Migration?: {
 
         /**
-         * How to run migration - with or without transaction
+         * Migration transaction options
          */
-        TransactionMode: MigrationTransactionMode;
+        Transaction?: {
+
+            /**
+             * Migration table name, if not set default is spinajs_orm_migrations
+             */
+            Table?: string,
+
+            /**
+             * How to run migration - with or without transaction
+             */
+            Mode?: MigrationTransactionMode
+        }
+   
     }
 
     /**
