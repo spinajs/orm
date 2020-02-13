@@ -10,7 +10,8 @@ export enum QueryContext {
     Select,
     Update,
     Delete,
-    Schema
+    Schema,
+    Transaction
 }
 
 /**
@@ -67,6 +68,13 @@ export interface IDriverOptions {
      * Migration table name, if not set default is spinajs_orm_migrations
      */
     MigrationTable: string;
+
+    /**
+     * Debug queries sent to orm driver. It writes raw queries queries to log for debug purposes
+     */
+    Debug?: {
+        Queries?: boolean;
+    }
 }
 
 export interface IMigrationDescriptor {

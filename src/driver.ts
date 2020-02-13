@@ -1,8 +1,9 @@
 import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor } from ".";
-import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder } from "./builders";
+import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder, QueryBuilder } from "./builders";
 import { ModelHydrator, PropertyHydrator, JoinHydrator } from './hydrators';
+import { Logger, Log } from '@spinajs/log';
 
 export abstract class OrmDriver extends ResolveStrategy {
 
@@ -12,6 +13,9 @@ export abstract class OrmDriver extends ResolveStrategy {
     public Options: IDriverOptions;
 
     public Container: IContainer;
+
+    @Logger({ module: "ORM" })
+    protected Log: Log;
 
     constructor(container: IContainer, options: IDriverOptions) {
         super();
@@ -27,7 +31,15 @@ export abstract class OrmDriver extends ResolveStrategy {
      * @param params binding parameters
      * @param context query context to optimize queries sent to DB
      */
-    public abstract execute(stmt: string | object, params: any[], context : QueryContext): Promise<any[] | any>;
+    public execute(stmt: string | object, params: any[], _context: QueryContext): Promise<any[] | any> {
+        if (this.Options.Debug?.Queries) {
+            this.Log.trace("[ QUERY ] raw query: {0} , bindings: {1}", stmt, params);
+        }
+
+        return undefined;
+    }
+
+
 
     /**
      * Checks if database is avaible
@@ -48,7 +60,7 @@ export abstract class OrmDriver extends ResolveStrategy {
 
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 
-    public resolve(container: IContainer){
+    public resolve(container: IContainer) {
         container.register(PropertyHydrator).as(ModelHydrator);
         container.register(JoinHydrator).as(ModelHydrator);
     }
@@ -92,4 +104,11 @@ export abstract class OrmDriver extends ResolveStrategy {
     public schema(): SchemaQueryBuilder {
         return this.Container.resolve(SchemaQueryBuilder, [this]);
     }
+
+    /**
+     * Executes all queries in transaction
+     * 
+     * @param queries - one or more queries to execute in transaction scope
+     */
+    public abstract transaction(queries: QueryBuilder[]): Promise<void>;
 }
