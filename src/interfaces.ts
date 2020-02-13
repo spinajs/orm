@@ -15,6 +15,22 @@ export enum QueryContext {
 }
 
 /**
+ * Transaction mode when migration DB
+ */
+export enum MigrationTransactionMode
+{
+    /**
+     * Migration is run whithout transaction
+     */
+    None,
+
+    /**
+     * Transaction per migration file.
+     */
+    PerFile,
+}
+
+/**
  * Configuration optiosn to set in configuration file and used in OrmDriver
  */
 export interface IDriverOptions {
@@ -64,10 +80,17 @@ export interface IDriverOptions {
      */
     Name: string;
 
-    /**
-     * Migration table name, if not set default is spinajs_orm_migrations
-     */
-    MigrationTable: string;
+    Migration: {
+        /**
+         * Migration table name, if not set default is spinajs_orm_migrations
+         */
+        MigrationTable: string;
+
+        /**
+         * How to run migration - with or without transaction
+         */
+        TransactionMode: MigrationTransactionMode;
+    }
 
     /**
      * Debug queries sent to orm driver. It writes raw queries queries to log for debug purposes
