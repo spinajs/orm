@@ -128,7 +128,7 @@ export class Orm extends AsyncResolveStrategy {
      * 
      * @param model model to register
      */
-    public registerModel<T extends ModelBase<any>>(model: Class<T>) {
+    protected registerModel<T extends ModelBase<any>>(model: Class<T>) {
         this.Models.push({
             file: `${model.name}.registered`,
             name: model.name,
@@ -145,7 +145,7 @@ export class Orm extends AsyncResolveStrategy {
      * 
      * @param model model to register
      */
-    public registerMigration<T extends OrmMigration>(migration: Class<T>) {
+    protected registerMigration<T extends OrmMigration>(migration: Class<T>) {
         this.Migrations.push({
             file: `${migration.name}.registered`,
             name: migration.name,
