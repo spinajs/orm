@@ -42,7 +42,7 @@ export class Orm extends AsyncResolveStrategy {
 
             const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
-            const migrationTableName = cn.Options.Migration?.Transaction?.Table || MIGRATION_TABLE_NAME;
+            const migrationTableName = cn.Options.Migration!.Transaction!.Table || MIGRATION_TABLE_NAME;
 
             await _ensureMigrationTable(cn, migrationTableName);
 
@@ -64,7 +64,7 @@ export class Orm extends AsyncResolveStrategy {
                     });
                 }
 
-                if (cn.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
+                if (cn.Options.Migration!.Transaction!.Mode === MigrationTransactionMode.PerMigration) {
                     await cn.transaction(trFunction);
                 } else {
                     await trFunction(cn);
@@ -128,7 +128,7 @@ export class Orm extends AsyncResolveStrategy {
      * 
      * @param model model to register
      */
-    protected registerModel<T extends ModelBase<any>>(model: Class<T>) {
+    public registerModel<T extends ModelBase<any>>(model: Class<T>) {
         this.Models.push({
             file: `${model.name}.registered`,
             name: model.name,
@@ -145,7 +145,7 @@ export class Orm extends AsyncResolveStrategy {
      * 
      * @param model model to register
      */
-    protected registerMigration<T extends OrmMigration>(migration: Class<T>) {
+    public registerMigration<T extends OrmMigration>(migration: Class<T>) {
         this.Migrations.push({
             file: `${migration.name}.registered`,
             name: migration.name,
