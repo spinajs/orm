@@ -113,7 +113,14 @@ export class Orm extends AsyncResolveStrategy {
 
     public async resolveAsync(): Promise<void> {
 
+        const migrateOnStartup = this.Configuration.get<boolean>("db.migrateOnStartup", false);
+
         await this.createConnections();
+        
+        if(migrateOnStartup){
+            await this.migrateUp();
+        }
+
         await this.reloadTableInfo();
 
         this.applyModelMixins();
