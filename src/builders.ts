@@ -1,4 +1,3 @@
-import { QueryBuilder } from './builders';
 import { Container, Inject, NewInstance } from "@spinajs/di";
 import { ArgumentException, NotImplementedException, InvalidOperationException } from "@spinajs/exceptions";
 import * as _ from "lodash";

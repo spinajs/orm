@@ -4,7 +4,7 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
 import _ from "lodash";
-import { IDriverOptions, IMigrationDescriptor, OrmMigration } from "./interfaces";
+import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactionMode } from "./interfaces";
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from "./model";
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
@@ -35,19 +35,17 @@ export class Orm extends AsyncResolveStrategy {
     protected Configuration: Configuration;
 
 
-    public async migrateUp(name?: string) {
+    public async migrateUp(name?: string): Promise<boolean> {
         const migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
 
         for (const m of migrations) {
 
             const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
             const cn = this.Connections.get(md.Connection);
+            const migrationTableName = cn.Options.Migration.MigrationTable || MIGRATION_TABLE_NAME;
 
-            const migrationTableName = cn.Options.MigrationTable || MIGRATION_TABLE_NAME;
-            const migrationTable = await cn.tableInfo(migrationTableName);
-            if (!migrationTable) {
-                await _buildSchemaTable(cn, migrationTableName);
-            }
+            await _ensureMigrationTable(cn, migrationTableName);
+
 
             const exists = await cn.select().from(migrationTableName).where({ Migration: m.name }).first();
             if (exists) {
@@ -55,27 +53,44 @@ export class Orm extends AsyncResolveStrategy {
                 continue;
             }
 
-            const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
             try {
-                await migration.up(cn);
-                await cn.insert().into(migrationTableName).values({
-                    Migration: m.name,
-                    CreatedAt: new Date()
-                });
+                const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
+                const trFunction = async (driver: OrmDriver) => {
+                    await migration.up(driver);
+
+                    await driver.insert().into(migrationTableName).values({
+                        Migration: m.name,
+                        CreatedAt: new Date()
+                    });
+                }
+
+                if (cn.Options.Migration.TransactionMode === MigrationTransactionMode.PerFile) {
+                    await cn.transaction(trFunction);
+                } else {
+                    await trFunction(cn);
+                }
+
                 this.Log.info(`Migration ${m.name} from file ${m.file} applied succesyfull`);
+
+                return true;
             } catch (ex) {
+
                 this.Log.error(ex, `Cannot execute migration ${m.name} from file ${m.file}`);
+                return false;
             }
         }
 
-        async function _buildSchemaTable(connection: OrmDriver, mTableName: string) {
-            await connection.schema().createTable(mTableName, (table) => {
-                table.int("Id").autoIncrement().primaryKey();
-                table.string("Migration").notNull();
-                table.dateTime("CreatedAt").notNull();
-            });
+        async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
+            const migrationTable = await connection.tableInfo(tableName);
+            if (!migrationTable) {
+                await connection.schema().createTable(tableName, (table) => {
+                    table.int("Id").autoIncrement().primaryKey();
+                    table.string("Migration").notNull();
+                    table.dateTime("CreatedAt").notNull();
+                });
+            }
         }
-     }
+    }
 
     /**
      * This function is exposed mainly for unit testing purposes. It reloads table information for models

@@ -5,6 +5,8 @@ import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQuery
 import { ModelHydrator, PropertyHydrator, JoinHydrator } from './hydrators';
 import { Logger, Log } from '@spinajs/log';
 
+export type TransactionCallback = (driver: OrmDriver) => Promise<any>;
+
 export abstract class OrmDriver extends ResolveStrategy {
 
     /**
@@ -38,8 +40,6 @@ export abstract class OrmDriver extends ResolveStrategy {
 
         return undefined;
     }
-
-
 
     /**
      * Checks if database is avaible
@@ -108,7 +108,8 @@ export abstract class OrmDriver extends ResolveStrategy {
     /**
      * Executes all queries in transaction
      * 
-     * @param queries - one or more queries to execute in transaction scope
+     * @param queryOrCallback - one or more queries to execute in transaction scope. If parameter is function
+     * its executed in transaction scope, thus all db operation in callback function are in transaction
      */
-    public abstract transaction(queries: QueryBuilder[]): Promise<void>;
+    public abstract transaction(queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void>;
 }
