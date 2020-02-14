@@ -80,7 +80,7 @@ describe("Orm migrations", () => {
                     dirs: {
                         migrations: [dir("./mocks/migrations")],
                         models: [dir("./mocks/models")],
-        
+
                     }
                 },
                 db: {
@@ -90,7 +90,9 @@ describe("Orm migrations", () => {
                             Filename: "foo.sqlite",
                             Name: "sqlite",
                             Migration: {
-                                TransactionMode: MigrationTransactionMode.PerMigration
+                                Transaction: {
+                                    Mode: MigrationTransactionMode.PerMigration
+                                }
                             }
                         },
                     ]
