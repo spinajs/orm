@@ -36,7 +36,7 @@ export abstract class OrmDriver extends ResolveStrategy {
     public execute(stmt: string | object, params: any[], context: QueryContext): Promise<any[] | any> {
 
         if (this.Options.Debug?.Queries) {
-            this.Log.trace("[ QUERY ] raw query: {0} , bindings: {1}, context: {2}", stmt, params.join(","), context);
+            this.Log.trace("[ QUERY ] raw query: %s , bindings: %s, context: %s", stmt, params.join(","), context);
         }
 
         return undefined;
