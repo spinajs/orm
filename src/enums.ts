@@ -59,6 +59,7 @@ export enum WhereOperators {
     NOT_NULL = "is not null",
     BETWEEN = "between",
     NOT_BETWEEN = "not between",
+    LIKE = "like"
 }
 
 
