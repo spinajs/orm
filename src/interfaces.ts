@@ -367,10 +367,6 @@ export interface IQueryCompiler {
     compile(): ICompilerOutput
 }
 
-export interface IOrderByCompiler {
-    sort(builder: IOrderByBuilder): ICompilerOutput;
-}
-
 export interface ILimitCompiler {
     limit(builder: ILimitBuilder): ICompilerOutput;
 }
@@ -416,6 +412,12 @@ export abstract class TableQueryCompiler implements IQueryCompiler {
 
 @NewInstance()
 export abstract class ColumnQueryCompiler implements IQueryCompiler {
+    public abstract compile(): ICompilerOutput;
+}
+
+
+@NewInstance()
+export abstract class OrderByQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
