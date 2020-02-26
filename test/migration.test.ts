@@ -1,3 +1,4 @@
+import { NonDbPropertyHydrator } from './../src/hydrators';
 import { Configuration } from "@spinajs/configuration";
 import { DI } from "@spinajs/di";
 import * as chai from 'chai';
@@ -7,7 +8,7 @@ import { Orm } from '../src/orm';
 import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeTableQueryCompiler, FakeColumnQueryCompiler, dir } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
-import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, PropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
+import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, DbPropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1";
 
 
@@ -34,7 +35,9 @@ describe("Orm migrations", () => {
         DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
         DI.register(FakeColumnQueryCompiler).as(ColumnQueryCompiler);
 
-        DI.register(PropertyHydrator).as(ModelHydrator);
+        DI.register(DbPropertyHydrator).as(ModelHydrator);
+        DI.register(NonDbPropertyHydrator).as(ModelHydrator);
+
 
         DI.resolve(LogModule);
     });

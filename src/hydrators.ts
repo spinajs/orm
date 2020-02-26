@@ -4,8 +4,8 @@ export abstract class ModelHydrator {
     public abstract hydrate(target: any, values: any): void;
 }
 
- 
-export class PropertyHydrator extends ModelHydrator {
+
+export class DbPropertyHydrator extends ModelHydrator {
 
     public hydrate<T>(target: ModelBase<T>, values: any): void {
 
@@ -24,7 +24,25 @@ export class PropertyHydrator extends ModelHydrator {
     }
 }
 
- 
+export class NonDbPropertyHydrator extends ModelHydrator {
+
+    public hydrate<T>(target: ModelBase<T>, values: any): void {
+        
+        const descriptor = target.ModelDescriptor;
+        if (!descriptor) {
+            throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
+        }   
+
+        // get only properties that are not in DB
+        const keys = Object.keys(values).filter(k => /\$\$(.*)\$\$/.test(k) === false && descriptor.Columns?.find(c => c.Name === k) === undefined);
+        keys.forEach(k => {
+            (target as any)[k] = values[k];
+        });
+    }
+
+}
+
+
 export class JoinHydrator extends ModelHydrator {
     // tslint:disable-next-line: no-empty
     public hydrate(_target: any, _values: any): void {

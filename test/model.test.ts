@@ -1,4 +1,4 @@
-import { PropertyHydrator, ModelHydrator } from './../src/hydrators';
+import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
 import { SelectQueryBuilder } from './../src/builders';
@@ -16,8 +16,9 @@ import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { RawModel } from './mocks/models/RawModel';
-import {   Model, Connection } from '../src/decorators';
+import { Model, Connection } from '../src/decorators';
 import { ModelBase } from "./../src/model";
+import { Model3 } from './mocks/models/Model3';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -42,7 +43,8 @@ describe("General model tests", () => {
         DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
 
 
-        DI.register(PropertyHydrator).as(ModelHydrator);
+        DI.register(DbPropertyHydrator).as(ModelHydrator);
+        DI.register(NonDbPropertyHydrator).as(ModelHydrator);
 
 
         DI.resolve(LogModule);
@@ -478,6 +480,23 @@ describe("General model tests", () => {
         expect(toDB.calledOnce).to.be.true;
         expect(compiler.calledOnce).to.be.true;
     })
+
+    it("hydrate should set non db properties", async () => {
+
+        const test = new Model3();
+        test.Id = 1;
+        test.Foo.set("bar", "baz");
+
+        const newMap = new Map<string, string>();
+        newMap.set("zar", "far");
+
+        const test2 = new Model3({ ...test, Foo: new Map([...test.Foo, ...newMap]) });
+
+        expect(test2.Id).to.eq(1);
+        expect(test2.Foo.size).to.eq(2);
+        expect(test2.Foo.has("bar")).to.be.true;
+        expect(test2.Foo.has("zar")).to.be.true;
+    });
 
     it("hydrate should call converter if avaible", async () => {
 

@@ -2,7 +2,7 @@ import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor } from ".";
 import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder, QueryBuilder } from "./builders";
-import { ModelHydrator, PropertyHydrator, JoinHydrator } from './hydrators';
+import { ModelHydrator, DbPropertyHydrator, JoinHydrator, NonDbPropertyHydrator } from './hydrators';
 import { Logger, Log } from '@spinajs/log';
 
 export type TransactionCallback = (driver: OrmDriver) => Promise<any>;
@@ -62,7 +62,8 @@ export abstract class OrmDriver extends ResolveStrategy {
     public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 
     public resolve(container: IContainer) {
-        container.register(PropertyHydrator).as(ModelHydrator);
+        container.register(DbPropertyHydrator).as(ModelHydrator);
+        container.register(NonDbPropertyHydrator).as(ModelHydrator);
         container.register(JoinHydrator).as(ModelHydrator);
     }
 
