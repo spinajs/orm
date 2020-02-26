@@ -75,7 +75,7 @@ export abstract class ModelBase<T> {
      * 
      * @returns {SelectQueryBuilder} fluent query builder to add more conditions if needed
      */
-    public static where(_column: string | boolean | WhereFunction | RawQuery | {}, _operator?: WhereOperators | any, _value?: any): SelectQueryBuilder {
+    public static where<U>(_column: string | boolean | WhereFunction | RawQuery | {}, _operator?: WhereOperators | any, _value?: any): SelectQueryBuilder<U> {
         throw Error("Not implemented");
     }
 

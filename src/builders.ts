@@ -20,7 +20,7 @@ function isWhereOperator(val: any) {
  */
 @NewInstance()
 @Inject(Container)
-export class QueryBuilder implements IQueryBuilder {
+export class QueryBuilder<T = any> implements IQueryBuilder {
 
     protected _method: QueryMethod;
     protected _table: string;
@@ -90,7 +90,7 @@ export class QueryBuilder implements IQueryBuilder {
         throw new NotImplementedException();
     }
 
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) : Promise<T> {
         const compiled = this.toDB();
         return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
             if (this._model && !this._nonSelect) {
@@ -100,7 +100,7 @@ export class QueryBuilder implements IQueryBuilder {
             } else {
                 resolve(result);
             }
-        }, reject);
+        }, reject) as Promise<any>;
     }
 
     /**
@@ -486,7 +486,7 @@ export class WhereBuilder implements IWhereBuilder {
 // tslint:disable-next-line
 export interface SelectQueryBuilder extends ISelectQueryBuilder { }
 
-export class SelectQueryBuilder extends QueryBuilder {
+export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
     /**
      * column query props
@@ -589,7 +589,7 @@ export class SelectQueryBuilder extends QueryBuilder {
         return compiler.compile();
     }
 
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) {
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) : Promise<T> {
         return super.then((result: any[]) => {
             if (this._first) {
                 if (this._fail && result.length === 0) {

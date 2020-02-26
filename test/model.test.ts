@@ -333,7 +333,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate<Model1>(1, { Bar: "hello" });
+        const result = await Model1.firstOrCreate(1, { Bar: "hello" });
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
