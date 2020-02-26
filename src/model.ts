@@ -207,7 +207,7 @@ export abstract class ModelBase<T> {
                 (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
             }
 
-            this.PrimaryKeyValue = id[0];
+            this.PrimaryKeyValue = id;
         }
     }
 
