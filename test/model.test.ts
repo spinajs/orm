@@ -287,6 +287,57 @@ describe("General model tests", () => {
         expect(result.PrimaryKeyValue).to.eq(1);
     })
 
+    it("firstOrCreate should work with data", async () => {
+
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+
+        const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
+            res([]);
+        })).onCall(1).returns(new Promise((res) => {
+            res([1]);
+        }));
+
+        const result = await Model1.firstOrCreate<Model1>(1, { Bar: "hello" });
+        expect(execute.calledTwice).to.be.true;
+        expect(result).to.be.not.null;
+        expect(result).instanceOf(Model1);
+        expect(result.PrimaryKeyValue).to.eq(1);
+        expect(result.Bar).to.eq("hello");
+
+    })
+
+    it("firstOrNew with data should work", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const result = await Model1.firstOrNew<Model1>(1, { Id: 666 });
+        expect(result).to.be.not.null;
+        expect(result).instanceOf(Model1);
+        expect(result.PrimaryKeyValue).to.eq(666);;
+    });
+
     it("firstOrNew should work", async () => {
 
         // @ts-ignore

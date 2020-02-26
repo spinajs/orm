@@ -66,8 +66,16 @@ export abstract class ModelBase<T> {
         throw Error("Not implemented");
     }
 
-    // @ts-ignore
-    public static where(column: string | boolean | WhereFunction | RawQuery | {}, operator?: WhereOperators | any, value?: any): SelectQueryBuilder {
+    /**
+     * Search entities in db
+     * 
+     * @param column column to search or function
+     * @param operator boolean operator
+     * @param value value to compare
+     * 
+     * @returns {SelectQueryBuilder} fluent query builder to add more conditions if needed
+     */
+    public static where(_column: string | boolean | WhereFunction | RawQuery | {}, _operator?: WhereOperators | any, _value?: any): SelectQueryBuilder {
         throw Error("Not implemented");
     }
 
@@ -79,8 +87,12 @@ export abstract class ModelBase<T> {
         throw Error("Not implemented");
     }
 
-    // @ts-ignore
-    public static findOrFail<U>(pk: any): Promise<U> {
+    /**
+     * Finds model by specified pk
+     * 
+     * @param _pk pk to find
+     */
+    public static findOrFail<U>(_pk: any): Promise<U> {
         throw Error("Not implemented");
     }
 
@@ -89,8 +101,18 @@ export abstract class ModelBase<T> {
      * Checks if model with pk key exists and if not creates one and saves to db
      * 
      * @param pk key to check
+     * @param {any} data - initial model data
      */
-    public static firstOrCreate<U>(_pk: any): Promise<U> {
+    public static firstOrCreate<U>(_pk: any, _data?: any): Promise<U> {
+        throw Error("Not implemented");
+    }
+
+    /**
+     * Creates new model & saves is to db
+     * 
+     * @param {any} data - initial model data
+     */
+    public static create<U>(_data?: any): Promise<U> {
         throw Error("Not implemented");
     }
 
@@ -99,8 +121,9 @@ export abstract class ModelBase<T> {
      * Checks if model with pk key exists and if not creates one AND NOT save in db
      * 
      * @param pk key to check
+     * @param {any} data - initial model data
      */
-    public static firstOrNew<U>(_pk: any): Promise<U> {
+    public static firstOrNew<U>(_pk: any, _data?: any): Promise<U> {
         throw Error("Not implemented");
     }
 
@@ -132,6 +155,9 @@ export abstract class ModelBase<T> {
         DI.resolve(Array.ofType(ModelHydrator)).forEach(h => h.hydrate(this, data));
     }
 
+    /**
+     * Extracts all data from model. It takes only properties that exists in DB
+     */
     public dehydrate() {
 
         const obj = {};
@@ -144,6 +170,9 @@ export abstract class ModelBase<T> {
         return obj;
     }
 
+    /**
+     * deletes enitty from db. If model have SoftDelete decorator, model is marked as deleted
+     */
     public async destroy() {
 
         if (!this.PrimaryKeyValue) {
@@ -152,6 +181,9 @@ export abstract class ModelBase<T> {
         await (this.constructor as any).destroy(this.PrimaryKeyValue);
     }
 
+    /**
+     * Save all changes to db
+     */
     public async save() {
         if (this.PrimaryKeyValue) {
             const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
@@ -284,13 +316,19 @@ export const MODEL_STATIC_MIXINS = {
         }
     },
 
-    async firstOrCreate(pk: any): Promise<any> {
+    async create(data?: any): Promise<any> {
+        const entity = new (Function.prototype.bind.apply(this))(data);
+        await (entity as ModelBase<any>).save();
+        return entity;
+    },
+
+    async firstOrCreate(pk: any, data? : any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
         let entity = await query.where(description.PrimaryKey, pk).first() as any;
 
         if (!entity) {
-            entity = new (Function.prototype.bind.apply(this))();
+            entity = new (Function.prototype.bind.apply(this))(data);
             await (entity as ModelBase<any>).save();
             return entity;
         }
@@ -298,13 +336,13 @@ export const MODEL_STATIC_MIXINS = {
         return entity;
     },
 
-    async firstOrNew(pk: any): Promise<any> {
+    async firstOrNew(pk: any, data? : any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
         let entity = await query.where(description.PrimaryKey, pk).first() as any;
 
         if (!entity) {
-            entity = new (Function.prototype.bind.apply(this))();
+            entity = new (Function.prototype.bind.apply(this))(data);
             return entity;
         }
 

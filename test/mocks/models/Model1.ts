@@ -20,4 +20,6 @@ export class Model1 extends ModelBase<Model1>
 
     @SoftDelete()
     public DeletedAt : Date;
+
+    public Bar : string;
 }
