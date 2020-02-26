@@ -307,8 +307,8 @@ export interface IQueryBuilder {
 export interface ILimitBuilder {
     take(count: number): this;
     skip(count: number): this;
-    first(): this;
-    firstOrFail(): this;
+    first<T>(): Promise<T>;
+    firstOrFail<T>(): Promise<T>;
     getLimits(): IQueryLimit;
 }
 
@@ -420,7 +420,6 @@ export abstract class ColumnQueryCompiler implements IQueryCompiler {
 export abstract class OrderByQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
-
 
 /**
  * ==========================================================

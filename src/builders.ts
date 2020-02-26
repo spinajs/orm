@@ -90,7 +90,7 @@ export class QueryBuilder<T = any> implements IQueryBuilder {
         throw new NotImplementedException();
     }
 
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) : Promise<T> {
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
         const compiled = this.toDB();
         return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
             if (this._model && !this._nonSelect) {
@@ -167,13 +167,13 @@ export class LimitBuilder implements ILimitBuilder {
         return this;
     }
 
-    public first() {
+    public async first<T>() : Promise<T> {
         this._first = true;
         this._limit.limit = 1;
-        return this;
+        return (await this) as any;
     }
 
-    public firstOrFail() {
+    public firstOrFail<T>(): Promise<T> {
         this._fail = true;
         return this.first();
     }
@@ -589,7 +589,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
         return compiler.compile();
     }
 
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void) : Promise<T> {
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
         return super.then((result: any[]) => {
             if (this._first) {
                 if (this._fail && result.length === 0) {
@@ -602,6 +602,10 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
                 resolve(result);
             }
         }, reject)
+    }
+
+    public async execute(): Promise<T> {
+        return (await this) as any;
     }
 }
 
