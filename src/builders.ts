@@ -423,13 +423,13 @@ export class WhereBuilder implements IWhereBuilder {
     }
 
     public whereNotNull(column: string): this {
-        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL, column]));
+        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL]));
 
         return this;
     }
 
     public whereNull(column: string): this {
-        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NULL, column]));
+        this._statements.push(this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NULL]));
         return this;
     }
 
