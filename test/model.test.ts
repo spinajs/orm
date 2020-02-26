@@ -1,7 +1,7 @@
 import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
-import { SelectQueryBuilder } from './../src/builders';
+import { SelectQueryBuilder, UpdateQueryBuilder } from './../src/builders';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
@@ -257,6 +257,30 @@ describe("General model tests", () => {
         await RawModel.destroy(1);
         expect(execute.calledOnce).to.be.true;
     })
+
+    it("update mixin should work", async () => {
+
+
+        // @ts-ignore
+        const orm = await db();
+
+        sinon.stub(FakeUpdateQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([]);
+        }));
+
+        const query = RawModel.update({ Bar: "hello" }).where("Id", 1);
+        await query;
+
+        expect(query).to.be.instanceOf(UpdateQueryBuilder);
+        expect((query.Value as any).Bar).to.eq("hello");
+        expect(execute.calledOnce).to.be.true;
+    })
+
 
     it("firstOrCreate mixin should work", async () => {
 

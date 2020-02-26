@@ -79,6 +79,15 @@ export abstract class ModelBase<T> {
         throw Error("Not implemented");
     }
 
+    /**
+     * Updates multiple records at once with provided value
+     * 
+     * @param _data data to set
+     */
+    public static update<U, K extends U>(_data?: K): UpdateQueryBuilder {
+        throw Error("Not implemented");
+    }
+
 
     public static find<U>(pks: any[]): Promise<U[]>;
     public static find<U>(pks: any): Promise<U>;
@@ -268,6 +277,11 @@ export const MODEL_STATIC_MIXINS = {
         return query.where(column, operator, value);
     },
 
+    update(data: any): UpdateQueryBuilder {
+        const { query } = _createQuery(this as any, UpdateQueryBuilder);
+        return query.update(data);
+    },
+
     async all(): Promise<any[]> {
         const { query } = _createQuery(this as any, SelectQueryBuilder);
         return await query;
@@ -322,7 +336,7 @@ export const MODEL_STATIC_MIXINS = {
         return entity;
     },
 
-    async firstOrCreate(pk: any, data? : any): Promise<any> {
+    async firstOrCreate(pk: any, data?: any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
         let entity = await query.where(description.PrimaryKey, pk).first() as any;
@@ -336,7 +350,7 @@ export const MODEL_STATIC_MIXINS = {
         return entity;
     },
 
-    async firstOrNew(pk: any, data? : any): Promise<any> {
+    async firstOrNew(pk: any, data?: any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
         let entity = await query.where(description.PrimaryKey, pk).first() as any;

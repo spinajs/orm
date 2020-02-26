@@ -8,4 +8,6 @@ export class RawModel extends ModelBase<RawModel>
 {
     @Primary()
     public Id: number;
+
+    public Bar : string;
 }
