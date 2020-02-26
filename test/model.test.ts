@@ -301,7 +301,7 @@ describe("General model tests", () => {
         const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
             res([]);
         })).onCall(1).returns(new Promise((res) => {
-            res([1]);
+            res(1);
         }));
 
         const result = await Model1.firstOrCreate<Model1>(1);
@@ -330,7 +330,7 @@ describe("General model tests", () => {
         const execute = sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
             res([]);
         })).onCall(1).returns(new Promise((res) => {
-            res([1]);
+            res(1);
         }));
 
         const result = await Model1.firstOrCreate<Model1>(1, { Bar: "hello" });
