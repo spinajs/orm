@@ -358,7 +358,7 @@ export class WhereBuilder implements IWhereBuilder {
                 throw new ArgumentException(`value cannot be undefined`);
             }
 
-            if (!isString(c)) {
+            if (!_.isString(c)) {
                 throw new ArgumentException(`column is not of type string.`)
             }
 
@@ -384,7 +384,7 @@ export class WhereBuilder implements IWhereBuilder {
                 throw new ArgumentException(`operator ${o} is invalid`);
             }
 
-            if (!isString(c)) {
+            if (!_.isString(c)) {
                 throw new ArgumentException(`column is not of type string.`)
             }
 
