@@ -2,7 +2,6 @@ import { Container, Inject, NewInstance } from "@spinajs/di";
 import { ArgumentException, NotImplementedException, InvalidOperationException } from "@spinajs/exceptions";
 import * as _ from "lodash";
 import { use } from "typescript-mix";
-import { isBoolean, isFunction, isObject, isString } from 'util';
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
 import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
@@ -11,7 +10,7 @@ import { OrmDriver } from "./driver";
 
 
 function isWhereOperator(val: any) {
-    return isString(val) && Object.values(WhereOperators).includes((val as any).toLowerCase());
+    return _.isString(val) && Object.values(WhereOperators).includes((val as any).toLowerCase());
 }
 
 /**
@@ -317,7 +316,7 @@ export class WhereBuilder implements IWhereBuilder {
         const self = this;
 
         // Support "where true || where false" 
-        if (isBoolean(column)) {
+        if (_.isBoolean(column)) {
             return this.where(RawQuery.create(column ? "TRUE" : "FALSE"));
         }
 
@@ -327,7 +326,7 @@ export class WhereBuilder implements IWhereBuilder {
         }
 
         // handle nested where's
-        if (isFunction(column)) {
+        if (_.isFunction(column)) {
             const builder = new WhereBuilder(this._container);
             (column as WhereFunction).call(builder);
 
@@ -336,7 +335,7 @@ export class WhereBuilder implements IWhereBuilder {
         }
 
         // handle simple key = object[key] AND ....
-        if (isObject(column)) {
+        if (_.isObject(column)) {
             return this.whereObject(column);
         }
 
