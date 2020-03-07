@@ -349,7 +349,35 @@ export interface IWhereBuilder {
     clearWhere(): this;
 }
 
-export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByBuilder, ILimitBuilder, IWhereBuilder {
+export interface IJoinBuilder
+{
+    Statements: IQueryStatement[];
+
+    innerJoin(query : RawQuery) : this;
+    innerJoin(table : string, callback : WhereFunction) : this;
+    innerJoin(table : string, foreignKey : string, primaryKey : string) : this;
+
+    leftJoin(table : string, callback : WhereFunction) : this;
+    leftJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    
+    leftOuterJoin(table : string, callback : WhereFunction) : this;
+    leftOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    
+    rightJoin(table : string, callback : WhereFunction) : this;
+    rightJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    
+    rightOuterJoin(table : string, callback : WhereFunction) : this;
+    rightOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    
+    fullOuterJoin(table : string, callback : WhereFunction) : this;
+    fullOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    
+    crossJoin(table : string, callback : WhereFunction) : this;
+    crossJoin(table : string, foreignKey : string, primaryKey : string) : this;
+
+}
+
+export interface ISelectQueryBuilder extends IColumnsBuilder, IOrderByBuilder, ILimitBuilder, IWhereBuilder, IJoinBuilder {
     min(column: string, as?: string): this;
     max(column: string, as?: string): this;
     count(column: string, as?: string): this;

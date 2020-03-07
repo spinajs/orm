@@ -3,7 +3,7 @@ import { ArgumentException, NotImplementedException, InvalidOperationException }
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext } from "./interfaces";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
 import { WhereFunction } from "./types";
 import { OrmDriver } from "./driver";
@@ -166,7 +166,7 @@ export class LimitBuilder implements ILimitBuilder {
         return this;
     }
 
-    public async first<T>() : Promise<T> {
+    public async first<T>(): Promise<T> {
         this._first = true;
         this._limit.limit = 1;
         return (await this) as any;
@@ -285,6 +285,53 @@ export class RawQuery {
     constructor(query: string, bindings?: any[]) {
         this._query = query;
         this._bindings = bindings;
+    }
+}
+
+export class JoinBuilder implements IJoinBuilder {
+    protected _joinStatements: IQueryStatement[];
+
+    public innerJoin(query : RawQuery): this; 
+    public innerJoin(table: string, callback: WhereFunction): this;
+    public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public innerJoin(table: string | RawQuery, foreignKey?: string | WhereFunction, primaryKey?: string): this {
+        throw new Error("Method not implemented.");
+    }
+
+    public leftJoin(table: string, callback: WhereFunction): this;
+    public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public leftJoin(table: any, foreignKey: any, primaryKey?: any): this {
+        throw new Error("Method not implemented.");
+    }
+
+    public leftOuterJoin(table: string, callback: WhereFunction): this;
+    public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public leftOuterJoin(table: any, foreignKey: any, primaryKey?: any): this {
+        throw new Error("Method not implemented.");
+    }
+
+    public rightJoin(table: string, callback: WhereFunction): this;
+    public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public rightJoin(table: any, foreignKey: any, primaryKey?: any) : this {
+        throw new Error("Method not implemented.");
+    }
+
+    public rightOuterJoin(table: string, callback: WhereFunction): this;
+    public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public rightOuterJoin(table: any, foreignKey: any, primaryKey?: any) : this {
+        throw new Error("Method not implemented.");
+    }
+
+    public fullOuterJoin(table: string, callback: WhereFunction): this;
+    public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public fullOuterJoin(table: any, foreignKey: any, primaryKey?: any) : this {
+        throw new Error("Method not implemented.");
+    }
+
+    public crossJoin(table: string, callback: WhereFunction): this;
+    public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
+    public crossJoin(table: any, foreignKey: any, primaryKey?: any) : this {
+        throw new Error("Method not implemented.");
     }
 }
 
