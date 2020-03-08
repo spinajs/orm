@@ -3,7 +3,7 @@ import { ArgumentException, NotImplementedException, InvalidOperationException }
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder } from "./interfaces";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder, OnDuplicateQueryCompiler } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
 import { WhereFunction } from "./types";
 import { OrmDriver } from "./driver";
@@ -705,6 +705,53 @@ export class DeleteQueryBuilder extends QueryBuilder {
     }
 }
 
+export class OnDuplicateQueryBuilder
+{
+    protected _column : string;
+    
+    protected _parent : InsertQueryBuilder;
+
+    protected _columnsToUpdate : string[];
+
+    protected _container : Container;
+
+    constructor(container: Container,  insertQueryBuilder : InsertQueryBuilder, column?: string)
+    {
+        this._parent = insertQueryBuilder;
+        this._column = column;
+        this._container = container;
+    }
+
+    public getColumn() : string{
+        return this._column;
+    }
+
+    public getColumnsToUpdate() {
+
+    }
+
+    public getParent() {
+        return this._parent;
+    }
+
+    public update(columns: string[] | {})
+    {
+        if()
+        this._columnsToUpdate = columns;
+        return this;
+    }
+
+ 
+
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
+        return this._parent.then(resolve, reject);
+    }
+
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<OnDuplicateQueryCompiler>(OnDuplicateQueryCompiler, [this]).compile();
+    }
+}
+
 // tslint:disable-next-line
 export interface UpdateQueryBuilder extends IWhereBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder {
@@ -758,7 +805,7 @@ export class InsertQueryBuilder extends QueryBuilder {
 
     protected _columns: ColumnStatement[];
 
-    protected _onDuplicate: UpdateQueryBuilder;
+    protected _onDuplicate: OnDuplicateQueryBuilder;
 
     @use(ColumnsBuilder)
     /// @ts-ignore
@@ -813,11 +860,10 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public onDuplicate(callback: (this: UpdateQueryBuilder) => void): InsertQueryBuilder {
-        this._onDuplicate = new UpdateQueryBuilder(this._container, this._driver, this._model);
-        callback.call(this._onDuplicate);
+    public onDuplicate(column? : string): OnDuplicateQueryBuilder {
 
-        return this;
+        this._onDuplicate = new OnDuplicateQueryBuilder(this._container, this, column);
+        return this._onDuplicate;
     }
 
     public toDB(): ICompilerOutput {

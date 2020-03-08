@@ -75,7 +75,7 @@ export abstract class ModelBase<T> {
      * 
      * @returns {SelectQueryBuilder} fluent query builder to add more conditions if needed
      */
-    public static where<U>(_column: string | boolean | WhereFunction | RawQuery | {}, _operator?: WhereOperators | any, _value?: any): SelectQueryBuilder<U> {
+    public static where<T>(_column: string | boolean | WhereFunction | RawQuery | {}, _operator?: WhereOperators | any, _value?: any): SelectQueryBuilder<T> {
         throw Error("Not implemented");
     }
 
@@ -84,15 +84,15 @@ export abstract class ModelBase<T> {
      * 
      * @param _data data to set
      */
-    public static update<U, K extends U>(_data?: K): UpdateQueryBuilder {
+    public static update<T, K extends T>(_data?: K): UpdateQueryBuilder {
         throw Error("Not implemented");
     }
 
 
-    public static find<U>(pks: any[]): Promise<U[]>;
-    public static find<U>(pks: any): Promise<U>;
+    public static find<T>(pks: any[]): Promise<T[]>;
+    public static find<T>(pks: any): Promise<T>;
     // @ts-ignore
-    public static find<U>(pks: any | any[]): Promise<U | U[]> {
+    public static find<T>(pks: any | any[]): Promise<T | T[]> {
         throw Error("Not implemented");
     }
 
@@ -101,18 +101,18 @@ export abstract class ModelBase<T> {
      * 
      * @param _pk pk to find
      */
-    public static findOrFail<U>(_pk: any): Promise<U> {
+    public static findOrFail<T>(_pk: any): Promise<T> {
         throw Error("Not implemented");
     }
 
     /**
      * 
-     * Checks if model with pk key exists and if not creates one and saves to db
+     * Checks if model with pk key / unique fields exists and if not creates one and saves to db
      * 
      * @param pk key to check
      * @param {any} data - initial model data
      */
-    public static firstOrCreate<U>(_pk: any, _data?: any): Promise<U> {
+    public static firstOrCreate<T>(_pk: any, _data?: any): Promise<T> {
         throw Error("Not implemented");
     }
 
@@ -121,18 +121,18 @@ export abstract class ModelBase<T> {
      * 
      * @param {any} data - initial model data
      */
-    public static create<U>(_data?: any): Promise<U> {
+    public static create<T>(_data?: any): Promise<T> {
         throw Error("Not implemented");
     }
 
     /**
      * 
-     * Checks if model with pk key exists and if not creates one AND NOT save in db
+     * Checks if model with pk key or unique fields exists and if not creates one AND NOT save in db
      * 
      * @param pk key to check
      * @param {any} data - initial model data
      */
-    public static firstOrNew<U>(_pk: any, _data?: any): Promise<U> {
+    public static firstOrNew<T>(_pk: any, _data?: any): Promise<T> {
         throw Error("Not implemented");
     }
 
@@ -180,7 +180,7 @@ export abstract class ModelBase<T> {
     }
 
     /**
-     * deletes enitty from db. If model have SoftDelete decorator, model is marked as deleted
+     * deletes enitt from db. If model have SoftDelete decorator, model is marked as deleted
      */
     public async destroy() {
 
@@ -191,11 +191,17 @@ export abstract class ModelBase<T> {
     }
 
     /**
-     * Save all changes to db
+     * Save all changes to db. It creates new entry id db or updates existing one if
+     * primary key exists
      */
     public async save() {
         if (this.PrimaryKeyValue) {
             const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
+
+            if (this.ModelDescriptor.Timestamps.UpdatedAt) {
+                (this as any)[this.ModelDescriptor.Timestamps.UpdatedAt] = new Date();
+            }
+
             await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
 
         } else {
@@ -203,12 +209,23 @@ export abstract class ModelBase<T> {
             const { query } = _createQuery(this.constructor, InsertQueryBuilder);
             const id = await query.values(this.dehydrate());
 
-            if (this.ModelDescriptor.Timestamps.UpdatedAt) {
+            if (this.ModelDescriptor.Timestamps.CreatedAt) {
                 (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
             }
 
             this.PrimaryKeyValue = id;
         }
+    }
+
+    /**
+     * Try to insert new value
+     */
+    public async insert(){
+
+        const {query} = _createQuery(this.constructor, InsertQueryBuilder);
+        query.values(this.dehydrate());
+
+        return query;
     }
 
     /**

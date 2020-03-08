@@ -36,6 +36,7 @@ export function extractDecoratorDescriptor(callback: (model: IModelDescrtiptor, 
                     CreatedAt: "",
                     UpdatedAt: ""
                 },
+                UniqueColumns: []
             };
 
             if (!base) {
@@ -162,5 +163,11 @@ export function Archived() {
 export function Primary() {
     return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
         model.PrimaryKey = propertyKey;
+    });
+}
+
+export function Unique() {
+    return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+        model.UniqueColumns.push(propertyKey)
     });
 }

@@ -156,6 +156,11 @@ export interface IModelDescrtiptor {
      * Column  / fields list in model
      */
     Columns: IColumnDescriptor[];
+
+    /**
+     * List of unique columns ( UNIQUE constraint )
+     */
+    UniqueColumns: string[];
 }
 
 
@@ -222,6 +227,11 @@ export interface IColumnDescriptor {
      * JSON schema definition build for this column. Used to automate data validation
      */
     Schema: any;
+
+     /**
+     * Does have unique constraint
+     */
+    Unique: boolean;
 }
 
 /**
@@ -430,6 +440,11 @@ export abstract class UpdateQueryCompiler implements IQueryCompiler {
 
 @NewInstance()
 export abstract class InsertQueryCompiler implements IQueryCompiler {
+    public abstract compile(): ICompilerOutput;
+}
+
+@NewInstance()
+export abstract class OnDuplicateQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 
