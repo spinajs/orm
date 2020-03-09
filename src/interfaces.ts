@@ -151,7 +151,6 @@ export interface IModelDescrtiptor {
      */
     Archived: IModelArchivedDescriptor;
 
-
     /**
      * Column  / fields list in model
      */

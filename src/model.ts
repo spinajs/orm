@@ -62,7 +62,19 @@ export abstract class ModelBase<T> {
         (this as any)[this.PrimaryKeyName] = newVal;
     }
 
-    public static async all<U>(): Promise<U[]> {
+    /**
+     * Get all data from db
+     */
+    public static async all<U>(_page?: number, _perPage?: number): Promise<U[]> {
+        throw Error("Not implemented");
+    }
+
+    /**
+     * Inserts data to DB
+     * 
+     * @param _data data to insert
+     */
+    public static insert<T>(_data: T | any[]): InsertQueryBuilder {
         throw Error("Not implemented");
     }
 
@@ -84,7 +96,7 @@ export abstract class ModelBase<T> {
      * 
      * @param _data data to set
      */
-    public static update<T, K extends T>(_data?: K): UpdateQueryBuilder {
+    public static update<T, K extends T>(_data?: K[]): Promise<void> {
         throw Error("Not implemented");
     }
 
@@ -294,14 +306,38 @@ export const MODEL_STATIC_MIXINS = {
         return query.where(column, operator, value);
     },
 
-    update(data: any): UpdateQueryBuilder {
-        const { query } = _createQuery(this as any, UpdateQueryBuilder);
-        return query.update(data);
+    async update(data: any[]): Promise<void> {
+
+        const updates = data.map(d => {
+            const { query } = _createQuery(this as any, UpdateQueryBuilder);
+            return query.update(d);
+        });
+
+        await Promise.all(updates);
     },
 
-    async all(): Promise<any[]> {
+    async all(page: number, perPage: number): Promise<any[]> {
         const { query } = _createQuery(this as any, SelectQueryBuilder);
+
+        if (page >= 0 && perPage > 0) {
+            query.take(perPage).skip(page * perPage);
+        }
+
         return await query;
+    },
+
+    insert(data: any[] | ModelBase<any>): InsertQueryBuilder {
+        const { query, description } = _createQuery(this as any, InsertQueryBuilder);
+
+        query.into(description.TableName);
+
+        if (data instanceof ModelBase) {
+            query.values(data.dehydrate());
+        } else {
+            query.values(data);
+        }
+
+        return query;
     },
 
     async find(pks: any | any[]): Promise<any> {
@@ -381,7 +417,7 @@ export const MODEL_STATIC_MIXINS = {
     async firstOrNew(data?: any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
-        
+
         // pk constrain
         if (data[description.PrimaryKey]) {
             query.where(description.PrimaryKey, data[description.PrimaryKey])
