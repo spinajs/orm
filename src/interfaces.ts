@@ -227,7 +227,7 @@ export interface IColumnDescriptor {
      */
     Schema: any;
 
-     /**
+    /**
      * Does have unique constraint
      */
     Unique: boolean;
@@ -358,30 +358,29 @@ export interface IWhereBuilder {
     clearWhere(): this;
 }
 
-export interface IJoinBuilder
-{
+export interface IJoinBuilder {
     JoinStatements: IQueryStatement[];
 
-    innerJoin(query : RawQuery) : this;
-    innerJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    innerJoin(query: RawQuery): this;
+    innerJoin(table: string, foreignKey: string, primaryKey: string): this;
 
-    leftJoin(query : RawQuery) : this;
-    leftJoin(table : string, foreignKey : string, primaryKey : string) : this;
-    
-    leftOuterJoin(query : RawQuery) : this;
-    leftOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
-    
-    rightJoin(query : RawQuery) : this;
-    rightJoin(table : string, foreignKey : string, primaryKey : string) : this;
-    
-    rightOuterJoin(query : RawQuery) : this;
-    rightOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
-    
-    fullOuterJoin(query : RawQuery) : this;
-    fullOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
-    
-    crossJoin(query : RawQuery) : this;
-    crossJoin(table : string, foreignKey : string, primaryKey : string) : this;
+    leftJoin(query: RawQuery): this;
+    leftJoin(table: string, foreignKey: string, primaryKey: string): this;
+
+    leftOuterJoin(query: RawQuery): this;
+    leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+
+    rightJoin(query: RawQuery): this;
+    rightJoin(table: string, foreignKey: string, primaryKey: string): this;
+
+    rightOuterJoin(query: RawQuery): this;
+    rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+
+    fullOuterJoin(query: RawQuery): this;
+    fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+
+    crossJoin(query: RawQuery): this;
+    crossJoin(table: string, foreignKey: string, primaryKey: string): this;
 
 }
 
