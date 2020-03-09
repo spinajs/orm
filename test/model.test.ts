@@ -1,7 +1,7 @@
 import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
-import { SelectQueryBuilder, UpdateQueryBuilder } from './../src/builders';
+import { SelectQueryBuilder } from './../src/builders';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
@@ -331,7 +331,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate<Model1>(1, { Bar: "hello" });
+        const result = await Model1.firstOrCreate<Model1>({ Bar: "hello" });
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
