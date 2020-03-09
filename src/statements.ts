@@ -1,6 +1,7 @@
 import { SelectQueryBuilder, WhereBuilder, RawQuery } from "./builders";
-import { ColumnMethods, WhereOperators } from "./enums";
+import { ColumnMethods, WhereOperators, JoinMethod } from "./enums";
 import { NewInstance } from "@spinajs/di";
+import _ from "lodash";
 
 export interface IQueryStatementResult {
     Statements: string[];
@@ -63,6 +64,33 @@ export abstract class WhereStatement implements IQueryStatement {
         this._column = column;
         this._operator = operator;
         this._value = value;
+    }
+
+    public abstract build(): IQueryStatementResult;
+}
+
+@NewInstance()
+export abstract class JoinStatement implements IQueryStatement {
+    
+    protected _table: string;
+    protected _method: JoinMethod;
+    protected _foreignKey: string;
+    protected _primaryKey: string;
+    protected _query: RawQuery;
+
+
+    constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string) {
+
+        this._method = method;
+
+        if (_.isString(table)) {
+            this._table = table;
+            this._foreignKey = foreignKey;
+            this._primaryKey = primaryKey;
+        }
+        else {
+            this._query = table;
+        }
     }
 
     public abstract build(): IQueryStatementResult;
@@ -155,9 +183,9 @@ export abstract class ColumnStatement implements IQueryStatement {
     public abstract build(): IQueryStatementResult;
 }
 
-export abstract class ColumnRawStatement implements IQueryStatement{
+export abstract class ColumnRawStatement implements IQueryStatement {
 
-    constructor(public RawQuery : RawQuery){
+    constructor(public RawQuery: RawQuery) {
 
     }
 

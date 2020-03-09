@@ -2,9 +2,9 @@ import { Container, Inject, NewInstance } from "@spinajs/di";
 import { ArgumentException, NotImplementedException, InvalidOperationException } from "@spinajs/exceptions";
 import * as _ from "lodash";
 import { use } from "typescript-mix";
-import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators } from "./enums";
-import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder, OnDuplicateQueryCompiler } from "./interfaces";
-import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement } from "./statements";
+import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators, JoinMethod } from "./enums";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder } from "./interfaces";
+import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement, JoinStatement } from "./statements";
 import { WhereFunction } from "./types";
 import { OrmDriver } from "./driver";
 
@@ -289,49 +289,73 @@ export class RawQuery {
 }
 
 export class JoinBuilder implements IJoinBuilder {
-    protected _joinStatements: IQueryStatement[];
 
-    public innerJoin(query : RawQuery): this; 
-    public innerJoin(table: string, callback: WhereFunction): this;
+    public get JoinStatements() {
+        return this._joinStatements;
+    }
+
+    protected _joinStatements: IQueryStatement[] = [];
+    protected _container: Container;
+
+    constructor(container: Container) {
+        this._container = container;
+        this._joinStatements = [];
+    }
+
+    public innerJoin(query: RawQuery): this;
     public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public innerJoin(table: string | RawQuery, foreignKey?: string | WhereFunction, primaryKey?: string): this {
-        throw new Error("Method not implemented.");
+    public innerJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.INNER, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public leftJoin(table: string, callback: WhereFunction): this;
+    public leftJoin(query: RawQuery): this;
     public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public leftJoin(table: any, foreignKey: any, primaryKey?: any): this {
-        throw new Error("Method not implemented.");
+    public leftJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public leftOuterJoin(table: string, callback: WhereFunction): this;
+    public leftOuterJoin(query: RawQuery): this;
     public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public leftOuterJoin(table: any, foreignKey: any, primaryKey?: any): this {
-        throw new Error("Method not implemented.");
+    public leftOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT_OUTER, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public rightJoin(table: string, callback: WhereFunction): this;
+    public rightJoin(query: RawQuery): this;
     public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public rightJoin(table: any, foreignKey: any, primaryKey?: any) : this {
-        throw new Error("Method not implemented.");
+    public rightJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public rightOuterJoin(table: string, callback: WhereFunction): this;
+    public rightOuterJoin(query: RawQuery): this;
     public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public rightOuterJoin(table: any, foreignKey: any, primaryKey?: any) : this {
-        throw new Error("Method not implemented.");
+    public rightOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT_OUTER, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public fullOuterJoin(table: string, callback: WhereFunction): this;
+    public fullOuterJoin(query: RawQuery): this;
     public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public fullOuterJoin(table: any, foreignKey: any, primaryKey?: any) : this {
-        throw new Error("Method not implemented.");
+    public fullOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.FULL_OUTER, foreignKey, primaryKey]));
+
+        return this;
     }
 
-    public crossJoin(table: string, callback: WhereFunction): this;
+    public crossJoin(query: RawQuery): this;
     public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
-    public crossJoin(table: any, foreignKey: any, primaryKey?: any) : this {
-        throw new Error("Method not implemented.");
+    public crossJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
+        this.JoinStatements.push(this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.CROSS, foreignKey, primaryKey]));
+
+        return this;
     }
 }
 
@@ -558,7 +582,9 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     protected _statements: IQueryStatement[];
     protected _boolean: WhereBoolean;
 
-    @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder)
+    protected _joinStatements: IQueryStatement[];
+
+    @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder)
     /// @ts-ignore
     private this: this;
 
@@ -575,6 +601,8 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
         this._boolean = WhereBoolean.AND;
         this._statements = [];
+
+        this._joinStatements = [];
 
         this._sort = {
             column: "",
@@ -705,50 +733,44 @@ export class DeleteQueryBuilder extends QueryBuilder {
     }
 }
 
-export class OnDuplicateQueryBuilder
-{
-    protected _column : string;
-    
-    protected _parent : InsertQueryBuilder;
+export class OnDuplicateQueryBuilder {
+    protected _column: string;
 
-    protected _columnsToUpdate : string[];
+    protected _parent: InsertQueryBuilder;
 
-    protected _container : Container;
+    protected _columnsToUpdate: Array<string | RawQuery>;
 
-    constructor(container: Container,  insertQueryBuilder : InsertQueryBuilder, column?: string)
-    {
+    protected _container: Container;
+
+    constructor(container: Container, insertQueryBuilder: InsertQueryBuilder, column?: string) {
         this._parent = insertQueryBuilder;
         this._column = column;
         this._container = container;
     }
 
-    public getColumn() : string{
+    public getColumn(): string {
         return this._column;
     }
 
     public getColumnsToUpdate() {
-
+        return this._columnsToUpdate;
     }
 
     public getParent() {
         return this._parent;
     }
 
-    public update(columns: string[] | {})
-    {
-        if()
+    public update(columns: string[] | RawQuery[]) {
         this._columnsToUpdate = columns;
         return this;
     }
 
- 
-
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<any> {
         return this._parent.then(resolve, reject);
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<OnDuplicateQueryCompiler>(OnDuplicateQueryCompiler, [this]).compile();
+        return this._parent.toDB();
     }
 }
 
@@ -801,11 +823,12 @@ export class UpdateQueryBuilder extends QueryBuilder {
 export interface InsertQueryBuilder extends IColumnsBuilder { }
 export class InsertQueryBuilder extends QueryBuilder {
 
+    public DuplicateQueryBuilder: OnDuplicateQueryBuilder;
+
     protected _values: any[][];
 
     protected _columns: ColumnStatement[];
 
-    protected _onDuplicate: OnDuplicateQueryBuilder;
 
     @use(ColumnsBuilder)
     /// @ts-ignore
@@ -860,10 +883,10 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public onDuplicate(column? : string): OnDuplicateQueryBuilder {
+    public onDuplicate(column?: string): OnDuplicateQueryBuilder {
 
-        this._onDuplicate = new OnDuplicateQueryBuilder(this._container, this, column);
-        return this._onDuplicate;
+        this.DuplicateQueryBuilder = new OnDuplicateQueryBuilder(this._container, this, column);
+        return this.DuplicateQueryBuilder;
     }
 
     public toDB(): ICompilerOutput {

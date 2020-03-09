@@ -361,28 +361,27 @@ export interface IWhereBuilder {
 
 export interface IJoinBuilder
 {
-    Statements: IQueryStatement[];
+    JoinStatements: IQueryStatement[];
 
     innerJoin(query : RawQuery) : this;
-    innerJoin(table : string, callback : WhereFunction) : this;
     innerJoin(table : string, foreignKey : string, primaryKey : string) : this;
 
-    leftJoin(table : string, callback : WhereFunction) : this;
+    leftJoin(query : RawQuery) : this;
     leftJoin(table : string, foreignKey : string, primaryKey : string) : this;
     
-    leftOuterJoin(table : string, callback : WhereFunction) : this;
+    leftOuterJoin(query : RawQuery) : this;
     leftOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
     
-    rightJoin(table : string, callback : WhereFunction) : this;
+    rightJoin(query : RawQuery) : this;
     rightJoin(table : string, foreignKey : string, primaryKey : string) : this;
     
-    rightOuterJoin(table : string, callback : WhereFunction) : this;
+    rightOuterJoin(query : RawQuery) : this;
     rightOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
     
-    fullOuterJoin(table : string, callback : WhereFunction) : this;
+    fullOuterJoin(query : RawQuery) : this;
     fullOuterJoin(table : string, foreignKey : string, primaryKey : string) : this;
     
-    crossJoin(table : string, callback : WhereFunction) : this;
+    crossJoin(query : RawQuery) : this;
     crossJoin(table : string, foreignKey : string, primaryKey : string) : this;
 
 }
@@ -417,6 +416,10 @@ export interface IWhereCompiler {
     where(builder: IWhereBuilder): ICompilerOutput;
 }
 
+export interface IJoinCompiler {
+    join(builder: IJoinBuilder): ICompilerOutput;
+}
+
 
 /**
  *  Definitions of query compiler are needed for DI resolving
@@ -425,6 +428,11 @@ export interface IWhereCompiler {
 
 @NewInstance()
 export abstract class SelectQueryCompiler implements IQueryCompiler {
+    public abstract compile(): ICompilerOutput;
+}
+
+@NewInstance()
+export abstract class JoinQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }
 

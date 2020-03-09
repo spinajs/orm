@@ -108,9 +108,9 @@ export abstract class ModelBase<T> {
     /**
      * 
      * Checks if model with pk key / unique fields exists and if not creates one and saves to db
+     * NOTE: it checks for unique fields too.
      * 
-     * @param pk key to check
-     * @param {any} data - initial model data
+     * @param {any} data - model width data to check
      */
     public static firstOrCreate<T>(_pk: any, _data?: any): Promise<T> {
         throw Error("Not implemented");
@@ -128,11 +128,11 @@ export abstract class ModelBase<T> {
     /**
      * 
      * Checks if model with pk key or unique fields exists and if not creates one AND NOT save in db
+     * NOTE: it checks for unique fields constraint
      * 
-     * @param pk key to check
-     * @param {any} data - initial model data
+     * @param {any} data - model to check
      */
-    public static firstOrNew<T>(_pk: any, _data?: any): Promise<T> {
+    public static firstOrNew<T>(_data?: any): Promise<T> {
         throw Error("Not implemented");
     }
 
@@ -220,9 +220,9 @@ export abstract class ModelBase<T> {
     /**
      * Try to insert new value
      */
-    public async insert(){
+    public async insert() {
 
-        const {query} = _createQuery(this.constructor, InsertQueryBuilder);
+        const { query } = _createQuery(this.constructor, InsertQueryBuilder);
         query.values(this.dehydrate());
 
         return query;
@@ -353,10 +353,21 @@ export const MODEL_STATIC_MIXINS = {
         return entity;
     },
 
-    async firstOrCreate(pk: any, data?: any): Promise<any> {
+    async firstOrCreate(data?: any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
-        let entity = await query.where(description.PrimaryKey, pk).first() as any;
+
+        // pk constrain
+        if (data[description.PrimaryKey]) {
+            query.where(description.PrimaryKey, data[description.PrimaryKey])
+        }
+
+        // check for all unique columns ( unique constrain )
+        description.UniqueColumns.forEach(u => {
+            query.orWhere(u, data[u]);
+        });
+
+        let entity = await query.first() as any;
 
         if (!entity) {
             entity = new (Function.prototype.bind.apply(this))(data);
@@ -367,10 +378,21 @@ export const MODEL_STATIC_MIXINS = {
         return entity;
     },
 
-    async firstOrNew(pk: any, data?: any): Promise<any> {
+    async firstOrNew(data?: any): Promise<any> {
 
         const { query, description } = _createQuery(this as any, SelectQueryBuilder);
-        let entity = await query.where(description.PrimaryKey, pk).first() as any;
+        
+        // pk constrain
+        if (data[description.PrimaryKey]) {
+            query.where(description.PrimaryKey, data[description.PrimaryKey])
+        }
+
+        // check for all unique columns ( unique constrain )
+        description.UniqueColumns.forEach(u => {
+            query.orWhere(u, data[u]);
+        });
+
+        let entity = await query.first() as any;
 
         if (!entity) {
             entity = new (Function.prototype.bind.apply(this))(data);
