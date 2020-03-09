@@ -74,7 +74,16 @@ export abstract class ModelBase<T> {
      * 
      * @param _data data to insert
      */
-    public static insert<T>(_data: T | any[]): InsertQueryBuilder {
+    public static insert<T extends ModelBase<T>>(_data: T | object): InsertQueryBuilder {
+        throw Error("Not implemented");
+    }
+
+    /**
+     * Inserts multiple data at once to DB
+     * 
+     * @param _data data to insert
+     */
+    public static insertBulk<T extends ModelBase<T>>(_data: T[] | object[]): Promise<void> {
         throw Error("Not implemented");
     }
 
@@ -92,11 +101,11 @@ export abstract class ModelBase<T> {
     }
 
     /**
-     * Updates multiple records at once with provided value
+     * Updates single or multiple records at once with provided value based on condition
      * 
      * @param _data data to set
      */
-    public static update<T, K extends T>(_data?: K[]): Promise<void> {
+    public static update(_data: object): UpdateQueryBuilder {
         throw Error("Not implemented");
     }
 
@@ -230,17 +239,6 @@ export abstract class ModelBase<T> {
     }
 
     /**
-     * Try to insert new value
-     */
-    public async insert() {
-
-        const { query } = _createQuery(this.constructor, InsertQueryBuilder);
-        query.values(this.dehydrate());
-
-        return query;
-    }
-
-    /**
      * Gets model data from database and returns as fresh instance.
      */
     public async fresh(): Promise<T> {
@@ -306,14 +304,10 @@ export const MODEL_STATIC_MIXINS = {
         return query.where(column, operator, value);
     },
 
-    async update(data: any[]): Promise<void> {
+    update(data: object): UpdateQueryBuilder {
 
-        const updates = data.map(d => {
-            const { query } = _createQuery(this as any, UpdateQueryBuilder);
-            return query.update(d);
-        });
-
-        await Promise.all(updates);
+        const { query } = _createQuery(this as any, UpdateQueryBuilder);
+        return query.update(data);
     },
 
     async all(page: number, perPage: number): Promise<any[]> {
@@ -326,10 +320,26 @@ export const MODEL_STATIC_MIXINS = {
         return await query;
     },
 
-    insert(data: any[] | ModelBase<any>): InsertQueryBuilder {
-        const { query, description } = _createQuery(this as any, InsertQueryBuilder);
 
-        query.into(description.TableName);
+    insertBulk<T>(data: Array<ModelBase<T> | object>) {
+        const { query } = _createQuery(this, InsertQueryBuilder);
+
+        return query.values(data.map(d => {
+            if (d instanceof ModelBase) {
+                return d.dehydrate()
+            }
+
+            return d;
+        }
+        ));
+    },
+
+    /**
+     * Try to insert new value
+     */
+    insert<T>(data: ModelBase<T> | object) {
+
+        const { query } = _createQuery(this, InsertQueryBuilder);
 
         if (data instanceof ModelBase) {
             query.values(data.dehydrate());

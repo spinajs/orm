@@ -276,8 +276,6 @@ describe("General model tests", () => {
         const query = RawModel.update({ Bar: "hello" }).where("Id", 1);
         await query;
 
-        expect(query).to.be.instanceOf(UpdateQueryBuilder);
-        expect((query.Value as any).Bar).to.eq("hello");
         expect(execute.calledOnce).to.be.true;
     })
 
@@ -356,7 +354,7 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        const result = await Model1.firstOrNew<Model1>(1, { Id: 666 });
+        const result = await Model1.firstOrNew<Model1>({ Id: 666 });
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
         expect(result.PrimaryKeyValue).to.eq(666);;
@@ -542,7 +540,8 @@ describe("General model tests", () => {
                 AutoIncrement: false,
                 Name: "CreatedAt",
                 Converter: converterStub,
-                Schema: "test"
+                Schema: "test",
+                Unique: false
             }]);
         }));
 
@@ -606,7 +605,8 @@ describe("General model tests", () => {
                 AutoIncrement: false,
                 Name: "CreatedAt",
                 Converter: converterStub,
-                Schema: "test"
+                Schema: "test",
+                Unique: false
             }]);
         }));
 
