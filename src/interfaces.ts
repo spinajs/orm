@@ -435,6 +435,11 @@ export abstract class JoinQueryCompiler implements IQueryCompiler {
 }
 
 @NewInstance()
+export abstract class IndexQueryCompiler implements IQueryCompiler {
+    public abstract compile(): ICompilerOutput;
+}
+
+@NewInstance()
 export abstract class DeleteQueryCompiler implements IQueryCompiler {
     public abstract compile(): ICompilerOutput;
 }

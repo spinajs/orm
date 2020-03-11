@@ -13,21 +13,14 @@ function isWhereOperator(val: any) {
     return _.isString(val) && Object.values(WhereOperators).includes((val as any).toLowerCase());
 }
 
-/**
- * Base class for queires. Implements basic query functionality
- * 
- */
 @NewInstance()
 @Inject(Container)
-export class QueryBuilder<T = any> implements IQueryBuilder {
+export class Builder<T = any>  {
 
-    protected _method: QueryMethod;
-    protected _table: string;
-    protected _tableAlias: string;
-    protected _schema: string;
     protected _driver: OrmDriver;
     protected _container: Container;
     protected _model?: Constructor<any>;
+
     protected _nonSelect: boolean;
     protected _queryContext: QueryContext;
 
@@ -36,6 +29,45 @@ export class QueryBuilder<T = any> implements IQueryBuilder {
         this._container = container;
         this._model = model;
         this._nonSelect = true;
+    }
+    /**
+     * Builds query that is ready to use in DB 
+     */
+    public toDB(): ICompilerOutput {
+        throw new NotImplementedException();
+    }
+
+    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
+        const compiled = this.toDB();
+        return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
+            if (this._model && !this._nonSelect) {
+                resolve(result.map(r => {
+                    return new this._model(r);
+                }));
+            } else {
+                resolve(result);
+            }
+        }, reject) as Promise<any>;
+    }
+}
+
+/**
+ * Base class for queires. Implements basic query functionality
+ * 
+ */
+@NewInstance()
+@Inject(Container)
+export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
+
+    protected _method: QueryMethod;
+    protected _table: string;
+    protected _tableAlias: string;
+    protected _schema: string;
+
+
+
+    constructor(container: Container, driver: OrmDriver, model?: Constructor<any>) {
+        super(container, driver, model);
     }
 
 
@@ -82,25 +114,7 @@ export class QueryBuilder<T = any> implements IQueryBuilder {
         return this;
     }
 
-    /**
-     * Builds query that is ready to use in DB 
-     */
-    public toDB(): ICompilerOutput {
-        throw new NotImplementedException();
-    }
 
-    public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
-        const compiled = this.toDB();
-        return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
-            if (this._model && !this._nonSelect) {
-                resolve(result.map(r => {
-                    return new this._model(r);
-                }));
-            } else {
-                resolve(result);
-            }
-        }, reject) as Promise<any>;
-    }
 
     /**
      * Sets table that query is executed on
@@ -734,7 +748,7 @@ export class DeleteQueryBuilder extends QueryBuilder {
 }
 
 export class OnDuplicateQueryBuilder {
-    protected _column: string;
+    protected _column: string[];
 
     protected _parent: InsertQueryBuilder;
 
@@ -742,13 +756,15 @@ export class OnDuplicateQueryBuilder {
 
     protected _container: Container;
 
-    constructor(container: Container, insertQueryBuilder: InsertQueryBuilder, column?: string) {
+    constructor(container: Container, insertQueryBuilder: InsertQueryBuilder, column?: string | string[]) {
         this._parent = insertQueryBuilder;
-        this._column = column;
         this._container = container;
+
+
+        this._column = _.isArray(column) ? column : [column];
     }
 
-    public getColumn(): string {
+    public getColumn(): string[] {
         return this._column;
     }
 
@@ -883,7 +899,7 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this;
     }
 
-    public onDuplicate(column?: string): OnDuplicateQueryBuilder {
+    public onDuplicate(column?: string | string[]): OnDuplicateQueryBuilder {
 
         this.DuplicateQueryBuilder = new OnDuplicateQueryBuilder(this._container, this, column);
         return this.DuplicateQueryBuilder;
@@ -893,9 +909,49 @@ export class InsertQueryBuilder extends QueryBuilder {
         return this._container.resolve<InsertQueryCompiler>(InsertQueryCompiler, [this]).compile();
     }
 }
-
 @NewInstance()
 @Inject(Container)
+export class IndexQueryBuilder extends Builder {
+    public Name: string;
+    public Unique: boolean;
+    public Table: string;
+    public Columns: string[];
+
+    constructor(container: Container, driver: OrmDriver) {
+        super(container, driver);
+    }
+
+    public name(name: string) {
+        this.Name = name;
+
+        return this;
+    }
+
+    public unique() {
+        this.Unique = true;
+
+        return this;
+    }
+
+    public table(name: string) {
+        this.Table = name;
+
+        return this;
+
+    }
+
+    public columns(colNames: string[]) {
+        this.Columns = colNames;
+
+        return this;
+    }
+
+    public toDB(): ICompilerOutput {
+        return this._container.resolve<TableQueryCompiler>(TableQueryCompiler, [this]).compile();
+    }
+}
+
+@NewInstance()
 export class ColumnQueryBuilder {
 
     public Name: string;

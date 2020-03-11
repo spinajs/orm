@@ -1,7 +1,7 @@
 import { QueryContext } from './interfaces';
 import { ResolveStrategy, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor } from ".";
-import { UpdateQueryBuilder, SelectQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder, QueryBuilder } from "./builders";
+import { UpdateQueryBuilder, SelectQueryBuilder, IndexQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder, QueryBuilder } from "./builders";
 import { ModelHydrator, DbPropertyHydrator, JoinHydrator, NonDbPropertyHydrator } from './hydrators';
 import { Logger, Log } from '@spinajs/log';
 
@@ -105,6 +105,14 @@ export abstract class OrmDriver extends ResolveStrategy {
      */
     public schema(): SchemaQueryBuilder {
         return this.Container.resolve(SchemaQueryBuilder, [this]);
+    }
+
+    /**
+     * Creates index query builder associated with this connection.
+     * This can be use to create table indexes
+     */
+    public index(): IndexQueryBuilder {
+        return this.Container.resolve(IndexQueryBuilder, [this]);
     }
 
     /**
