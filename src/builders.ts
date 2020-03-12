@@ -947,7 +947,7 @@ export class IndexQueryBuilder extends Builder {
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<IndexQueryCompiler>(TableQueryCompiler, [this]).compile();
+        return this._container.resolve<IndexQueryCompiler>(IndexQueryCompiler, [this]).compile();
     }
 }
 
