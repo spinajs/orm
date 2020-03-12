@@ -3,7 +3,7 @@ import { ArgumentException, NotImplementedException, InvalidOperationException }
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators, JoinMethod } from "./enums";
-import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder } from "./interfaces";
+import { DeleteQueryCompiler, IColumnsBuilder, ICompilerOutput, ILimitBuilder, InsertQueryCompiler, IOrderByBuilder, IQueryBuilder, IQueryLimit, ISelectQueryBuilder, ISort, IWhereBuilder, SelectQueryCompiler, TableQueryCompiler, UpdateQueryCompiler, QueryContext, IJoinBuilder, IndexQueryCompiler } from "./interfaces";
 import { BetweenStatement, ColumnMethodStatement, ColumnStatement, ExistsQueryStatement, InSetStatement, InStatement, IQueryStatement, RawQueryStatement, WhereQueryStatement, WhereStatement, ColumnRawStatement, JoinStatement } from "./statements";
 import { WhereFunction } from "./types";
 import { OrmDriver } from "./driver";
@@ -947,7 +947,7 @@ export class IndexQueryBuilder extends Builder {
     }
 
     public toDB(): ICompilerOutput {
-        return this._container.resolve<TableQueryCompiler>(TableQueryCompiler, [this]).compile();
+        return this._container.resolve<IndexQueryCompiler>(TableQueryCompiler, [this]).compile();
     }
 }
 
