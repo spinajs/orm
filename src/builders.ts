@@ -919,6 +919,8 @@ export class IndexQueryBuilder extends Builder {
 
     constructor(container: Container, driver: OrmDriver) {
         super(container, driver);
+
+        this._queryContext = QueryContext.Schema;
     }
 
     public name(name: string) {
