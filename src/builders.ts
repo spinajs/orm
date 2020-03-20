@@ -1,5 +1,5 @@
 import { Container, Inject, NewInstance } from "@spinajs/di";
-import { ArgumentException, NotImplementedException, InvalidOperationException } from "@spinajs/exceptions";
+import { InvalidArgument, MethodNotImplemented, InvalidOperation } from "@spinajs/exceptions";
 import * as _ from "lodash";
 import { use } from "typescript-mix";
 import { ColumnMethods, ColumnType, QueryMethod, SORT_ORDER, WhereBoolean, WhereOperators, JoinMethod } from "./enums";
@@ -34,7 +34,7 @@ export class Builder<T = any>  {
      * Builds query that is ready to use in DB 
      */
     public toDB(): ICompilerOutput {
-        throw new NotImplementedException();
+        throw new MethodNotImplemented();
     }
 
     public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
@@ -106,7 +106,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
     public schema(schema: string) {
 
         if (!schema) {
-            throw new ArgumentException(`schema argument cannot be null or empty`)
+            throw new InvalidArgument(`schema argument cannot be null or empty`)
         }
 
         this._schema = schema;
@@ -130,7 +130,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
     public setTable(table: string, alias?: string) {
 
         if (!table.trim()) {
-            throw new ArgumentException("table name is empty");
+            throw new InvalidArgument("table name is empty");
         }
 
         this._table = table;
@@ -164,7 +164,7 @@ export class LimitBuilder implements ILimitBuilder {
 
     public take(count: number) {
         if (count <= 0) {
-            throw new ArgumentException(`take count cannot be negative number`)
+            throw new InvalidArgument(`take count cannot be negative number`)
         }
 
         this._limit.limit = count;
@@ -173,7 +173,7 @@ export class LimitBuilder implements ILimitBuilder {
 
     public skip(count: number) {
         if (count <= 0) {
-            throw new ArgumentException(`skip count cannot be negative number`)
+            throw new InvalidArgument(`skip count cannot be negative number`)
         }
 
         this._limit.offset = count;
@@ -440,11 +440,11 @@ export class WhereBuilder implements IWhereBuilder {
         function _handleForTwo(c: any, v: any) {
 
             if (v === undefined) {
-                throw new ArgumentException(`value cannot be undefined`);
+                throw new InvalidArgument(`value cannot be undefined`);
             }
 
             if (!_.isString(c)) {
-                throw new ArgumentException(`column is not of type string.`)
+                throw new InvalidArgument(`column is not of type string.`)
             }
 
             if (v === null) {
@@ -466,11 +466,11 @@ export class WhereBuilder implements IWhereBuilder {
         function _handleForThree(c: any, o: any, v: any) {
 
             if (!isWhereOperator(o)) {
-                throw new ArgumentException(`operator ${o} is invalid`);
+                throw new InvalidArgument(`operator ${o} is invalid`);
             }
 
             if (!_.isString(c)) {
-                throw new ArgumentException(`column is not of type string.`)
+                throw new InvalidArgument(`column is not of type string.`)
             }
 
             if (v === null) {
@@ -665,7 +665,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     public distinct() {
 
         if (this._columns.length === 0 || (this._columns[0] as ColumnStatement).IsWildcard) {
-            throw new InvalidOperationException("Cannot force DISTINCT on unknown column");
+            throw new InvalidOperation("Cannot force DISTINCT on unknown column");
         }
 
         this._distinct = true;
