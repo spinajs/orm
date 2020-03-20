@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncResolveStrategy, Container } from "@spinajs/di";
+import { AsyncModule, Container } from "@spinajs/di";
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from "@spinajs/log";
 import { ClassInfo, ListFromFiles } from "@spinajs/reflection";
@@ -15,7 +15,7 @@ import { OrmDriver } from './driver';
 const CFG_PROPS = ["Database", "User", "Host", "Port", "Filename", "Driver", "Name"];
 const MIGRATION_TABLE_NAME = "spinajs_migration";
 
-export class Orm extends AsyncResolveStrategy {
+export class Orm extends AsyncModule {
 
     @ListFromFiles("/**/*.{ts,js}", "system.dirs.models")
     public Models: Array<ClassInfo<ModelBase<any>>>;

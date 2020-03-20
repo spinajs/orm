@@ -1,5 +1,5 @@
 import { QueryContext } from './interfaces';
-import { ResolveStrategy, IContainer } from "@spinajs/di";
+import { SyncModule, IContainer } from "@spinajs/di";
 import { IDriverOptions, IColumnDescriptor } from ".";
 import { UpdateQueryBuilder, SelectQueryBuilder, IndexQueryBuilder, DeleteQueryBuilder, InsertQueryBuilder, SchemaQueryBuilder, QueryBuilder } from "./builders";
 import { ModelHydrator, DbPropertyHydrator, JoinHydrator, NonDbPropertyHydrator } from './hydrators';
@@ -7,7 +7,7 @@ import { Logger, Log } from '@spinajs/log';
 
 export type TransactionCallback = (driver: OrmDriver) => Promise<any>;
 
-export abstract class OrmDriver extends ResolveStrategy {
+export abstract class OrmDriver extends SyncModule {
 
     /**
      * Connection options
