@@ -1,3 +1,3 @@
-import { IWhereBuilder } from "./interfaces";
+import { IWhereBuilder } from './interfaces';
 
 export type WhereFunction = (this: IWhereBuilder) => IWhereBuilder;

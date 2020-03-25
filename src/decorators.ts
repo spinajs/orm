@@ -1,114 +1,118 @@
-import { IModelDescrtiptor, IMigrationDescriptor } from "./interfaces";
-import "reflect-metadata";
+import { IModelDescrtiptor, IMigrationDescriptor } from './interfaces';
+import 'reflect-metadata';
 
-export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for("MODEL_DESCRIPTOR");
-export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for("MIGRATION_DESCRIPTOR");
-
+export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
+export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for('MIGRATION_DESCRIPTOR');
 
 /**
  * Helper func to create model metadata
- * 
- * @param callback 
+ *
+ * @param callback
  */
-export function extractDecoratorDescriptor(callback: (model: IModelDescrtiptor, target: any, propertyKey: symbol | string, indexOrDescriptor: number | PropertyDescriptor) => void, base = false): any {
-    return (target: any, propertyKey: string | symbol, indexOrDescriptor: number | PropertyDescriptor) => {
-
-        let metadata: IModelDescrtiptor = null;
-        if (!base) {
-            metadata = target.constructor[MODEL_DESCTRIPTION_SYMBOL];
-        } else {
-            metadata = target[MODEL_DESCTRIPTION_SYMBOL];
-        }
-
-        if (!metadata) {
-            metadata = {
-                Columns: [],
-                Connection: null,
-                PrimaryKey: "",
-                SoftDelete: {
-                    DeletedAt: ""
-                },
-                Archived: {
-                    ArchivedAt: ""
-                },
-                TableName: "",
-                Timestamps: {
-                    CreatedAt: "",
-                    UpdatedAt: ""
-                },
-                UniqueColumns: []
-            };
-
-            if (!base) {
-                target.constructor[MODEL_DESCTRIPTION_SYMBOL] = metadata;
-            } else {
-                target[MODEL_DESCTRIPTION_SYMBOL] = metadata;
-            }
-        }
-
-        if (callback) {
-            callback(metadata, target, propertyKey, indexOrDescriptor);
-        }
+export function extractDecoratorDescriptor(
+  callback: (
+    model: IModelDescrtiptor,
+    target: any,
+    propertyKey: symbol | string,
+    indexOrDescriptor: number | PropertyDescriptor,
+  ) => void,
+  base = false,
+): any {
+  return (target: any, propertyKey: string | symbol, indexOrDescriptor: number | PropertyDescriptor) => {
+    let metadata: IModelDescrtiptor = null;
+    if (!base) {
+      metadata = target.constructor[MODEL_DESCTRIPTION_SYMBOL];
+    } else {
+      metadata = target[MODEL_DESCTRIPTION_SYMBOL];
     }
+
+    if (!metadata) {
+      metadata = {
+        Columns: [],
+        Connection: null,
+        PrimaryKey: '',
+        SoftDelete: {
+          DeletedAt: '',
+        },
+        Archived: {
+          ArchivedAt: '',
+        },
+        TableName: '',
+        Timestamps: {
+          CreatedAt: '',
+          UpdatedAt: '',
+        },
+        UniqueColumns: [],
+      };
+
+      if (!base) {
+        target.constructor[MODEL_DESCTRIPTION_SYMBOL] = metadata;
+      } else {
+        target[MODEL_DESCTRIPTION_SYMBOL] = metadata;
+      }
+    }
+
+    if (callback) {
+      callback(metadata, target, propertyKey, indexOrDescriptor);
+    }
+  };
 }
 
 /**
  * Sets migration option
- * 
+ *
  * @param connection connection name, must exists in configuration file
  */
 export function Migration(connection: string) {
-    return (target: any) => {
-        let metadata = target[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
-        
-        if(!metadata){
-            metadata = {
-                Connection : ""
-            }
-            target[MIGRATION_DESCRIPTION_SYMBOL] = metadata;
-        }
+  return (target: any) => {
+    let metadata = target[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
 
-        metadata.Connection = connection;
+    if (!metadata) {
+      metadata = {
+        Connection: '',
+      };
+      target[MIGRATION_DESCRIPTION_SYMBOL] = metadata;
     }
+
+    metadata.Connection = connection;
+  };
 }
 
 /**
  * @Connection model decorator, assigns connection to model
- * 
+ *
  * @param name connection name, must be avaible in db config
  */
 export function Connection(name: string) {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor) => {
-        model.Connection = name;
-    }, true);
+  return extractDecoratorDescriptor((model: IModelDescrtiptor) => {
+    model.Connection = name;
+  }, true);
 }
 
 /**
  * @TableName model decorator, assigns table from database to model
- * 
+ *
  * @param name table name in database that is referred by this model
  */
 export function Model(tableName: string) {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor) => {
-        model.TableName = tableName;
-    }, true);
+  return extractDecoratorDescriptor((model: IModelDescrtiptor) => {
+    model.TableName = tableName;
+  }, true);
 }
-
 
 /**
  * Set create timestamps feature to model. Proper columns must be avaible in database table.
  * It allow to track creation times & changes to model
  */
 export function CreatedAt() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Date') {
+      throw Error('Proprety CreatedAt must be Date type');
+    }
 
-        const type = Reflect.getMetadata('design:type', target, propertyKey);
-        if (type.name !== "Date") {
-            throw Error("Proprety CreatedAt must be Date type");
-        }
-
-        model.Timestamps.CreatedAt = propertyKey;
-    });
+    model.Timestamps.CreatedAt = propertyKey;
+  });
 }
 
 /**
@@ -116,58 +120,55 @@ export function CreatedAt() {
  * It allow to track creation times & changes to model
  */
 export function UpdatedAt() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Date') {
+      throw Error('Proprety UpdatedAt must be Date type');
+    }
 
-        const type = Reflect.getMetadata('design:type', target, propertyKey);
-        if (type.name !== "Date") {
-            throw Error("Proprety UpdatedAt must be Date type");
-        }
-
-        model.Timestamps.UpdatedAt = propertyKey;
-    });
+    model.Timestamps.UpdatedAt = propertyKey;
+  });
 }
 
 /**
- * Sets soft delete feature to model. Soft delete dont delete model, but sets deletion date and hides from 
+ * Sets soft delete feature to model. Soft delete dont delete model, but sets deletion date and hides from
  * select result by default.
  */
 export function SoftDelete() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Date') {
+      throw Error('Proprety DeletedAt must be Date type');
+    }
 
-        const type = Reflect.getMetadata('design:type', target, propertyKey);
-        if (type.name !== "Date") {
-            throw Error("Proprety DeletedAt must be Date type");
-        }
-
-        model.SoftDelete.DeletedAt = propertyKey;
-    });
+    model.SoftDelete.DeletedAt = propertyKey;
+  });
 }
 
 /**
- * Enable archive mode for model. If enabled all changes creates new instance in DB and old have set archived field 
+ * Enable archive mode for model. If enabled all changes creates new instance in DB and old have set archived field
  * and gets attached to new model. It enabled to track changes to model in DB and also preserve data in relations.
- * 
+ *
  */
 export function Archived() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Date') {
+      throw Error('Proprety DeletedAt must be Date type');
+    }
 
-        const type = Reflect.getMetadata('design:type', target, propertyKey);
-        if (type.name !== "Date") {
-            throw Error("Proprety DeletedAt must be Date type");
-        }
-
-        model.Archived.ArchivedAt = propertyKey;
-    });
+    model.Archived.ArchivedAt = propertyKey;
+  });
 }
 
 export function Primary() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
-        model.PrimaryKey = propertyKey;
-    });
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+    model.PrimaryKey = propertyKey;
+  });
 }
 
 export function Unique() {
-    return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
-        model.UniqueColumns.push(propertyKey)
-    });
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+    model.UniqueColumns.push(propertyKey);
+  });
 }
