@@ -1,4 +1,4 @@
-import { IModelDescrtiptor, IMigrationDescriptor } from './interfaces';
+import { IModelDescrtiptor, IMigrationDescriptor, RelationType } from './interfaces';
 import 'reflect-metadata';
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
@@ -43,6 +43,7 @@ export function extractDecoratorDescriptor(
           UpdatedAt: '',
         },
         UniqueColumns: [],
+        Relations: []
       };
 
       if (!base) {
@@ -161,6 +162,9 @@ export function Archived() {
   });
 }
 
+/**
+ * Makrs field as primary key
+ */
 export function Primary() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
     model.PrimaryKey = propertyKey;
@@ -170,5 +174,69 @@ export function Primary() {
 export function Unique() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
     model.UniqueColumns.push(propertyKey);
+  });
+}
+
+/**
+ * Creates one to one relation with target model.
+ * 
+ * @param targetModel
+ * @param foreignKey
+ * @param primaryKey 
+ */
+export function BelongsTo(targetModel: string, foreignKey: string, primaryKey?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
+    model.Relations.push({
+      Type: RelationType.One,
+      SourceModel: targetModel,
+      TargetModel: _target.constructor.name,
+      TargetModelPrimaryKey: foreignKey,
+      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+    });
+  });
+}
+
+
+/**
+ * Creates one to many relation with target model.
+ * 
+ * @param targetModel
+ * @param foreignKey
+ * @param primaryKey 
+ * 
+ */
+export function HasMany(targetModel: string, foreignKey: string, primaryKey?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
+    model.Relations.push({
+      Type: RelationType.Many,
+      SourceModel: targetModel,
+      TargetModel: _target.constructor.name,
+      TargetModelPrimaryKey: foreignKey,
+      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+    });
+  });
+}
+
+/**
+ * Creates many to many relation with separate join table
+ * 
+ * @param targetModel
+ * @param foreignKey
+ * @param primaryKey 
+ * @param joinModelTargetPk 
+ * @param joinModelSourcePk 
+ */
+export function HasManyToMany(targetModel: string, joinModel: string, foreignKey?: string, primaryKey?: string, joinModelTargetPk?: string, joinModelSourcePk?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
+    model.Relations.push({
+      Type: RelationType.ManyToMany,
+      SourceModel: targetModel,
+      TargetModel: _target.constructor.name,
+      TargetModelPrimaryKey: foreignKey,
+      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+      JoinModel: joinModel,
+      JoinModelTargetModelPKey_Name: joinModelTargetPk,
+      JoinModelSourceModelPKey_Name: joinModelSourcePk
+    });
   });
 }

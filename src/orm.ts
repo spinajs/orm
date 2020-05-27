@@ -81,6 +81,7 @@ export class Orm extends AsyncModule {
     }
 
     return true;
+    
     async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
       const migrationTable = await connection.tableInfo(tableName);
       if (!migrationTable) {

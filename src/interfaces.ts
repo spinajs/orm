@@ -33,6 +33,12 @@ export enum MigrationTransactionMode {
  * Configuration options to set in configuration file and used in OrmDriver
  */
 export interface IDriverOptions {
+
+  /**
+   * Max connections limit
+   */
+  PoolLimit: number;
+
   /**
    * Database name associated with this connection
    */
@@ -77,6 +83,11 @@ export interface IDriverOptions {
    * Connection name for identification
    */
   Name: string;
+
+  /**
+   * Additional driver-specific options
+   */
+  Options: any;
 
   Migration?: {
     /**
@@ -153,6 +164,56 @@ export interface IModelDescrtiptor {
    * List of unique columns ( UNIQUE constraint )
    */
   UniqueColumns: string[];
+
+  /**
+   * List of relations in model
+   */
+  Relations: IRelationDescriptor[];
+
+}
+
+export enum RelationType {
+  One,
+  Many,
+  ManyToMany
+}
+
+export interface IRelationDescriptor {
+
+  Type: RelationType,
+
+  /**
+   * Relation model (  foreign )
+   */
+  TargetModel: string,
+
+  /** 
+   * Relation owner
+   */
+  SourceModel: string,
+
+
+  /**
+   * Relation foreign key (one to one, one to many)
+   */
+  TargetModelPrimaryKey: string,
+
+  /**
+   * Relation primary key (one to one, one to many)
+   */
+  SourceModelPrimaryKey: string
+
+  /**
+   * Used in many to many relations, model for join table
+   */
+  JoinModel?: string
+
+  /**
+   * Join table foreign keys, defaults to auto generated field names. Can be override.
+   */
+  JoinModelTargetModelPKey_Name?: string;
+  JoinModelSourceModelPKey_Name?: string;
+
 }
 
 /**
@@ -374,10 +435,10 @@ export interface IJoinBuilder {
 
 export interface ISelectQueryBuilder
   extends IColumnsBuilder,
-    IOrderByBuilder,
-    ILimitBuilder,
-    IWhereBuilder,
-    IJoinBuilder {
+  IOrderByBuilder,
+  ILimitBuilder,
+  IWhereBuilder,
+  IJoinBuilder {
   min(column: string, as?: string): this;
   max(column: string, as?: string): this;
   count(column: string, as?: string): this;
