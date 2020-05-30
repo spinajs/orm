@@ -4,6 +4,7 @@ import { IQueryStatement } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { NewInstance } from '@spinajs/di';
+import { ModelBase } from './model';
 
 export enum QueryContext {
   Insert,
@@ -168,7 +169,7 @@ export interface IModelDescrtiptor {
   /**
    * List of relations in model
    */
-  Relations: IRelationDescriptor[];
+  Relations: Map<string, IRelationDescriptor>
 
 }
 
@@ -180,40 +181,47 @@ export enum RelationType {
 
 export interface IRelationDescriptor {
 
+  /**
+   * Name of relations, defaults for property name in model that owns relation
+   */
+  Name: string,
+
+  /**
+   * Is it one-to-one, one-to-many or many-to-many
+   */
   Type: RelationType,
 
   /**
    * Relation model (  foreign )
    */
-  TargetModel: string,
+  TargetModel: Constructor<ModelBase<any>>,
 
   /** 
    * Relation owner
    */
-  SourceModel: string,
+  SourceModel: Constructor<ModelBase<any>>,
 
 
   /**
    * Relation foreign key (one to one, one to many)
    */
-  TargetModelPrimaryKey: string,
+  ForeignKey: string,
 
   /**
    * Relation primary key (one to one, one to many)
    */
-  SourceModelPrimaryKey: string
+  PrimaryKey: string;
 
   /**
    * Used in many to many relations, model for join table
    */
-  JoinModel?: string
+  JoinModel?: Constructor<ModelBase<any>>;
 
   /**
    * Join table foreign keys, defaults to auto generated field names. Can be override.
    */
   JoinModelTargetModelPKey_Name?: string;
   JoinModelSourceModelPKey_Name?: string;
-
 }
 
 /**
@@ -367,8 +375,8 @@ export interface IQueryBuilder {
 export interface ILimitBuilder {
   take(count: number): this;
   skip(count: number): this;
-  first<T>(): Promise<T>;
-  firstOrFail<T>(): Promise<T>;
+  first(): this;
+  firstOrFail(): this;
   getLimits(): IQueryLimit;
 }
 
@@ -379,10 +387,48 @@ export interface IOrderByBuilder {
 }
 
 export interface IColumnsBuilder {
+ 
+  /**
+   * clears selected columns
+   */
   clearColumns(): this;
+
+  /**
+   * 
+   * Select columns from db result ( multiple at once )
+   * 
+   * @param names column names to select
+   */
   columns(names: string[]): this;
+
+  /**
+   * Return selected columns in this query
+   */
   getColumns(): IQueryStatement[];
-  select(column: string | RawQuery, alias?: string): this;
+
+  /**
+   * Selects single column from DB result with optional alias
+   * Can be used multiple times
+   * 
+   * @param column column to select
+   * @param alias column alias ( optional )
+   */
+  select(column: string, alias?: string): this;
+
+  /**
+   * Selects custom values from DB. eg. Count(*)
+   * 
+   * @param rawQuery  raw query to be executed
+   */
+  select(rawQuery: RawQuery) : this;
+  
+  /**
+   * Selects multiple columns at once with aliases. Map key property is column name, value is its alias
+   * 
+   * @param columns column list with aliases
+   */
+  // tslint:disable-next-line: unified-signatures
+  select(columns : Map<string, string>) : this;
 }
 
 export interface IWhereBuilder {
@@ -416,6 +462,9 @@ export interface IJoinBuilder {
 
   leftJoin(query: RawQuery): this;
   leftJoin(table: string, foreignKey: string, primaryKey: string): this;
+  
+  // tslint:disable-next-line: unified-signatures
+  leftJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
   leftOuterJoin(query: RawQuery): this;
   leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;

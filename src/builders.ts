@@ -21,6 +21,7 @@ import {
   QueryContext,
   IJoinBuilder,
   IndexQueryCompiler,
+  RelationType,
 } from './interfaces';
 import {
   BetweenStatement,
@@ -38,6 +39,9 @@ import {
 } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
+import { ModelBase, extractModelDescriptor } from './model';
+import { OrmRelation, BelongsToRelation } from './relations';
+import { Orm } from './orm';
 
 function isWhereOperator(val: any) {
   return _.isString(val) && Object.values(WhereOperators).includes((val as any).toLowerCase());
@@ -48,17 +52,24 @@ function isWhereOperator(val: any) {
 export class Builder<T = any> {
   protected _driver: OrmDriver;
   protected _container: Container;
-  protected _model?: Constructor<any>;
+  protected _model?: Constructor<ModelBase<any>>;
+  protected _relations: OrmRelation[] = [];
 
   protected _nonSelect: boolean;
   protected _queryContext: QueryContext;
+  protected _middlewares: Array<(rows: any[]) => void> = [];
 
-  constructor(container: Container, driver: OrmDriver, model?: Constructor<any>) {
+  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
     this._driver = driver;
     this._container = container;
     this._model = model;
     this._nonSelect = true;
   }
+
+  public middleware(callback: (rows: any[]) => void) {
+    this._middlewares.push(callback);
+  }
+
   /**
    * Builds query that is ready to use in DB
    */
@@ -68,15 +79,25 @@ export class Builder<T = any> {
 
   public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
     const compiled = this.toDB();
+    const resolveFunc = (result: any[]) => {
+      return result.map(r => {
+        return new this._model(r);
+      });
+    }
+
     return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
-      if (this._model && !this._nonSelect) {
-        resolve(
-          result.map(r => {
-            return new this._model(r);
-          }),
-        );
-      } else {
-        resolve(result);
+      try {
+        this._middlewares.forEach(m => m.call(this, [result]));
+
+        (this._model && !this._nonSelect) ?
+          resolve(
+            resolveFunc(result)
+          ) :
+          resolve(
+            result
+          );
+      } catch (err) {
+        reject(err);
       }
     }, reject) as Promise<any>;
   }
@@ -94,7 +115,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   protected _tableAlias: string;
   protected _schema: string;
 
-  constructor(container: Container, driver: OrmDriver, model?: Constructor<any>) {
+  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
     super(container, driver, model);
   }
 
@@ -165,6 +186,30 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   public from(table: string, alias?: string): this {
     return this.setTable(table, alias);
   }
+
+  public populate<R = any>(relation: string, callback: (qb: QueryBuilder<R>) => void) {
+
+    let relInstance: OrmRelation = null;
+    const descriptor = extractModelDescriptor(this._model);
+
+    if (!descriptor.Relations.has(relation)) {
+      throw new InvalidArgument(`Relation ${relation} not exists in model ${this._model?.constructor.name}`);
+    }
+
+    const relDescription = descriptor.Relations.get(relation);
+    switch (relDescription.Type) {
+
+      case RelationType.One:
+        relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription]);
+        break;
+    }
+
+    relInstance.execute(callback);
+
+    this._relations.push(relInstance);
+
+    return this;
+  }
 }
 
 @NewInstance()
@@ -201,13 +246,14 @@ export class LimitBuilder implements ILimitBuilder {
     return this;
   }
 
-  public async first<T>(): Promise<T> {
+  public first() {
     this._first = true;
     this._limit.limit = 1;
-    return (await this) as any;
+    
+    return this;
   }
 
-  public firstOrFail<T>(): Promise<T> {
+  public firstOrFail() {
     this._fail = true;
     return this.first();
   }
@@ -273,6 +319,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
   }
 
   public columns(names: string[]) {
+
     this._columns = names.map(n => {
       return this._container.resolve<ColumnStatement>(ColumnStatement, [n]);
     });
@@ -280,7 +327,14 @@ export class ColumnsBuilder implements IColumnsBuilder {
     return this;
   }
 
-  public select(column: string | RawQuery, alias?: string) {
+  public select(column: string | RawQuery | Map<string, string>, alias?: string) {
+
+    if (column instanceof Map) {
+      column.forEach((alias, colName) => {
+        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias]));
+      });
+    }
+
     if (column instanceof RawQuery) {
       this._columns.push(
         this._container.resolve<ColumnRawStatement>(ColumnRawStatement, [column]),
@@ -346,10 +400,20 @@ export class JoinBuilder implements IJoinBuilder {
 
   public leftJoin(query: RawQuery): this;
   public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public leftJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, foreignKey, primaryKey]),
-    );
+  public leftJoin(table: string | RawQuery, AliasOrForeignKey?: string, fkOrPkKey?: string, primaryKey?: string): this {
+
+    let stmt: JoinStatement = null;
+
+    if (arguments.length === 3) {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, AliasOrForeignKey, fkOrPkKey]);
+    } else if (arguments.length === 4) {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, fkOrPkKey, primaryKey, AliasOrForeignKey]);
+    }
+    else {
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT]);
+    }
+
+    this.JoinStatements.push(stmt);
 
     return this;
   }
@@ -622,7 +686,7 @@ export class WhereBuilder implements IWhereBuilder {
 }
 
 // tslint:disable-next-line
-export interface SelectQueryBuilder extends ISelectQueryBuilder {}
+export interface SelectQueryBuilder extends ISelectQueryBuilder { }
 
 export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   /**
@@ -755,7 +819,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 }
 
 // tslint:disable-next-line
-export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder {}
+export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder { }
 export class DeleteQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -847,7 +911,7 @@ export class OnDuplicateQueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface UpdateQueryBuilder extends IWhereBuilder {}
+export interface UpdateQueryBuilder extends IWhereBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -892,7 +956,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface InsertQueryBuilder extends IColumnsBuilder {}
+export interface InsertQueryBuilder extends IColumnsBuilder { }
 export class InsertQueryBuilder extends QueryBuilder {
   public DuplicateQueryBuilder: OnDuplicateQueryBuilder;
 
@@ -1176,7 +1240,7 @@ export class TableQueryBuilder extends QueryBuilder {
 @NewInstance()
 @Inject(Container)
 export class SchemaQueryBuilder {
-  constructor(protected container: Container, protected driver: OrmDriver) {}
+  constructor(protected container: Container, protected driver: OrmDriver) { }
 
   public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
     const builder = new TableQueryBuilder(this.container, this.driver, name);
@@ -1187,7 +1251,7 @@ export class SchemaQueryBuilder {
 }
 
 Object.values(ColumnType).forEach(type => {
-  (TableQueryBuilder.prototype as any)[type] = function(name: string, ...args: any[]) {
+  (TableQueryBuilder.prototype as any)[type] = function (name: string, ...args: any[]) {
     const _builder = new ColumnQueryBuilder(name, type, ...args);
     this._columns.push(_builder);
     return _builder;

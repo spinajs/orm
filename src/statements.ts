@@ -72,14 +72,16 @@ export abstract class JoinStatement implements IQueryStatement {
   protected _foreignKey: string;
   protected _primaryKey: string;
   protected _query: RawQuery;
+  protected _alias: string;
 
-  constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string) {
+  constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string, alias?: string) {
     this._method = method;
 
     if (_.isString(table)) {
       this._table = table;
       this._foreignKey = foreignKey;
       this._primaryKey = primaryKey;
+      this._alias = alias;
     } else {
       this._query = table;
     }
@@ -170,7 +172,7 @@ export abstract class ColumnStatement implements IQueryStatement {
 }
 
 export abstract class ColumnRawStatement implements IQueryStatement {
-  constructor(public RawQuery: RawQuery) {}
+  constructor(public RawQuery: RawQuery) { }
 
   public abstract build(): IQueryStatementResult;
 }

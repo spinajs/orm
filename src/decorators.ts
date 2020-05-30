@@ -1,5 +1,6 @@
-import { IModelDescrtiptor, IMigrationDescriptor, RelationType } from './interfaces';
+import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor } from './interfaces';
 import 'reflect-metadata';
+import { ModelBase } from './model';
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
 export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for('MIGRATION_DESCRIPTOR');
@@ -43,7 +44,7 @@ export function extractDecoratorDescriptor(
           UpdatedAt: '',
         },
         UniqueColumns: [],
-        Relations: []
+        Relations: new Map<string, IRelationDescriptor>()
       };
 
       if (!base) {
@@ -184,15 +185,18 @@ export function Unique() {
  * @param foreignKey
  * @param primaryKey 
  */
-export function BelongsTo(targetModel: string, foreignKey: string, primaryKey?: string) {
-  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
-    model.Relations.push({
+export function BelongsTo(foreignKey: string, primaryKey?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+
+    model.Relations.set(propertyKey, {
+      Name: propertyKey,
       Type: RelationType.One,
-      SourceModel: targetModel,
-      TargetModel: _target.constructor.name,
-      TargetModelPrimaryKey: foreignKey,
-      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+      SourceModel: target.constructor,
+      TargetModel: Reflect.getMetadata('design:type', target, propertyKey),
+      ForeignKey: foreignKey,
+      PrimaryKey: primaryKey ?? model.PrimaryKey,
     });
+
   });
 }
 
@@ -205,14 +209,15 @@ export function BelongsTo(targetModel: string, foreignKey: string, primaryKey?: 
  * @param primaryKey 
  * 
  */
-export function HasMany(targetModel: string, foreignKey: string, primaryKey?: string) {
-  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
-    model.Relations.push({
+export function HasMany(foreignKey: string, primaryKey?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    model.Relations.set(propertyKey,{
+      Name: propertyKey,
       Type: RelationType.Many,
-      SourceModel: targetModel,
-      TargetModel: _target.constructor.name,
-      TargetModelPrimaryKey: foreignKey,
-      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+      SourceModel: target.constructor,
+      TargetModel: Reflect.getMetadata('design:type', target, propertyKey),
+      ForeignKey: foreignKey,
+      PrimaryKey: primaryKey ?? model.PrimaryKey,
     });
   });
 }
@@ -226,14 +231,15 @@ export function HasMany(targetModel: string, foreignKey: string, primaryKey?: st
  * @param joinModelTargetPk 
  * @param joinModelSourcePk 
  */
-export function HasManyToMany(targetModel: string, joinModel: string, foreignKey?: string, primaryKey?: string, joinModelTargetPk?: string, joinModelSourcePk?: string) {
-  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
-    model.Relations.push({
+export function HasManyToMany(joinModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string, joinModelTargetPk?: string, joinModelSourcePk?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    model.Relations.set(propertyKey,{
+      Name: propertyKey,
       Type: RelationType.ManyToMany,
-      SourceModel: targetModel,
-      TargetModel: _target.constructor.name,
-      TargetModelPrimaryKey: foreignKey,
-      SourceModelPrimaryKey: primaryKey ?? model.PrimaryKey,
+      SourceModel: target.constructor,
+      TargetModel: target.constructor.name,
+      ForeignKey: foreignKey,
+      PrimaryKey: primaryKey ?? model.PrimaryKey,
       JoinModel: joinModel,
       JoinModelTargetModelPKey_Name: joinModelTargetPk,
       JoinModelSourceModelPKey_Name: joinModelSourcePk

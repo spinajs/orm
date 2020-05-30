@@ -69,7 +69,7 @@ export abstract class ModelBase<T> {
   /**
    * Get all data from db
    */
-  public static async all<U>(_page?: number, _perPage?: number): Promise<U[]> {
+  public static all<T>(_page?: number, _perPage?: number): SelectQueryBuilder<T> {
     throw Error('Not implemented');
   }
 
@@ -117,10 +117,8 @@ export abstract class ModelBase<T> {
     throw Error('Not implemented');
   }
 
-  public static find<T>(pks: any[]): Promise<T[]>;
-  public static find<T>(pks: any): Promise<T>;
   // @ts-ignore
-  public static find<T>(pks: any | any[]): Promise<T | T[]> {
+  public static find<T>(pks: any | any[]): Promise<T> {
     throw Error('Not implemented');
   }
 
@@ -311,14 +309,14 @@ export const MODEL_STATIC_MIXINS = {
     return query.update(data);
   },
 
-  async all(page: number, perPage: number): Promise<any[]> {
+  all(page: number, perPage: number): SelectQueryBuilder {
     const { query } = _createQuery(this as any, SelectQueryBuilder);
 
     if (page >= 0 && perPage > 0) {
       query.take(perPage).skip(page * perPage);
     }
 
-    return await query;
+    return query;
   },
 
   insertBulk<T>(data: Array<ModelBase<T> | object>) {
@@ -357,20 +355,22 @@ export const MODEL_STATIC_MIXINS = {
     return (await Array.isArray(pks)) ? query.whereIn(pkey, pks) : query.where(pkey, pks).first();
   },
 
-  async findOrFail(pks: any | any[]): Promise<any> {
-    const { query, description, model } = _createQuery(this as any, SelectQueryBuilder);
+  findOrFail(pks: any | any[]): SelectQueryBuilder {
+    const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
 
     if (Array.isArray(pks)) {
-      const ar = await query.whereIn(pkey, pks);
-      if (ar.length !== pks.length) {
-        throw new Error(`could not find all of pkeys in model ${model.name}`);
-      }
-
-      return ar;
+      query.whereIn(pkey, pks);
+      query.middleware((result) => {
+        if (result.length !== pks.length) {
+          throw new Error(`could not find all of pkeys in model ${this.model.name}`);
+        }
+      });
+    } else {
+      query.where(pkey, pks).firstOrFail();
     }
 
-    return await query.where(pkey, pks).firstOrFail();
+    return query;
   },
 
   async destroy(pks: any | any[]): Promise<void> {
