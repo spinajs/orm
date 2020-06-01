@@ -10,7 +10,7 @@ import {
   SchemaQueryBuilder,
   QueryBuilder,
 } from './builders';
-import { ModelHydrator, DbPropertyHydrator, JoinHydrator, NonDbPropertyHydrator } from './hydrators';
+import { ModelHydrator, DbPropertyHydrator, OneToOneRelationHydrator, NonDbPropertyHydrator } from './hydrators';
 import { Logger, Log } from '@spinajs/log';
 
 export type TransactionCallback = (driver: OrmDriver) => Promise<any>;
@@ -70,7 +70,7 @@ export abstract class OrmDriver extends SyncModule {
   public resolve(container: IContainer) {
     container.register(DbPropertyHydrator).as(ModelHydrator);
     container.register(NonDbPropertyHydrator).as(ModelHydrator);
-    container.register(JoinHydrator).as(ModelHydrator);
+    container.register(OneToOneRelationHydrator).as(ModelHydrator);
   }
 
   /**

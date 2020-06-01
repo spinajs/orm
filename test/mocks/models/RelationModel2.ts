@@ -1,11 +1,18 @@
-import { Connection, Primary, Model } from "../../../src/decorators";
+import { Connection, Primary, Model, BelongsTo } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
+import { Model1 } from "./Model1";
 
 @Connection("sqlite")
-@Model("TestTable3")
+@Model("TestTableRelation2")
 // @ts-ignore
-export class RelationModel2 extends ModelBase<Model3>
+export class RelationModel2 extends ModelBase<RelationModel2>
 {
     @Primary()
     public Id: number;
+    
+    @BelongsTo("OwnerId", "Id")
+    public Owner : Model1;
+
+    public Property2: string;
+
 }

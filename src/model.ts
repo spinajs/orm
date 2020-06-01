@@ -1,5 +1,5 @@
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
-import { IModelDescrtiptor } from './interfaces';
+import { IModelDescrtiptor, RelationType } from './interfaces';
 import { WhereFunction } from './types';
 import {
   RawQuery,
@@ -117,6 +117,8 @@ export abstract class ModelBase<T> {
     throw Error('Not implemented');
   }
 
+  public static find<T>(pks: any[]): Promise<T[]>;
+  public static find<T>(pks: any): Promise<T>;
   // @ts-ignore
   public static find<T>(pks: any | any[]): Promise<T> {
     throw Error('Not implemented');
@@ -198,6 +200,12 @@ export abstract class ModelBase<T> {
       const val = (this as any)[c.Name];
       (obj as any)[c.Name] = c.Converter ? c.Converter.toDB(val) : val;
     });
+
+    for (const [, val] of this.ModelDescriptor.Relations) {
+      if (val.Type === RelationType.One) {
+        (obj as any)[val.ForeignKey] = (this as any)[val.Name].PrimaryKeyValue;
+      }
+    }
 
     return obj;
   }
@@ -301,6 +309,8 @@ export const MODEL_STATIC_MIXINS = {
     value?: any,
   ): SelectQueryBuilder {
     const { query } = _createQuery(this as any, SelectQueryBuilder);
+    query.select("*");
+
     return query.where(column, operator, value);
   },
 
@@ -351,26 +361,37 @@ export const MODEL_STATIC_MIXINS = {
   async find(pks: any | any[]): Promise<any> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
+    query.select("*");
 
     return (await Array.isArray(pks)) ? query.whereIn(pkey, pks) : query.where(pkey, pks).first();
   },
 
-  findOrFail(pks: any | any[]): SelectQueryBuilder {
+  async findOrFail<T>(pks: any | any[]): Promise<T | T[]> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
+    const middleware = {
+      afterData(data: any[]) {
+        if (data.length !== pks.length) {
+          throw new Error(`could not find all of pkeys in model ${this.model.name}`);
+        }
+
+        return data;
+      },
+
+      // tslint:disable-next-line: no-empty
+      afterHydration(_data: Array<ModelBase<any>>) { }
+    }
+
+    query.select("*");
 
     if (Array.isArray(pks)) {
       query.whereIn(pkey, pks);
-      query.middleware((result) => {
-        if (result.length !== pks.length) {
-          throw new Error(`could not find all of pkeys in model ${this.model.name}`);
-        }
-      });
-    } else {
-      query.where(pkey, pks).firstOrFail();
-    }
+      query.middleware(middleware);
 
-    return query;
+      return await query;
+    } else {
+      return await query.where(pkey, pks).firstOrFail<T>();
+    }
   },
 
   async destroy(pks: any | any[]): Promise<void> {

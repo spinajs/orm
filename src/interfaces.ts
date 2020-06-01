@@ -375,8 +375,8 @@ export interface IQueryBuilder {
 export interface ILimitBuilder {
   take(count: number): this;
   skip(count: number): this;
-  first(): this;
-  firstOrFail(): this;
+  first<T>(): Promise<T>;
+  firstOrFail<T>(): Promise<T>;
   getLimits(): IQueryLimit;
 }
 
@@ -387,7 +387,7 @@ export interface IOrderByBuilder {
 }
 
 export interface IColumnsBuilder {
- 
+
   /**
    * clears selected columns
    */
@@ -420,15 +420,15 @@ export interface IColumnsBuilder {
    * 
    * @param rawQuery  raw query to be executed
    */
-  select(rawQuery: RawQuery) : this;
-  
+  select(rawQuery: RawQuery): this;
+
   /**
    * Selects multiple columns at once with aliases. Map key property is column name, value is its alias
    * 
    * @param columns column list with aliases
    */
   // tslint:disable-next-line: unified-signatures
-  select(columns : Map<string, string>) : this;
+  select(columns: Map<string, string>): this;
 }
 
 export interface IWhereBuilder {
@@ -462,7 +462,7 @@ export interface IJoinBuilder {
 
   leftJoin(query: RawQuery): this;
   leftJoin(table: string, foreignKey: string, primaryKey: string): this;
-  
+
   // tslint:disable-next-line: unified-signatures
   leftJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
@@ -579,3 +579,23 @@ export abstract class OrderByQueryCompiler implements IQueryCompiler {
 /**
  * ==========================================================
  */
+
+/**
+ * Middlewares for query builders
+ */
+export interface IBuilderMiddleware {
+
+  /**
+   * 
+   * Executed AFTER query is executed in DB and fetcher raw data
+   * 
+   * @param data raw data fetched from DB
+   */
+  afterData(data: any[]): any[];
+
+  /**
+   * 
+   * @param data hydrated data. Models are created and hydrated with data
+   */
+  afterHydration(data: Array<ModelBase<any>>): Promise<void> | void;
+}

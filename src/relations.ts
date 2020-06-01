@@ -1,27 +1,74 @@
 import { InvalidOperation } from '@spinajs/exceptions';
-import { IRelationDescriptor, IModelDescrtiptor } from './interfaces';
-import { NewInstance } from '@spinajs/di';
-import { SelectQueryBuilder, QueryBuilder } from './builders';
+import { IRelationDescriptor, IModelDescrtiptor, IBuilderMiddleware } from './interfaces';
+import { NewInstance, DI } from '@spinajs/di';
+import { SelectQueryBuilder } from './builders';
 import { extractModelDescriptor, ModelBase } from './model';
 import { Orm } from './orm';
 
 export interface IOrmRelation {
-    execute(callback: (qb: QueryBuilder) => void): void;
+    execute(callback?: (this: SelectQueryBuilder, relation: OrmRelation) => void): void;
 }
 
 export abstract class OrmRelation implements IOrmRelation {
 
-    get Alias() {
-        return this.parentRelation !== undefined ? `$${this.parentRelation}$${this._description.Name}$` : `$${this._description.Name}$`;
+    get Alias(): string {
+        return this.parentRelation !== undefined ? `$${this.parentRelation.Alias}$${this._description.Name}$` : `$${this._description.Name}$`;
     }
 
     constructor(protected _orm: Orm, protected _query: SelectQueryBuilder<any>, protected _description: IRelationDescriptor, protected parentRelation?: OrmRelation) {
 
     }
 
-    public abstract execute(callback: (qb: QueryBuilder) => void): void;
+    public abstract execute(callback?: (this: SelectQueryBuilder, relation: OrmRelation) => void): void;
 }
 
+class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
+    public afterData(data: any[]): any[] {
+
+        return data.map(d => {
+
+            const transformedData = Object.assign(d);
+            for (const key in transformedData) {
+                if (key.startsWith('$')) {
+                    this.setDeep(transformedData, key.replace(/\$+/g, '').split("."), d[key]);
+                    delete transformedData[key];
+                }
+            }
+
+            return transformedData;
+
+        });
+    }
+
+    // tslint:disable-next-line: no-empty
+    public afterHydration(_data: Array<ModelBase<any>>): void | Promise<void> {
+    }
+
+    /**
+     * Dynamically sets a deeply nested value in an object.
+     * Optionally "bores" a path to it if its undefined.
+     * @function
+     * @param {!object} obj  - The object which contains the value you want to change/set.
+     * @param {!array} path  - The array representation of path to the value you want to change/set.
+     * @param {!mixed} value - The value you want to set it to.
+     * @param {boolean} setrecursively - If true, will set value of non-existing path as well.
+     */
+    protected setDeep(obj: any, path: any[], value: any, setrecursively = true) {
+        path.reduce((a, b, level) => {
+            if (setrecursively && typeof a[b] === "undefined" && level !== path.length - 1) {
+                a[b] = {};
+                return a[b];
+            }
+
+            if (level === path.length - 1) {
+                a[b] = value;
+                return value;
+            }
+            return a[b];
+        }, obj);
+    }
+
+}
 
 
 @NewInstance()
@@ -29,9 +76,10 @@ export class BelongsToRelation extends OrmRelation {
 
     protected _targetModel: Constructor<ModelBase<any>>;
     protected _targetModelDescriptor: IModelDescrtiptor;
+    protected _relationQuery: SelectQueryBuilder;
 
-    constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor) {
-        super(_orm, _query, _description);
+    constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor, _parentRelation?: OrmRelation) {
+        super(_orm, _query, _description, _parentRelation);
 
         this._targetModel = this._orm.Models.find(m => m.name === this._description.TargetModel.name)?.type ?? undefined;
 
@@ -40,20 +88,34 @@ export class BelongsToRelation extends OrmRelation {
         }
 
         this._targetModelDescriptor = extractModelDescriptor(this._targetModel);
+
+        const orm = DI.get<Orm>(Orm);
+        const driver = orm.Connections.get(this._targetModelDescriptor.Connection);
+
+        const cnt = driver.Container;
+        this._relationQuery = cnt.resolve<SelectQueryBuilder>(SelectQueryBuilder, [driver, this._targetModel, this]);
+        this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
+
+        if (driver.Options.Database) {
+            this._relationQuery.schema(driver.Options.Database);
+        }
     }
 
-    public execute(callback: (relationOwner: QueryBuilder, relation: OrmRelation) => void) {
-        this._query.columns(this._targetModelDescriptor.Columns.map((c) => {
+    public execute(callback: (this: SelectQueryBuilder, relation: OrmRelation) => void) {
+        this._relationQuery.columns(this._targetModelDescriptor.Columns.map((c) => {
             return `${this.Alias}.${c.Name}`;
         }));
 
-        this._query.leftJoin(this._targetModelDescriptor.TableName, this._description.ForeignKey, this._description.PrimaryKey);
+        this._query.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.ForeignKey, `${this._description.PrimaryKey}`);
 
         if (callback) {
-            callback(this._query, this);
+            callback.call(this._relationQuery, [this]);
         }
+
+        this._query.mergeStatements(this._relationQuery);
+        this._query.middleware(new BelongsToRelationResultTransformMiddleware());
     }
- 
+
 }
 
 @NewInstance()

@@ -702,4 +702,39 @@ describe("General model tests", () => {
         expect(models.find(m => m.name === "Test.registered")).to.be.not.null;
 
     })
+
+    it("Custom middleware should work", async () => {
+
+        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([{
+                a: 1
+            }]);
+        }));
+
+        // @ts-ignore
+        await db();
+        const middleware = {
+            // tslint:disable-next-line: no-empty
+            afterData(data: any[]) {
+                return data;
+            },
+
+            // tslint:disable-next-line: no-empty
+            afterHydration(_data: Array<ModelBase<any>>) { }
+        };
+        const spy = sinon.spy(middleware, "afterData");
+        const spy2 = sinon.spy(middleware, "afterHydration");
+
+
+        await Model1.where({ Id: 1 }).middleware(middleware);
+
+        expect(spy.calledOnce).to.be.true;
+        expect(spy2.calledOnce).to.be.true;
+
+    })
 });

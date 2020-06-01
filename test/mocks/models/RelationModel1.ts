@@ -3,7 +3,7 @@ import { ModelBase } from "../../../src/model";
 import { RelationModel2 } from "./RelationModel2";
 
 @Connection("sqlite")
-@Model("TestTable3")
+@Model("TestTableRelation1")
 // @ts-ignore
 export class RelationModel1 extends ModelBase<Model3>
 {
@@ -12,4 +12,6 @@ export class RelationModel1 extends ModelBase<Model3>
 
     @BelongsTo("OwnerId", "Id")
     public Owner : RelationModel2;
+
+    public Property1: string;
 }

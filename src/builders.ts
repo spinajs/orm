@@ -22,6 +22,7 @@ import {
   IJoinBuilder,
   IndexQueryCompiler,
   RelationType,
+  IBuilderMiddleware,
 } from './interfaces';
 import {
   BetweenStatement,
@@ -40,7 +41,7 @@ import {
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { ModelBase, extractModelDescriptor } from './model';
-import { OrmRelation, BelongsToRelation } from './relations';
+import { OrmRelation, BelongsToRelation, IOrmRelation } from './relations';
 import { Orm } from './orm';
 
 function isWhereOperator(val: any) {
@@ -53,11 +54,12 @@ export class Builder<T = any> {
   protected _driver: OrmDriver;
   protected _container: Container;
   protected _model?: Constructor<ModelBase<any>>;
-  protected _relations: OrmRelation[] = [];
+
 
   protected _nonSelect: boolean;
   protected _queryContext: QueryContext;
-  protected _middlewares: Array<(rows: any[]) => void> = [];
+  protected _middlewares: IBuilderMiddleware[] = [];
+
 
   constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
     this._driver = driver;
@@ -66,8 +68,10 @@ export class Builder<T = any> {
     this._nonSelect = true;
   }
 
-  public middleware(callback: (rows: any[]) => void) {
-    this._middlewares.push(callback);
+  public middleware(middleware: IBuilderMiddleware) {
+    this._middlewares.push(middleware);
+
+    return this;
   }
 
   /**
@@ -79,23 +83,43 @@ export class Builder<T = any> {
 
   public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
     const compiled = this.toDB();
-    const resolveFunc = (result: any[]) => {
-      return result.map(r => {
-        return new this._model(r);
-      });
-    }
 
     return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
       try {
-        this._middlewares.forEach(m => m.call(this, [result]));
 
-        (this._model && !this._nonSelect) ?
-          resolve(
-            resolveFunc(result)
-          ) :
+
+
+        if (this._model && !this._nonSelect) {
+
+          let transformedResult = result;
+
+          if (this._middlewares.length > 0) {
+            transformedResult = this._middlewares.reduce((_, current) => {
+              return current.afterData(result);
+            }, []);
+          }
+
+          const models = transformedResult.map(r => {
+            return new this._model(r);
+          });
+
+          if (this._middlewares.length > 0) {
+            Promise.all(this._middlewares.map(m => m.afterHydration(models))).then(() => {
+              resolve(
+                models
+              );
+            }, reject);
+          } else {
+            resolve(
+              models
+            );
+          }
+        } else {
           resolve(
             result
           );
+        }
+
       } catch (err) {
         reject(err);
       }
@@ -186,30 +210,6 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   public from(table: string, alias?: string): this {
     return this.setTable(table, alias);
   }
-
-  public populate<R = any>(relation: string, callback: (qb: QueryBuilder<R>) => void) {
-
-    let relInstance: OrmRelation = null;
-    const descriptor = extractModelDescriptor(this._model);
-
-    if (!descriptor.Relations.has(relation)) {
-      throw new InvalidArgument(`Relation ${relation} not exists in model ${this._model?.constructor.name}`);
-    }
-
-    const relDescription = descriptor.Relations.get(relation);
-    switch (relDescription.Type) {
-
-      case RelationType.One:
-        relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription]);
-        break;
-    }
-
-    relInstance.execute(callback);
-
-    this._relations.push(relInstance);
-
-    return this;
-  }
 }
 
 @NewInstance()
@@ -246,11 +246,11 @@ export class LimitBuilder implements ILimitBuilder {
     return this;
   }
 
-  public first() {
+  public async first() {
     this._first = true;
     this._limit.limit = 1;
-    
-    return this;
+
+    return (await this) as any;
   }
 
   public firstOrFail() {
@@ -693,7 +693,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
    * column query props
    */
   protected _distinct: boolean;
-  protected _columns: IQueryStatement[];
+  protected _columns: IQueryStatement[] = [];
 
   /**
    * limit query props
@@ -710,10 +710,14 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   /**
    * where query props
    */
-  protected _statements: IQueryStatement[];
+  protected _statements: IQueryStatement[] = [];
   protected _boolean: WhereBoolean;
 
-  protected _joinStatements: IQueryStatement[];
+  protected _joinStatements: IQueryStatement[] = [];
+
+  protected _owner: IOrmRelation;
+
+  protected _relations: IOrmRelation[] = [];
 
   @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder)
   /// @ts-ignore
@@ -723,17 +727,21 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     return this._distinct;
   }
 
-  constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
+  public get Owner(): IOrmRelation {
+    return this._owner;
+  }
+
+  public get Relations(): IOrmRelation[] {
+    return this._relations;
+  }
+
+  constructor(container: Container, driver: OrmDriver, model: Constructor<any>, owner?: IOrmRelation) {
     super(container, driver, model);
 
     this._distinct = false;
-    this._columns = [];
     this._method = QueryMethod.SELECT;
 
     this._boolean = WhereBoolean.AND;
-    this._statements = [];
-
-    this._joinStatements = [];
 
     this._sort = {
       column: '',
@@ -748,6 +756,36 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
     this._nonSelect = false;
     this._queryContext = QueryContext.Select;
+    this._owner = owner;
+  }
+
+  public populate<R = this>(relation: string, callback?: (this: SelectQueryBuilder<R>, relation: OrmRelation) => void) {
+
+    let relInstance: OrmRelation = null;
+    const descriptor = extractModelDescriptor(this._model);
+
+    if (!descriptor.Relations.has(relation)) {
+      throw new InvalidArgument(`Relation ${relation} not exists in model ${this._model?.constructor.name}`);
+    }
+
+    const relDescription = descriptor.Relations.get(relation);
+    switch (relDescription.Type) {
+      case RelationType.One:
+        relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+        break;
+    }
+
+    relInstance.execute(callback);
+
+    this._relations.push(relInstance);
+
+    return this;
+  }
+
+  public mergeStatements(builder: SelectQueryBuilder) {
+    this._joinStatements = this._joinStatements.concat(builder._joinStatements);
+    this._columns = this._columns.concat(builder._columns);
+    this._statements = this._statements.concat(builder._statements);
   }
 
   public min(column: string, as?: string): this {
