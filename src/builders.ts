@@ -414,7 +414,7 @@ export class JoinBuilder implements IJoinBuilder {
       stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, fkOrPkKey, primaryKey, AliasOrForeignKey]);
     }
     else {
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT]);
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT]);
     }
 
     this.JoinStatements.push(stmt);
