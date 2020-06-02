@@ -1,5 +1,5 @@
 import { ManyToManyRelation } from './../src/relations';
-import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator } from './../src/hydrators';
+import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator, JunctionModelPropertyHydrator } from './../src/hydrators';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
 import { Configuration } from "@spinajs/configuration";
@@ -44,6 +44,7 @@ describe("Orm relations tests", () => {
         DI.register(DbPropertyHydrator).as(ModelHydrator);
         DI.register(NonDbPropertyHydrator).as(ModelHydrator);
         DI.register(OneToOneRelationHydrator).as(ModelHydrator);
+        DI.register(JunctionModelPropertyHydrator).as(ModelHydrator);
 
         DI.resolve(LogModule);
         DI.resolve<Orm>(Orm);

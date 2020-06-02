@@ -99,6 +99,8 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
                     (d as any)[self._description.Name] = relationData.filter(rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
                 });
 
+                relationData.forEach( d=> delete (d as any).JunctionModel );
+
             }
         }
 
