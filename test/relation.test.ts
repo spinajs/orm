@@ -475,7 +475,7 @@ describe("Orm relations tests", () => {
             },
             {
                 Id: 2,
-                model4_id: 2,
+                model4_id: 1,
                 model5_id: 3,
                 JoinProperty: "joinProp2",
                 '$ForeignModel$.Property5': "prop5",

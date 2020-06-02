@@ -90,19 +90,34 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
         const hydrateMiddleware = {
-            afterData(data: any[]) { return data; },
+            afterData(data: any[]) {
+                return data.map(d => Object.assign({}, d.ForeignModel, { JunctionModel: self.pickProps(d, ["ForeignModel"]) }));
+            },
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => {
-                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
-                })
+                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                });
 
             }
         }
 
         this._relationQuery.whereIn(this._description.ForeignKey, pks);
+        this._relationQuery.middleware(new BelongsToRelationResultTransformMiddleware());
         this._relationQuery.middleware(hydrateMiddleware)
         return await this._relationQuery;
+    }
+
+    private pickProps(source: any, except: string[]) {
+
+        const obj : any = {};
+        for (const p in source) {
+            if (except.indexOf(p) === -1) {
+                obj[p] = source[p];
+            }
+        }
+
+        return obj;
     }
 }
 
@@ -266,7 +281,7 @@ export class ManyToManyRelation extends OrmRelation {
             callback.call(this._joinQuery, [this]);
         }
 
-        const joinRelationDescriptor = { 
+        const joinRelationDescriptor = {
             Name: this._description.Name,
             Type: RelationType.Many,
             TargetModel: this._description.JunctionModel,
