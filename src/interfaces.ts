@@ -597,5 +597,5 @@ export interface IBuilderMiddleware {
    * 
    * @param data hydrated data. Models are created and hydrated with data
    */
-  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> | void;
+  afterHydration(data: Array<ModelBase<any>>): Promise<any[] | void>;
 }

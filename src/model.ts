@@ -379,7 +379,7 @@ export const MODEL_STATIC_MIXINS = {
       },
 
       // tslint:disable-next-line: no-empty
-      afterHydration(_data: Array<ModelBase<any>>) { }
+      async afterHydration(_data: Array<ModelBase<any>>) { }
     }
 
     query.select("*");

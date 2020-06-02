@@ -59,7 +59,7 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
         const hydrateMiddleware = {
             afterData(data: any[]) { return data; },
-            afterHydration(relationData: Array<ModelBase<any>>) : void {
+            async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => { 
                     (d as any)[self._description.Name] = relationData.filter( rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
@@ -93,7 +93,7 @@ class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
     }
 
     // tslint:disable-next-line: no-empty
-    public afterHydration(_data: Array<ModelBase<any>>): void | Promise<any[]> {
+    public async afterHydration(_data: Array<ModelBase<any>>) {
     }
 
     /**

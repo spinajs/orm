@@ -13,7 +13,7 @@ import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { extractModelDescriptor } from "./../src/model";
 import { RelationModel1 } from './mocks/models/RelationModel1';
-import { BelongsToRelation } from '../src/relations';
+import { BelongsToRelation, OneToManyRelation } from '../src/relations';
 import { Orm } from '../src/orm';
 import { RelationModel2 } from './mocks/models/RelationModel2';
 
@@ -48,7 +48,7 @@ describe("Orm relations tests", () => {
 
         const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
 
-        tableInfoStub.withArgs("TestTableRelation1",undefined).returns(new Promise(res => {
+        tableInfoStub.withArgs("TestTableRelation1", undefined).returns(new Promise(res => {
             res([{
                 Type: "INT",
                 MaxLength: 0,
@@ -63,7 +63,7 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false
-            },{
+            }, {
                 Type: "INT",
                 MaxLength: 0,
                 Comment: "",
@@ -95,7 +95,7 @@ describe("Orm relations tests", () => {
             }]);
         }));
 
-        tableInfoStub.withArgs("TestTableRelation2",undefined).returns(new Promise(res => {
+        tableInfoStub.withArgs("TestTableRelation2", undefined).returns(new Promise(res => {
             res([{
                 Type: "INT",
                 MaxLength: 0,
@@ -110,7 +110,7 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false
-            },{
+            }, {
                 Type: "INT",
                 MaxLength: 0,
                 Comment: "",
@@ -136,6 +136,23 @@ describe("Orm relations tests", () => {
                 PrimaryKey: true,
                 AutoIncrement: true,
                 Name: "Property2",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }]);
+        }));
+        tableInfoStub.withArgs("TestTable1", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "RelId2",
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false
@@ -172,6 +189,27 @@ describe("Orm relations tests", () => {
         expect(desc.SourceModel.name).to.eq("RelationModel1");
     })
 
+    it("HasMany relation decorator", async () => {
+
+
+        const descriptor = extractModelDescriptor(RelationModel2);
+
+        expect(descriptor.Relations.size).to.eq(2);
+        expect(descriptor.Relations.has("Many")).to.be.true;
+
+        expect(descriptor.Relations.get("Many")).to.include({
+            Name: "Many",
+            Type: RelationType.Many,
+            PrimaryKey: "Id",
+            ForeignKey: "RelId2"
+        });
+
+        const desc = descriptor.Relations.get("Many");
+
+        expect(desc.TargetModel.name).to.eq("Model1");
+        expect(desc.SourceModel.name).to.eq("RelationModel2");
+    })
+
     it("Belongs to relation is executed", async () => {
 
         await db();
@@ -206,6 +244,7 @@ describe("Orm relations tests", () => {
     })
 
     it("OneToOneRelationHydrator is working", async () => {
+        await db();
 
         sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
             res([{
@@ -220,7 +259,6 @@ describe("Orm relations tests", () => {
             }]);
         }));
 
-        await db();
 
         const result = await RelationModel1.where({ Id: 1 }).populate("Owner", function () {
             this.populate("Owner");
@@ -237,6 +275,8 @@ describe("Orm relations tests", () => {
 
     it("OneToOneRelation should be dehydrated", async () => {
 
+        await db();
+
         sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
             res([{
                 Id: 1,
@@ -250,12 +290,81 @@ describe("Orm relations tests", () => {
             }]);
         }));
 
-        await db();
-
         const result = await RelationModel1.where({ Id: 1 }).populate("Owner").first<RelationModel1>();
         const dehydrated = result.dehydrate() as any;
 
         expect(dehydrated).to.be.not.null;
         expect(dehydrated.OwnerId).to.eq(2);
+    })
+
+    it("HasMany relation should be executed", async () => {
+
+        await db();
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property2: "property2",
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                RelId2: 1
+            },
+            {
+                Id: 2,
+                RelId2: 1
+            }]);
+        }));
+
+
+
+        const callback = sinon.spy(OneToManyRelation.prototype, "execute");
+        const query = RelationModel2.where({ Id: 1 }).populate("Many").first<RelationModel1>();
+
+        expect(callback.calledOnce).to.be.true;
+        expect(query).to.be.not.null;
+
+        const result = await query;
+
+        expect(result).to.be.not.null;
+
+        callback.restore();
+    })
+
+    it("HasMany relation with belongsToRelation should be executed", async () => {
+
+        await db();
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property2: "property2",
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                RelId2: 1
+            },
+            {
+                Id: 2,
+                RelId2: 1
+            }]);
+        }));
+
+
+
+        const callback = sinon.spy(OneToManyRelation.prototype, "execute");
+        const query = RelationModel2.where({ Id: 1 }).populate("Many").first<RelationModel1>();
+
+        expect(callback.calledOnce).to.be.true;
+        expect(query).to.be.not.null;
+
+        const result = await query;
+
+        expect(result).to.be.not.null;
+
+        callback.restore();
+
     })
 });

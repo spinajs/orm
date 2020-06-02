@@ -41,7 +41,7 @@ import {
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { ModelBase, extractModelDescriptor } from './model';
-import { OrmRelation, BelongsToRelation, IOrmRelation } from './relations';
+import { OrmRelation, BelongsToRelation, IOrmRelation, OneToManyRelation } from './relations';
 import { Orm } from './orm';
 
 function isWhereOperator(val: any) {
@@ -103,8 +103,12 @@ export class Builder<T = any> {
             return new this._model(r);
           });
 
+          const afterMiddlewarePromises = this._middlewares.reduce((prev, current) => {
+            return prev.concat([current.afterHydration(models)]);
+          }, [] as Array<Promise<any[] | void>>);
+
           if (this._middlewares.length > 0) {
-            Promise.all(this._middlewares.map(m => m.afterHydration(models))).then(() => {
+            Promise.all(afterMiddlewarePromises).then(() => {
               resolve(
                 models
               );
@@ -773,6 +777,9 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
       case RelationType.One:
         relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription, this._owner]);
         break;
+      case RelationType.Many:
+        relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+      break;
     }
 
     relInstance.execute(callback);

@@ -725,7 +725,7 @@ describe("General model tests", () => {
             },
 
             // tslint:disable-next-line: no-empty
-            afterHydration(_data: Array<ModelBase<any>>) { }
+            async afterHydration(_data: Array<ModelBase<any>>) { }
         };
         const spy = sinon.spy(middleware, "afterData");
         const spy2 = sinon.spy(middleware, "afterHydration");

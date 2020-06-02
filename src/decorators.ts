@@ -204,18 +204,18 @@ export function BelongsTo(foreignKey: string, primaryKey?: string) {
 /**
  * Creates one to many relation with target model.
  * 
- * @param targetModel
+ * @param targetModel - due to limitations of metadata reflection api in typescript target model mus be set explicitly
  * @param foreignKey
  * @param primaryKey 
  * 
  */
-export function HasMany(foreignKey: string, primaryKey?: string) {
+export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
     model.Relations.set(propertyKey,{
       Name: propertyKey,
       Type: RelationType.Many,
       SourceModel: target.constructor,
-      TargetModel: Reflect.getMetadata('design:type', target, propertyKey),
+      TargetModel: targetModel,
       ForeignKey: foreignKey,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
     });

@@ -1,6 +1,7 @@
-import { Connection, Primary, Model, BelongsTo } from "../../../src/decorators";
+import { Connection, Primary, Model, BelongsTo, HasMany } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 import { Model1 } from "./Model1";
+
 
 @Connection("sqlite")
 @Model("TestTableRelation2")
@@ -15,4 +16,6 @@ export class RelationModel2 extends ModelBase<RelationModel2>
 
     public Property2: string;
 
+    @HasMany(Model1, "RelId2")
+    public Many : Model1[];
 }
