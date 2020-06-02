@@ -62,11 +62,11 @@ describe("General model tests", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        expect(models.length).to.eq(8);
-        expect(models[0].name).to.eq("Model1");
-        expect(models[1].name).to.eq("Model2");
-        expect(models[0].type.name).to.eq("Model1");
-        expect(models[1].type.name).to.eq("Model2");
+        expect(models.length).to.eq(11);
+        expect(models[1].name).to.eq("Model1");
+        expect(models[2].name).to.eq("Model2");
+        expect(models[1].type.name).to.eq("Model1");
+        expect(models[2].type.name).to.eq("Model2");
     })
 
     it("Models should have added mixins", async () => {
@@ -635,7 +635,7 @@ describe("General model tests", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        let toCheck = models[0];
+        let toCheck = models[1];
         let descriptor = (toCheck.type)[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
 
         expect(descriptor).to.deep.include({
@@ -652,10 +652,11 @@ describe("General model tests", () => {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"
             },
-            PrimaryKey: "Id"
+            PrimaryKey: "Id",
+            Name: "Model1"
         });
 
-        toCheck = models[1];
+        toCheck = models[2];
         descriptor = (toCheck.type)[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
 
         expect(descriptor).to.deep.include({
@@ -672,7 +673,8 @@ describe("General model tests", () => {
                 CreatedAt: "CreatedAt",
                 UpdatedAt: "UpdatedAt"
             },
-            PrimaryKey: "Id"
+            PrimaryKey: "Id",
+            Name: "Model2"
         });
 
     })

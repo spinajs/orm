@@ -1,6 +1,6 @@
 import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor } from './interfaces';
 import 'reflect-metadata';
-import { ModelBase } from './model';
+import { ModelBase, extractModelDescriptor } from './model';
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
 export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for('MIGRATION_DESCRIPTOR');
@@ -44,7 +44,9 @@ export function extractDecoratorDescriptor(
           UpdatedAt: '',
         },
         UniqueColumns: [],
-        Relations: new Map<string, IRelationDescriptor>()
+        Relations: new Map<string, IRelationDescriptor>(),
+        Name: target.constructor.name,
+        JunctionModelProperties: []
       };
 
       if (!base) {
@@ -178,14 +180,22 @@ export function Unique() {
   });
 }
 
+export function JunctionTable() {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    model.JunctionModelProperties.push({
+      Name: propertyKey,
+      Model: Reflect.getMetadata('design:type', target, propertyKey)
+    });
+  });
+}
+
 /**
  * Creates one to one relation with target model.
  * 
- * @param targetModel
- * @param foreignKey
- * @param primaryKey 
+ * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
+ * @param primaryKey - primary key in related model, defaults to primary key taken from db
  */
-export function BelongsTo(foreignKey: string, primaryKey?: string) {
+export function BelongsTo(foreignKey?: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
     model.Relations.set(propertyKey, {
@@ -193,7 +203,7 @@ export function BelongsTo(foreignKey: string, primaryKey?: string) {
       Type: RelationType.One,
       SourceModel: target.constructor,
       TargetModel: Reflect.getMetadata('design:type', target, propertyKey),
-      ForeignKey: foreignKey,
+      ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
     });
 
@@ -205,18 +215,18 @@ export function BelongsTo(foreignKey: string, primaryKey?: string) {
  * Creates one to many relation with target model.
  * 
  * @param targetModel - due to limitations of metadata reflection api in typescript target model mus be set explicitly
- * @param foreignKey
+ * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
  * @param primaryKey 
  * 
  */
-export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey: string, primaryKey?: string) {
+export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
-    model.Relations.set(propertyKey,{
+    model.Relations.set(propertyKey, {
       Name: propertyKey,
       Type: RelationType.Many,
       SourceModel: target.constructor,
       TargetModel: targetModel,
-      ForeignKey: foreignKey,
+      ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
     });
   });
@@ -228,21 +238,24 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey: st
  * @param targetModel
  * @param foreignKey
  * @param primaryKey 
- * @param joinModelTargetPk 
- * @param joinModelSourcePk 
+ * @param junctionModelTargetPk 
+ * @param junctionModelSourcePk 
  */
-export function HasManyToMany(joinModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string, joinModelTargetPk?: string, joinModelSourcePk?: string) {
+export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, targetModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string, junctionModelTargetPk?: string, junctionModelSourcePk?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
-    model.Relations.set(propertyKey,{
+
+    const targetModelDescriptor = extractModelDescriptor(targetModel);
+
+    model.Relations.set(propertyKey, {
       Name: propertyKey,
       Type: RelationType.ManyToMany,
       SourceModel: target.constructor,
-      TargetModel: target.constructor.name,
-      ForeignKey: foreignKey,
+      TargetModel: targetModel,
+      ForeignKey: foreignKey ?? targetModelDescriptor.PrimaryKey,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
-      JoinModel: joinModel,
-      JoinModelTargetModelPKey_Name: joinModelTargetPk,
-      JoinModelSourceModelPKey_Name: joinModelSourcePk
+      JunctionModel: junctionModel,
+      JunctionModelTargetModelFKey_Name: junctionModelTargetPk ?? `${targetModelDescriptor.Name.toLowerCase()}_id`,
+      JunctionModelSourceModelFKey_Name: junctionModelSourcePk ?? `${model.Name.toLowerCase()}_id`
     });
   });
 }

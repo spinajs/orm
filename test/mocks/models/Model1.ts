@@ -1,5 +1,6 @@
-import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete } from "../../../src/decorators";
+import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete, BelongsTo } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
+import { Model4 } from "./Model4";
 
 @Connection("sqlite")
 @Model("TestTable1")
@@ -22,4 +23,7 @@ export class Model1 extends ModelBase<Model1>
     public DeletedAt : Date;
 
     public Bar : string;
+
+    @BelongsTo("OwnerId")
+    public Owner : Model4;
 }

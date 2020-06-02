@@ -1,5 +1,5 @@
 import { InvalidOperation } from '@spinajs/exceptions';
-import { IRelationDescriptor, IModelDescrtiptor, IBuilderMiddleware } from './interfaces';
+import { IRelationDescriptor, IModelDescrtiptor, IBuilderMiddleware, RelationType } from './interfaces';
 import { NewInstance, DI } from '@spinajs/di';
 import { SelectQueryBuilder } from './builders';
 import { extractModelDescriptor, ModelBase } from './model';
@@ -61,8 +61,40 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
             afterData(data: any[]) { return data; },
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
-                data.forEach(d => { 
-                    (d as any)[self._description.Name] = relationData.filter( rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                data.forEach(d => {
+                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                })
+
+            }
+        }
+
+        this._relationQuery.whereIn(this._description.ForeignKey, pks);
+        this._relationQuery.middleware(hydrateMiddleware)
+        return await this._relationQuery;
+    }
+}
+
+class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
+
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
+
+    }
+
+    public afterData(data: any[]): any[] {
+        return data;
+
+    }
+
+    public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+
+        const self = this;
+        const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
+        const hydrateMiddleware = {
+            afterData(data: any[]) { return data; },
+            async afterHydration(relationData: Array<ModelBase<any>>) {
+
+                data.forEach(d => {
+                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
                 })
 
             }
@@ -157,7 +189,6 @@ export class BelongsToRelation extends OrmRelation {
 @NewInstance()
 export class OneToManyRelation extends OrmRelation {
 
-
     constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor, _parentRelation?: OrmRelation) {
         super(_orm, _query, _description, _parentRelation);
 
@@ -170,7 +201,6 @@ export class OneToManyRelation extends OrmRelation {
 
     public execute(callback?: (this: SelectQueryBuilder<any>, relation: OrmRelation) => void): void {
 
-
         if (callback) {
             callback.call(this._relationQuery, [this]);
         }
@@ -182,6 +212,71 @@ export class OneToManyRelation extends OrmRelation {
 }
 
 @NewInstance()
-export class ManyToManyRelation {
+export class ManyToManyRelation extends OrmRelation {
 
+    protected _joinModel: Constructor<ModelBase<any>>;
+    protected _joinModelDescriptor: IModelDescrtiptor;
+    protected _joinQuery: SelectQueryBuilder;
+
+    public get TableJoinQuery() {
+        return this._joinQuery;
+    }
+
+    public get RelationQuery() {
+        return this._relationQuery;
+    }
+
+    constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor, _parentRelation?: OrmRelation) {
+        super(_orm, _query, _description, _parentRelation);
+
+        this._joinModel = this._orm.Models.find(m => m.name === this._description.JunctionModel?.name)?.type ?? undefined;
+
+        if (this._joinModel === undefined) {
+            throw new InvalidOperation(`model ${this._description.JunctionModel} not exists in orm module`);
+        }
+
+        this._joinModelDescriptor = extractModelDescriptor(this._joinModel);
+
+        const orm = DI.get<Orm>(Orm);
+        const driver = orm.Connections.get(this._targetModelDescriptor.Connection);
+
+        const cnt = driver.Container;
+        this._joinQuery = cnt.resolve<SelectQueryBuilder>(SelectQueryBuilder, [driver, this._targetModel, this]);
+
+        if (driver.Options.Database) {
+            this._joinQuery.schema(driver.Options.Database);
+        }
+
+        this._joinQuery.from(this._joinModelDescriptor.TableName);
+        this._joinQuery.columns(this._joinModelDescriptor.Columns.map((c) => {
+            return c.Name;
+        }));
+
+        this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
+        this._relationQuery.columns(this._targetModelDescriptor.Columns.map((c) => {
+            return `${this.Alias}.${c.Name}`;
+        }));
+    }
+
+    public execute(callback?: (this: SelectQueryBuilder<any>, relation: OrmRelation) => void): void {
+
+        this._relationQuery.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.JunctionModelTargetModelFKey_Name, `${this._description.ForeignKey}`);
+
+        if (callback) {
+            callback.call(this._joinQuery, [this]);
+        }
+
+        const joinRelationDescriptor = { 
+            Name: this._description.Name,
+            Type: RelationType.Many,
+            TargetModel: this._description.JunctionModel,
+            SourceModel: this._description.SourceModel,
+            ForeignKey: this._description.JunctionModelSourceModelFKey_Name,
+            PrimaryKey: this._description.PrimaryKey
+        }
+
+        this._joinQuery.mergeStatements(this._relationQuery);
+
+        this._query.middleware(new HasManyToManyRelationMiddleware(this._joinQuery, joinRelationDescriptor));
+    }
 }

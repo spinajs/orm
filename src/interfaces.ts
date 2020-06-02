@@ -167,9 +167,17 @@ export interface IModelDescrtiptor {
   UniqueColumns: string[];
 
   /**
+   * List of unique columns ( UNIQUE constraint )
+   */
+  JunctionModelProperties: IJunctionProperty[];
+
+  /**
    * List of relations in model
    */
   Relations: Map<string, IRelationDescriptor>
+
+  /** Name of model */
+  Name : string;
 
 }
 
@@ -215,13 +223,20 @@ export interface IRelationDescriptor {
   /**
    * Used in many to many relations, model for join table
    */
-  JoinModel?: Constructor<ModelBase<any>>;
+  JunctionModel?: Constructor<ModelBase<any>>;
 
   /**
    * Join table foreign keys, defaults to auto generated field names. Can be override.
    */
-  JoinModelTargetModelPKey_Name?: string;
-  JoinModelSourceModelPKey_Name?: string;
+  JunctionModelTargetModelFKey_Name?: string;
+  JunctionModelSourceModelFKey_Name?: string;
+}
+
+export interface IJunctionProperty
+{
+   Name : string;
+
+   Model: Constructor<ModelBase<any>>;
 }
 
 /**

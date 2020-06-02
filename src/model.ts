@@ -203,7 +203,9 @@ export abstract class ModelBase<T> {
 
     for (const [, val] of this.ModelDescriptor.Relations) {
       if (val.Type === RelationType.One) {
-        (obj as any)[val.ForeignKey] = (this as any)[val.Name].PrimaryKeyValue;
+        if ((this as any)[val.Name]) {
+          (obj as any)[val.ForeignKey] = (this as any)[val.Name].PrimaryKeyValue;
+        }
       }
     }
 

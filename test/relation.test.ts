@@ -1,3 +1,4 @@
+import { ManyToManyRelation } from './../src/relations';
 import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator } from './../src/hydrators';
 import { Model1 } from './mocks/models/Model1';
 import { MODEL_DESCTRIPTION_SYMBOL } from './../src/decorators';
@@ -16,6 +17,7 @@ import { RelationModel1 } from './mocks/models/RelationModel1';
 import { BelongsToRelation, OneToManyRelation } from '../src/relations';
 import { Orm } from '../src/orm';
 import { RelationModel2 } from './mocks/models/RelationModel2';
+import { Model4 } from './mocks/models/Model4';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -153,6 +155,85 @@ describe("Orm relations tests", () => {
                 PrimaryKey: true,
                 AutoIncrement: true,
                 Name: "RelId2",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }]);
+        }));
+        tableInfoStub.withArgs("JunctionTable", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "model4_id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "model5_id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }]);
+        }));
+        tableInfoStub.withArgs("TestTable5", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property5",
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false
@@ -320,7 +401,7 @@ describe("Orm relations tests", () => {
 
 
         const callback = sinon.spy(OneToManyRelation.prototype, "execute");
-        const query = RelationModel2.where({ Id: 1 }).populate("Many").first<RelationModel1>();
+        const query = RelationModel2.where({ Id: 1 }).populate("Many").first<RelationModel2>();
 
         expect(callback.calledOnce).to.be.true;
         expect(query).to.be.not.null;
@@ -328,6 +409,7 @@ describe("Orm relations tests", () => {
         const result = await query;
 
         expect(result).to.be.not.null;
+        expect(result.Many.length).to.eq(2);
 
         callback.restore();
     })
@@ -344,18 +426,67 @@ describe("Orm relations tests", () => {
         })).onSecondCall().returns(new Promise((res) => {
             res([{
                 Id: 1,
-                RelId2: 1
+                RelId2: 1,
+                '$Owner$.Id': 2,
+                '$Owner$.Property4': "property1",
             },
             {
                 Id: 2,
-                RelId2: 1
+                RelId2: 1,
+                '$Owner$.Id': 2,
+                '$Owner$.Property4': "property1",
             }]);
         }));
 
 
 
         const callback = sinon.spy(OneToManyRelation.prototype, "execute");
-        const query = RelationModel2.where({ Id: 1 }).populate("Many").first<RelationModel1>();
+        const query = RelationModel2.where({ Id: 1 }).populate("Many", function () {
+            this.populate("Owner");
+        }).first<RelationModel2>();
+ 
+        const result = await query;
+ 
+        expect(result.Many[0].Owner).to.be.not.null;
+        expect(result.Many[1].Owner).to.be.not.null;
+
+        callback.restore();
+
+    })
+
+    it("HasManyToMany relation should be executed", async () => {
+
+        await db();
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property4: "property4",
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                model4_id: 1,
+                model5_id: 2,
+                JoinProperty: "joinProp1",
+                '$ForeignModel$.Property5': "prop5",
+                '$ForeignModel$.Id': 2,
+
+            },
+            {
+                Id: 2,
+                model4_id: 2,
+                model5_id: 3,
+                JoinProperty: "joinProp2",
+                '$ForeignModel$.Property5': "prop5",
+                '$ForeignModel$.Id': 3,
+            }]);
+        }));
+
+
+
+        const callback = sinon.spy(ManyToManyRelation.prototype, "execute");
+        const query = Model4.where({ Id: 1 }).populate("ManyOwners").first<Model4>();
 
         expect(callback.calledOnce).to.be.true;
         expect(query).to.be.not.null;
@@ -363,8 +494,9 @@ describe("Orm relations tests", () => {
         const result = await query;
 
         expect(result).to.be.not.null;
+        expect(result.ManyOwners.length).to.eq(2);
 
         callback.restore();
-
     })
+
 });
