@@ -292,6 +292,28 @@ describe("Orm relations tests", () => {
         expect(desc.SourceModel.name).to.eq("RelationModel2");
     })
 
+    it("HasManyToMany relation decorator", async () => {
+
+
+        const descriptor = extractModelDescriptor(Model4);
+
+        expect(descriptor.Relations.size).to.eq(1);
+        expect(descriptor.Relations.has("ManyOwners")).to.be.true;
+
+        expect(descriptor.Relations.get("ManyOwners")).to.include({
+            Name: "ManyOwners",
+            Type: RelationType.ManyToMany,
+            PrimaryKey: "Id",
+            ForeignKey: "Id"
+        });
+
+        const desc = descriptor.Relations.get("ManyOwners");
+
+        expect(desc.TargetModel.name).to.eq("Model5");
+        expect(desc.SourceModel.name).to.eq("Model4");
+        expect(desc.JunctionModel.name).to.eq("JunctionModel");
+    })
+
     it("Belongs to relation is executed", async () => {
 
         await db();
