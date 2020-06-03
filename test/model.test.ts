@@ -110,7 +110,8 @@ describe("General model tests", () => {
         expect(query.Statements).to.be.an("array").with.length(1).to.deep.include.members([{
             _column: "id",
             _operator: "=",
-            _value: 1
+            _value: 1,
+            _tableAlias: undefined
         }]);
 
         query = Model1.where("id", ">", 1);
@@ -118,7 +119,8 @@ describe("General model tests", () => {
         expect(query.Statements).to.be.an("array").with.length(1).to.deep.include.members([{
             _column: "id",
             _operator: ">",
-            _value: 1
+            _value: 1,
+            _tableAlias: undefined
         }]);
     })
 

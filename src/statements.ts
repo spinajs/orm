@@ -9,15 +9,39 @@ export interface IQueryStatementResult {
 }
 
 export interface IQueryStatement {
+
+  TableAlias: string;
+
   build(): IQueryStatementResult;
 }
 
+export abstract class QueryStatement implements IQueryStatement {
+
+  protected _tableAlias: string;
+
+  public get TableAlias() {
+    return this._tableAlias;
+  }
+
+  public set TableAlias(alias: string) {
+    this._tableAlias = alias;
+  }
+
+  constructor(tableAlias?: string) {
+    this._tableAlias = tableAlias;
+  }
+
+  public abstract build(): IQueryStatementResult;
+}
+
 @NewInstance()
-export abstract class RawQueryStatement implements IQueryStatement {
+export abstract class RawQueryStatement extends QueryStatement {
   protected _query: string;
   protected _bindings: any[];
 
   constructor(query: string, bindings?: any[]) {
+    super();
+
     this._query = query || '';
     this._bindings = bindings || [];
   }
@@ -26,12 +50,14 @@ export abstract class RawQueryStatement implements IQueryStatement {
 }
 
 @NewInstance()
-export abstract class BetweenStatement implements IQueryStatement {
+export abstract class BetweenStatement extends QueryStatement {
   protected _val: any[];
   protected _not: boolean;
   protected _column: string;
 
-  constructor(column: string, val: any[], not: boolean) {
+  constructor(column: string, val: any[], not: boolean, tableAlias: string) {
+    super(tableAlias);
+
     this._val = val || [];
     this._not = not || false;
     this._column = column || '';
@@ -40,10 +66,11 @@ export abstract class BetweenStatement implements IQueryStatement {
   public abstract build(): IQueryStatementResult;
 }
 @NewInstance()
-export abstract class WhereQueryStatement implements IQueryStatement {
+export abstract class WhereQueryStatement extends QueryStatement {
   protected _builder: WhereBuilder;
 
-  constructor(builder: WhereBuilder) {
+  constructor(builder: WhereBuilder, tableAlias: string) {
+    super(tableAlias)
     this._builder = builder;
   }
 
@@ -51,12 +78,13 @@ export abstract class WhereQueryStatement implements IQueryStatement {
 }
 
 @NewInstance()
-export abstract class WhereStatement implements IQueryStatement {
+export abstract class WhereStatement extends QueryStatement {
   protected _column: string;
   protected _operator: WhereOperators;
   protected _value: any;
 
-  constructor(column: string, operator: WhereOperators, value: any) {
+  constructor(column: string, operator: WhereOperators, value: any, tableAlias: string) {
+    super(tableAlias)
     this._column = column;
     this._operator = operator;
     this._value = value;
@@ -66,15 +94,18 @@ export abstract class WhereStatement implements IQueryStatement {
 }
 
 @NewInstance()
-export abstract class JoinStatement implements IQueryStatement {
+export abstract class JoinStatement extends QueryStatement {
   protected _table: string;
   protected _method: JoinMethod;
   protected _foreignKey: string;
   protected _primaryKey: string;
   protected _query: RawQuery;
   protected _alias: string;
+  protected _tableAlias: string;
 
-  constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string, alias?: string) {
+  constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string, alias: string, tableAlias: string) {
+    super(tableAlias)
+
     this._method = method;
 
     if (_.isString(table)) {
@@ -82,6 +113,7 @@ export abstract class JoinStatement implements IQueryStatement {
       this._foreignKey = foreignKey;
       this._primaryKey = primaryKey;
       this._alias = alias;
+      this._tableAlias = tableAlias;
     } else {
       this._query = table;
     }
@@ -91,12 +123,14 @@ export abstract class JoinStatement implements IQueryStatement {
 }
 
 @NewInstance()
-export abstract class InStatement implements IQueryStatement {
+export abstract class InStatement extends QueryStatement {
   protected _val: any[];
   protected _not: boolean;
   protected _column: string;
 
-  constructor(column: string, val: any[], not: boolean) {
+  constructor(column: string, val: any[], not: boolean, tableAlias: string) {
+    super(tableAlias)
+
     this._val = val || [];
     this._not = not || false;
     this._column = column || '';
@@ -106,9 +140,10 @@ export abstract class InStatement implements IQueryStatement {
 }
 
 @NewInstance()
-export abstract class SelectQueryStatement implements IQueryStatement {
+export abstract class SelectQueryStatement extends QueryStatement {
   protected _builder: SelectQueryBuilder;
-  constructor(builder: SelectQueryBuilder) {
+  constructor(builder: SelectQueryBuilder, tableAlias?: string) {
+    super(tableAlias)
     this._builder = builder;
   }
 
@@ -129,12 +164,14 @@ export abstract class ExistsQueryStatement extends SelectQueryStatement {
 }
 
 @NewInstance()
-export abstract class InSetStatement implements IQueryStatement {
+export abstract class InSetStatement extends QueryStatement {
   protected _val: any[];
   protected _not: boolean;
   protected _column: string;
 
-  constructor(column: string, val: any[], not: boolean) {
+  constructor(column: string, val: any[], not: boolean, tableAlias: string) {
+    super(tableAlias)
+
     this._val = val || [];
     this._not = not || false;
     this._column = column || '';
@@ -143,21 +180,33 @@ export abstract class InSetStatement implements IQueryStatement {
   public abstract build(): IQueryStatementResult;
 }
 @NewInstance()
-export abstract class ColumnStatement implements IQueryStatement {
+export abstract class ColumnStatement extends QueryStatement {
   protected _column: string | RawQuery;
   protected _alias: string;
+  protected _tableAlias: string;
 
-  constructor(column: string | RawQuery, alias?: string) {
+  constructor(column: string | RawQuery, alias: string, tableAlias: string) {
+    super(tableAlias)
+
     this._column = column || '';
     this._alias = alias || '';
+    this._tableAlias = tableAlias;
   }
 
-  get Column() {
+  public get Column() {
     return this._column;
   }
 
-  get Alias() {
+  public get Alias() {
     return this._alias;
+  }
+
+  public get TableAlias() {
+    return this._tableAlias;
+  }
+
+  public set TableAlias(alias: string) {
+    this._tableAlias = alias;
   }
 
   get IsWildcard() {
@@ -171,8 +220,10 @@ export abstract class ColumnStatement implements IQueryStatement {
   public abstract build(): IQueryStatementResult;
 }
 
-export abstract class ColumnRawStatement implements IQueryStatement {
-  constructor(public RawQuery: RawQuery) { }
+export abstract class ColumnRawStatement extends QueryStatement {
+  constructor(public RawQuery: RawQuery) {
+    super();
+  }
 
   public abstract build(): IQueryStatementResult;
 }
@@ -181,8 +232,8 @@ export abstract class ColumnRawStatement implements IQueryStatement {
 export abstract class ColumnMethodStatement extends ColumnStatement {
   protected _method: ColumnMethods;
 
-  constructor(column: string, method: ColumnMethods, alias?: string) {
-    super(column, alias);
+  constructor(column: string, method: ColumnMethods, alias: string, tableAlias: string) {
+    super(column, alias, tableAlias);
     this._method = method;
   }
 

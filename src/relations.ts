@@ -16,7 +16,7 @@ export abstract class OrmRelation implements IOrmRelation {
     protected _relationQuery: SelectQueryBuilder;
 
     get Alias(): string {
-        return this.parentRelation !== undefined ? `${this.parentRelation.Alias.substr(0, this.parentRelation.Alias.length -1)}.$${this._description.Name}$` : `$${this._description.Name}$`;
+        return this.parentRelation !== undefined ? `${this.parentRelation.Alias}.$${this._description.Name}$` : `$${this._description.Name}$`;
     }
 
     constructor(protected _orm: Orm, protected _query: SelectQueryBuilder<any>, protected _description: IRelationDescriptor, protected parentRelation?: OrmRelation) {
@@ -99,7 +99,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
                     (d as any)[self._description.Name] = relationData.filter(rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
                 });
 
-                relationData.forEach( d=> delete (d as any).JunctionModel );
+                relationData.forEach(d => delete (d as any).JunctionModel);
 
             }
         }
@@ -112,7 +112,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
     private pickProps(source: any, except: string[]) {
 
-        const obj : any = {};
+        const obj: any = {};
         for (const p in source) {
             if (except.indexOf(p) === -1) {
                 obj[p] = source[p];
@@ -183,14 +183,15 @@ export class BelongsToRelation extends OrmRelation {
         super(_orm, _query, _description, _parentRelation);
 
         this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
-        this._relationQuery.columns(this._targetModelDescriptor.Columns.map((c) => {
-            return `${this.Alias}.${c.Name}`;
-        }));
 
+        this._targetModelDescriptor.Columns.forEach( c=> {
+            this._relationQuery.select(c.Name, `${this.Alias}.${c.Name}`);
+        })
     }
 
     public execute(callback: (this: SelectQueryBuilder, relation: OrmRelation) => void) {
 
+        this._query.setAlias(`$${this._description.SourceModel.name}$`)
         this._query.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.ForeignKey, `${this._description.PrimaryKey}`);
 
         if (callback) {

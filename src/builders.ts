@@ -163,7 +163,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   public get TableAlias() {
     return this._tableAlias;
   }
-
+ 
   /**
    * SQL schema/database name that query is executed on.
    *
@@ -206,9 +206,18 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
     }
 
     this._table = table;
-    this._tableAlias = alias ? alias : null;
+    this.setAlias(alias);
 
     return this;
+  }
+
+  /**
+   * Sets table alias for query
+   * 
+   * @param alias sql table alias
+   */
+  public setAlias(alias: string) {
+    this._tableAlias = alias;
   }
 
   public from(table: string, alias?: string): this {
@@ -303,6 +312,7 @@ export class OrderByBuilder implements IOrderByBuilder {
 export class ColumnsBuilder implements IColumnsBuilder {
   protected _container: Container;
   protected _columns: IQueryStatement[];
+  protected _tableAlias: string;
 
   constructor() {
     this._columns = [];
@@ -325,7 +335,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
   public columns(names: string[]) {
 
     this._columns = names.map(n => {
-      return this._container.resolve<ColumnStatement>(ColumnStatement, [n]);
+      return this._container.resolve<ColumnStatement>(ColumnStatement, [n, null, this._tableAlias]);
     });
 
     return this;
@@ -335,17 +345,17 @@ export class ColumnsBuilder implements IColumnsBuilder {
 
     if (column instanceof Map) {
       column.forEach((alias, colName) => {
-        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias]));
+        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias, this._tableAlias]));
       });
     }
 
     if (column instanceof RawQuery) {
       this._columns.push(
-        this._container.resolve<ColumnRawStatement>(ColumnRawStatement, [column]),
+        this._container.resolve<ColumnRawStatement>(ColumnRawStatement, [column, null, this._tableAlias]),
       );
     } else {
       this._columns.push(
-        this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias]),
+        this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias, this._tableAlias]),
       );
     }
 
@@ -386,6 +396,7 @@ export class JoinBuilder implements IJoinBuilder {
 
   protected _joinStatements: IQueryStatement[] = [];
   protected _container: Container;
+  protected _tableAlias: string;
 
   constructor(container: Container) {
     this._container = container;
@@ -396,7 +407,7 @@ export class JoinBuilder implements IJoinBuilder {
   public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
   public innerJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.INNER, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.INNER, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -409,9 +420,9 @@ export class JoinBuilder implements IJoinBuilder {
     let stmt: JoinStatement = null;
 
     if (arguments.length === 3) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, AliasOrForeignKey, fkOrPkKey]);
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, AliasOrForeignKey, fkOrPkKey, null, this._tableAlias]);
     } else if (arguments.length === 4) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, fkOrPkKey, primaryKey, AliasOrForeignKey]);
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, fkOrPkKey, primaryKey, AliasOrForeignKey, this._tableAlias]);
     }
     else {
       stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT]);
@@ -426,7 +437,7 @@ export class JoinBuilder implements IJoinBuilder {
   public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public leftOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT_OUTER, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -436,7 +447,7 @@ export class JoinBuilder implements IJoinBuilder {
   public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
   public rightJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -446,7 +457,7 @@ export class JoinBuilder implements IJoinBuilder {
   public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public rightOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT_OUTER, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -456,7 +467,7 @@ export class JoinBuilder implements IJoinBuilder {
   public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public fullOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.FULL_OUTER, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.FULL_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -466,7 +477,7 @@ export class JoinBuilder implements IJoinBuilder {
   public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
   public crossJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
     this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.CROSS, foreignKey, primaryKey]),
+      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.CROSS, foreignKey, primaryKey, null, this._tableAlias]),
     );
 
     return this;
@@ -480,6 +491,7 @@ export class WhereBuilder implements IWhereBuilder {
   protected _boolean: WhereBoolean = WhereBoolean.AND;
 
   protected _container: Container;
+  protected _tableAlias: string;
 
   get Statements() {
     return this._statements;
@@ -489,10 +501,11 @@ export class WhereBuilder implements IWhereBuilder {
     return this._boolean;
   }
 
-  constructor(container: Container) {
+  constructor(container: Container, tableAlias?: string) {
     this._container = container;
     this._boolean = WhereBoolean.AND;
     this._statements = [];
+    this._tableAlias = tableAlias;
   }
 
   public where(
@@ -509,18 +522,18 @@ export class WhereBuilder implements IWhereBuilder {
 
     if (column instanceof RawQuery) {
       this.Statements.push(
-        this._container.resolve<RawQueryStatement>(RawQueryStatement, [column.Query, column.Bindings]),
+        this._container.resolve<RawQueryStatement>(RawQueryStatement, [column.Query, column.Bindings, self._tableAlias]),
       );
       return this;
     }
 
     // handle nested where's
     if (_.isFunction(column)) {
-      const builder = new WhereBuilder(this._container);
+      const builder = new WhereBuilder(this._container, this._tableAlias);
       (column as WhereFunction).call(builder);
 
       self.Statements.push(
-        this._container.resolve<WhereQueryStatement>(WhereQueryStatement, [builder]),
+        this._container.resolve<WhereQueryStatement>(WhereQueryStatement, [builder, self._tableAlias]),
       );
       return this;
     }
@@ -556,7 +569,7 @@ export class WhereBuilder implements IWhereBuilder {
       }
 
       self._statements.push(
-        self._container.resolve<WhereStatement>(WhereStatement, [c, WhereOperators.EQ, v]),
+        self._container.resolve<WhereStatement>(WhereStatement, [c, WhereOperators.EQ, v, self._tableAlias]),
       );
 
       return self;
@@ -583,7 +596,7 @@ export class WhereBuilder implements IWhereBuilder {
       }
 
       self._statements.push(
-        self._container.resolve<WhereStatement>(WhereStatement, [c, o, v]),
+        self._container.resolve<WhereStatement>(WhereStatement, [c, o, v, self._tableAlias]),
       );
 
       return this;
@@ -610,7 +623,7 @@ export class WhereBuilder implements IWhereBuilder {
 
   public whereNotNull(column: string): this {
     this._statements.push(
-      this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL]),
+      this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL, null, this._tableAlias]),
     );
 
     return this;
@@ -618,7 +631,7 @@ export class WhereBuilder implements IWhereBuilder {
 
   public whereNull(column: string): this {
     this._statements.push(
-      this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NULL]),
+      this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NULL, null, this._tableAlias]),
     );
     return this;
   }
@@ -629,14 +642,14 @@ export class WhereBuilder implements IWhereBuilder {
 
   public whereIn(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<InStatement>(InStatement, [column, val, false]),
+      this._container.resolve<InStatement>(InStatement, [column, val, false, this._tableAlias]),
     );
     return this;
   }
 
   public whereNotIn(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<InStatement>(InStatement, [column, val, true]),
+      this._container.resolve<InStatement>(InStatement, [column, val, true, this._tableAlias]),
     );
     return this;
   }
@@ -657,28 +670,28 @@ export class WhereBuilder implements IWhereBuilder {
 
   public whereBetween(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, false]),
+      this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, false, this._tableAlias]),
     );
     return this;
   }
 
   public whereNotBetween(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, true]),
+      this._container.resolve<BetweenStatement>(BetweenStatement, [column, val, true, this._tableAlias]),
     );
     return this;
   }
 
   public whereInSet(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<InSetStatement>(InSetStatement, [column, val, false]),
+      this._container.resolve<InSetStatement>(InSetStatement, [column, val, false, this._tableAlias]),
     );
     return this;
   }
 
   public whereNotInSet(column: string, val: any[]): this {
     this._statements.push(
-      this._container.resolve<InSetStatement>(InSetStatement, [column, val, true]),
+      this._container.resolve<InSetStatement>(InSetStatement, [column, val, true, this._tableAlias]),
     );
     return this;
   }
@@ -763,6 +776,14 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     this._owner = owner;
   }
 
+  public setAlias(alias: string){
+    this._tableAlias = alias;
+
+    this._columns.forEach( c=> c.TableAlias = alias);
+    this._joinStatements.forEach( c=> c.TableAlias = alias);
+    this._statements.forEach( c=> c.TableAlias = alias);
+  }
+
   public populate<R = this>(relation: string, callback?: (this: SelectQueryBuilder<R>, relation: OrmRelation) => void) {
 
     let relInstance: OrmRelation = null;
@@ -779,10 +800,10 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
         break;
       case RelationType.Many:
         relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
-      break;
+        break;
       case RelationType.ManyToMany:
         relInstance = this._container.resolve<ManyToManyRelation>(ManyToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
-      break;
+        break;
     }
 
     relInstance.execute(callback);
@@ -800,35 +821,35 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
   public min(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MIN, as]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MIN, as, this._tableAlias]),
     );
     return this;
   }
 
   public max(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MAX, as]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MAX, as, this._tableAlias]),
     );
     return this;
   }
 
   public count(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.COUNT, as]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.COUNT, as, this._tableAlias]),
     );
     return this;
   }
 
   public sum(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.SUM, as]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.SUM, as, this._tableAlias]),
     );
     return this;
   }
 
   public avg(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.AVG, as]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.AVG, as, this._tableAlias]),
     );
     return this;
   }
