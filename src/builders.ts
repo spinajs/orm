@@ -23,6 +23,7 @@ import {
   IndexQueryCompiler,
   RelationType,
   IBuilderMiddleware,
+  IWithRecursiveBuilder,
 } from './interfaces';
 import {
   BetweenStatement,
@@ -406,8 +407,8 @@ export class JoinBuilder implements IJoinBuilder {
     this._joinStatements = [];
   }
 
-  public clearJoins() : this{
-    
+  public clearJoins(): this {
+
     this._joinStatements = [];
 
     return this;
@@ -416,49 +417,49 @@ export class JoinBuilder implements IJoinBuilder {
   public innerJoin(query: RawQuery): this;
   public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
   public innerJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.INNER, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.INNER, ...arguments)
     return this;
   }
 
   public leftJoin(query: RawQuery): this;
   public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
   public leftJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.LEFT, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.LEFT, ...arguments)
     return this;
   }
 
   public leftOuterJoin(query: RawQuery): this;
   public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public leftOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.LEFT_OUTER, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.LEFT_OUTER, ...arguments)
     return this;
   }
 
   public rightJoin(query: RawQuery): this;
   public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
   public rightJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.RIGHT, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.RIGHT, ...arguments)
     return this;
   }
 
   public rightOuterJoin(query: RawQuery): this;
   public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public rightOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.RIGHT_OUTER, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.RIGHT_OUTER, ...arguments)
     return this;
   }
 
   public fullOuterJoin(query: RawQuery): this;
   public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   public fullOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.FULL_OUTER, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.FULL_OUTER, ...arguments)
     return this;
   }
 
   public crossJoin(query: RawQuery): this;
   public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
   public crossJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, [JoinMethod.CROSS, ...arguments])
+    this.addJoinStatement.call(this, JoinMethod.CROSS, ...arguments)
     return this;
   }
 
@@ -466,9 +467,9 @@ export class JoinBuilder implements IJoinBuilder {
 
     let stmt: JoinStatement = null;
 
-    if (arguments.length === 3) {
+    if (arguments.length === 4) {
       stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, AliasOrForeignKey, fkOrPkKey, null, this._tableAlias]);
-    } else if (arguments.length === 4) {
+    } else if (arguments.length === 5) {
       stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, fkOrPkKey, primaryKey, AliasOrForeignKey, this._tableAlias]);
     }
     else {
@@ -476,7 +477,24 @@ export class JoinBuilder implements IJoinBuilder {
     }
 
     this.JoinStatements.push(stmt);
+  }
 }
+
+@NewInstance()
+export class WithRecursiveBuilder implements IWithRecursiveBuilder {
+  protected _container: Container;
+
+  protected _cteStatement: IQueryStatement;
+
+  public get CteRecursive() {
+    return this._cteStatement;
+  }
+
+  public withRecursive(rcKeyName: string, pkName: string) {
+    this._cteStatement = this._container.resolve<WithRecursiveStatement>(WithRecursiveStatement, ["cte", this, rcKeyName, pkName]);
+    return this;
+  }
+
 }
 
 @NewInstance()
@@ -734,7 +752,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
   protected _relations: IOrmRelation[] = [];
 
-  @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder)
+  @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder, WithRecursiveBuilder)
   /// @ts-ignore
   private this: this;
 
@@ -785,9 +803,9 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   }
 
   public clone(): this {
-    
+
     const builder = new SelectQueryBuilder<T>(this._container, this._driver, this._model, this._owner);
-    
+
     builder._columns = this._columns.slice(0);
     builder._joinStatements = this._joinStatements.slice(0);
     builder._statements = this._statements.slice(0);
@@ -795,8 +813,10 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     builder._sort = { ...this._sort };
     builder._boolean = this._boolean;
     builder._distinct = this._distinct;
+    builder._table = this._table;
+    builder._tableAlias = this._tableAlias;
 
-    return  builder as any;
+    return builder as any;
   }
 
   public populate<R = this>(relation: string, callback?: (this: SelectQueryBuilder<R>, relation: OrmRelation) => void) {
@@ -825,11 +845,6 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
     this._relations.push(relInstance);
 
-    return this;
-  }
-
-  public withRecursive(rcKeyName: string, pkName : string) {
-    this._cteStatement = this._container.resolve<WithRecursiveStatement>(WithRecursiveStatement, ["cte", this, rcKeyName,pkName]);
     return this;
   }
 

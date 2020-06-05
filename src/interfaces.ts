@@ -474,6 +474,13 @@ export interface IWhereBuilder {
   clearWhere(): this;
 }
 
+export interface IWithRecursiveBuilder
+{
+  CteRecursive : IQueryStatement;
+
+  withRecursive(recKeyName : string, pkKeyName : string) : this;
+}
+
 export interface IJoinBuilder {
   JoinStatements: IQueryStatement[];
 
@@ -524,7 +531,8 @@ export interface ISelectQueryBuilder
   IOrderByBuilder,
   ILimitBuilder,
   IWhereBuilder,
-  IJoinBuilder {
+  IJoinBuilder,
+  IWithRecursiveBuilder {
   min(column: string, as?: string): this;
   max(column: string, as?: string): this;
   count(column: string, as?: string): this;
@@ -547,6 +555,11 @@ export interface ILimitCompiler {
   limit(builder: ILimitBuilder): ICompilerOutput;
 }
 
+export interface IRecursiveCompiler {
+  recursive(builder: IWithRecursiveBuilder): ICompilerOutput;
+}
+
+
 export interface IColumnsCompiler {
   columns(builder: IColumnsBuilder): ICompilerOutput;
 }
@@ -563,7 +576,10 @@ export interface IJoinCompiler {
  *  Definitions of query compiler are needed for DI resolving
  * ==========================================================
  */
-
+@NewInstance()
+export abstract class RecursiveQueryCompiler implements IQueryCompiler {
+  public abstract compile(): ICompilerOutput;
+}
 @NewInstance()
 export abstract class SelectQueryCompiler implements IQueryCompiler {
   public abstract compile(): ICompilerOutput;
