@@ -37,6 +37,7 @@ import {
   WhereStatement,
   ColumnRawStatement,
   JoinStatement,
+  WithRecursiveStatement,
 } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
@@ -163,7 +164,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   public get TableAlias() {
     return this._tableAlias;
   }
- 
+
   /**
    * SQL schema/database name that query is executed on.
    *
@@ -218,6 +219,8 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
    */
   public setAlias(alias: string) {
     this._tableAlias = alias;
+
+    return this;
   }
 
   public from(table: string, alias?: string): this {
@@ -403,85 +406,77 @@ export class JoinBuilder implements IJoinBuilder {
     this._joinStatements = [];
   }
 
+  public clearJoins() : this{
+    
+    this._joinStatements = [];
+
+    return this;
+  }
+
   public innerJoin(query: RawQuery): this;
   public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public innerJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.INNER, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public innerJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.INNER, ...arguments])
     return this;
   }
 
   public leftJoin(query: RawQuery): this;
   public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public leftJoin(table: string | RawQuery, AliasOrForeignKey?: string, fkOrPkKey?: string, primaryKey?: string): this {
-
-    let stmt: JoinStatement = null;
-
-    if (arguments.length === 3) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, AliasOrForeignKey, fkOrPkKey, null, this._tableAlias]);
-    } else if (arguments.length === 4) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT, fkOrPkKey, primaryKey, AliasOrForeignKey, this._tableAlias]);
-    }
-    else {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT]);
-    }
-
-    this.JoinStatements.push(stmt);
-
+  public leftJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.LEFT, ...arguments])
     return this;
   }
 
   public leftOuterJoin(query: RawQuery): this;
   public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public leftOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.LEFT_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public leftOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.LEFT_OUTER, ...arguments])
     return this;
   }
 
   public rightJoin(query: RawQuery): this;
   public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public rightJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public rightJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.RIGHT, ...arguments])
     return this;
   }
 
   public rightOuterJoin(query: RawQuery): this;
   public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public rightOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.RIGHT_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public rightOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.RIGHT_OUTER, ...arguments])
     return this;
   }
 
   public fullOuterJoin(query: RawQuery): this;
   public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public fullOuterJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.FULL_OUTER, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public fullOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.FULL_OUTER, ...arguments])
     return this;
   }
 
   public crossJoin(query: RawQuery): this;
   public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public crossJoin(table: string | RawQuery, foreignKey?: string, primaryKey?: string): this {
-    this.JoinStatements.push(
-      this._container.resolve<JoinStatement>(JoinStatement, [table, JoinMethod.CROSS, foreignKey, primaryKey, null, this._tableAlias]),
-    );
-
+  public crossJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
+    this.addJoinStatement.call(this, [JoinMethod.CROSS, ...arguments])
     return this;
   }
+
+  private addJoinStatement(method: JoinMethod, table: string | RawQuery, AliasOrForeignKey?: string, fkOrPkKey?: string, primaryKey?: string) {
+
+    let stmt: JoinStatement = null;
+
+    if (arguments.length === 3) {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, AliasOrForeignKey, fkOrPkKey, null, this._tableAlias]);
+    } else if (arguments.length === 4) {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, fkOrPkKey, primaryKey, AliasOrForeignKey, this._tableAlias]);
+    }
+    else {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method]);
+    }
+
+    this.JoinStatements.push(stmt);
+}
 }
 
 @NewInstance()
@@ -728,9 +723,12 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
    * where query props
    */
   protected _statements: IQueryStatement[] = [];
+
   protected _boolean: WhereBoolean;
 
   protected _joinStatements: IQueryStatement[] = [];
+
+  protected _cteStatement: IQueryStatement;
 
   protected _owner: IOrmRelation;
 
@@ -776,12 +774,29 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     this._owner = owner;
   }
 
-  public setAlias(alias: string){
+  public setAlias(alias: string) {
     this._tableAlias = alias;
 
-    this._columns.forEach( c=> c.TableAlias = alias);
-    this._joinStatements.forEach( c=> c.TableAlias = alias);
-    this._statements.forEach( c=> c.TableAlias = alias);
+    this._columns.forEach(c => c.TableAlias = alias);
+    this._joinStatements.forEach(c => c.TableAlias = alias);
+    this._statements.forEach(c => c.TableAlias = alias);
+
+    return this;
+  }
+
+  public clone(): this {
+    
+    const builder = new SelectQueryBuilder<T>(this._container, this._driver, this._model, this._owner);
+    
+    builder._columns = this._columns.slice(0);
+    builder._joinStatements = this._joinStatements.slice(0);
+    builder._statements = this._statements.slice(0);
+    builder._limit = { ...this._limit };
+    builder._sort = { ...this._sort };
+    builder._boolean = this._boolean;
+    builder._distinct = this._distinct;
+
+    return  builder as any;
   }
 
   public populate<R = this>(relation: string, callback?: (this: SelectQueryBuilder<R>, relation: OrmRelation) => void) {
@@ -810,6 +825,11 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
     this._relations.push(relInstance);
 
+    return this;
+  }
+
+  public withRecursive(rcKeyName: string, pkName : string) {
+    this._cteStatement = this._container.resolve<WithRecursiveStatement>(WithRecursiveStatement, ["cte", this, rcKeyName,pkName]);
     return this;
   }
 

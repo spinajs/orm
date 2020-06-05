@@ -201,7 +201,38 @@ export class BelongsToRelation extends OrmRelation {
         this._query.mergeStatements(this._relationQuery);
         this._query.middleware(new BelongsToRelationResultTransformMiddleware());
     }
+}
 
+
+@NewInstance()
+export class BelongsToRecursiveRelation extends OrmRelation {
+
+    protected _targetModel: Constructor<ModelBase<any>>;
+    protected _targetModelDescriptor: IModelDescrtiptor;
+    protected _relationQuery: SelectQueryBuilder;
+
+    constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor, _parentRelation?: OrmRelation) {
+        super(_orm, _query, _description, _parentRelation);
+
+        this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
+
+        this._targetModelDescriptor.Columns.forEach( c=> {
+            this._relationQuery.select(c.Name, `${this.Alias}.${c.Name}`);
+        })
+    }
+
+    public execute(callback: (this: SelectQueryBuilder, relation: OrmRelation) => void) {
+
+        this._query.setAlias(`$${this._description.SourceModel.name}$`)
+        this._query.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.ForeignKey, `${this._description.PrimaryKey}`);
+
+        if (callback) {
+            callback.call(this._relationQuery, [this]);
+        }
+
+        this._query.mergeStatements(this._relationQuery);
+        this._query.middleware(new BelongsToRelationResultTransformMiddleware());
+    }
 }
 
 @NewInstance()
@@ -290,7 +321,8 @@ export class ManyToManyRelation extends OrmRelation {
             TargetModel: this._description.JunctionModel,
             SourceModel: this._description.SourceModel,
             ForeignKey: this._description.JunctionModelSourceModelFKey_Name,
-            PrimaryKey: this._description.PrimaryKey
+            PrimaryKey: this._description.PrimaryKey,
+            Recursive: false,
         }
 
         this._joinQuery.mergeStatements(this._relationQuery);

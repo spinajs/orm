@@ -177,7 +177,7 @@ export interface IModelDescrtiptor {
   Relations: Map<string, IRelationDescriptor>
 
   /** Name of model */
-  Name : string;
+  Name: string;
 
 }
 
@@ -230,13 +230,17 @@ export interface IRelationDescriptor {
    */
   JunctionModelTargetModelFKey_Name?: string;
   JunctionModelSourceModelFKey_Name?: string;
+
+  /**
+   * Is this relation recursive ? Used for hierarchical / paren one-to-one relations
+   */
+  Recursive: boolean;
 }
 
-export interface IJunctionProperty
-{
-   Name : string;
+export interface IJunctionProperty {
+  Name: string;
 
-   Model: Constructor<ModelBase<any>>;
+  Model: Constructor<ModelBase<any>>;
 }
 
 /**
@@ -385,6 +389,7 @@ export interface IQueryBuilder {
   Schema: string;
   schema(schema: string): IQueryBuilder;
   from(table: string, alias?: string): this;
+  setAlias(alias: string): this;
 }
 
 export interface ILimitBuilder {
@@ -472,8 +477,13 @@ export interface IWhereBuilder {
 export interface IJoinBuilder {
   JoinStatements: IQueryStatement[];
 
+  clearJoins() : this;
+
   innerJoin(query: RawQuery): this;
   innerJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  innerJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
+
 
   leftJoin(query: RawQuery): this;
   leftJoin(table: string, foreignKey: string, primaryKey: string): this;
@@ -483,18 +493,30 @@ export interface IJoinBuilder {
 
   leftOuterJoin(query: RawQuery): this;
   leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  leftOuterJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
   rightJoin(query: RawQuery): this;
   rightJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  rightJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
   rightOuterJoin(query: RawQuery): this;
   rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  rightOuterJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
+
 
   fullOuterJoin(query: RawQuery): this;
   fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  fullOuterJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
   crossJoin(query: RawQuery): this;
   crossJoin(table: string, foreignKey: string, primaryKey: string): this;
+  // tslint:disable-next-line: unified-signatures
+  crossJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
+
 }
 
 export interface ISelectQueryBuilder
@@ -509,6 +531,7 @@ export interface ISelectQueryBuilder
   sum(column: string, as?: string): this;
   avg(column: string, as?: string): this;
   distinct(): this;
+  clone(): this;
 }
 
 export interface ICompilerOutput {

@@ -50,6 +50,16 @@ export abstract class RawQueryStatement extends QueryStatement {
 }
 
 @NewInstance()
+export abstract class WithRecursiveStatement extends QueryStatement {
+  constructor(protected _name: string, protected _query: SelectQueryBuilder, protected _rcKeyName: string, protected _pkName: string) {
+    super(null);
+
+  }
+
+  public abstract build(): IQueryStatementResult;
+}
+
+@NewInstance()
 export abstract class BetweenStatement extends QueryStatement {
   protected _val: any[];
   protected _not: boolean;

@@ -1,6 +1,7 @@
 import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor } from './interfaces';
 import 'reflect-metadata';
 import { ModelBase, extractModelDescriptor } from './model';
+import { InvalidOperation } from '@spinajs/exceptions';
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
 export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for('MIGRATION_DESCRIPTOR');
@@ -190,6 +191,28 @@ export function JunctionTable() {
 }
 
 /**
+ * Marks relation as recursive. When relation is populated it loads all to the top
+ * 
+ */
+export function Recursive() {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+
+    if(!model.Relations.has(propertyKey))
+    {
+      throw new InvalidOperation(`cannot set recursive on not existing relation ( relation ${propertyKey} on model ${model.Name} )`);
+    }
+
+    const relation = model.Relations.get(propertyKey);
+
+    if(relation.Type !== RelationType.One){
+      throw new InvalidOperation(`cannot set recursive on non one-to-one relation ( relation ${propertyKey} on model ${model.Name} )`);
+    }
+
+    relation.Recursive = true;
+  });
+}
+
+/**
  * Creates one to one relation with target model.
  * 
  * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
@@ -205,6 +228,7 @@ export function BelongsTo(foreignKey?: string, primaryKey?: string) {
       TargetModel: Reflect.getMetadata('design:type', target, propertyKey),
       ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
+      Recursive: false,
     });
 
   });
@@ -228,6 +252,7 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
       TargetModel: targetModel,
       ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
+      Recursive: false,
     });
   });
 }
@@ -235,24 +260,26 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
 /**
  * Creates many to many relation with separate join table
  * 
- * @param targetModel
- * @param foreignKey
- * @param primaryKey 
- * @param junctionModelTargetPk 
- * @param junctionModelSourcePk 
+ * @param junctionModel model for junction table
+ * @param targetModel  model for related data
+ * @param targetModelPKey target model primary key name
+ * @param sourceModelPKey source model primary key name
+ * @param junctionModelTargetPk junction table target primary key name ( foreign key for target model )
+ * @param junctionModelSourcePk junction table source primary key name ( foreign key for source model )
  */
-export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, targetModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string, junctionModelTargetPk?: string, junctionModelSourcePk?: string) {
+export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, targetModel: Constructor<ModelBase<any>>, targetModelPKey?: string, sourceModelPKey?: string, junctionModelTargetPk?: string, junctionModelSourcePk?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
 
     const targetModelDescriptor = extractModelDescriptor(targetModel);
 
     model.Relations.set(propertyKey, {
       Name: propertyKey,
+      Recursive: false,
       Type: RelationType.ManyToMany,
       SourceModel: target.constructor,
       TargetModel: targetModel,
-      ForeignKey: foreignKey ?? targetModelDescriptor.PrimaryKey,
-      PrimaryKey: primaryKey ?? model.PrimaryKey,
+      ForeignKey: targetModelPKey ?? targetModelDescriptor.PrimaryKey,
+      PrimaryKey: sourceModelPKey ?? model.PrimaryKey,
       JunctionModel: junctionModel,
       JunctionModelTargetModelFKey_Name: junctionModelTargetPk ?? `${targetModelDescriptor.Name.toLowerCase()}_id`,
       JunctionModelSourceModelFKey_Name: junctionModelSourcePk ?? `${model.Name.toLowerCase()}_id`
