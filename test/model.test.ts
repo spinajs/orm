@@ -1,4 +1,4 @@
-import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator } from './../src/hydrators';
+import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator, JunctionModelPropertyHydrator } from './../src/hydrators';
 import { ModelNoConnection } from './mocks/models/ModelNoConnection';
 import { ModelNoDescription } from './mocks/models/ModelNoDescription';
 import { SelectQueryBuilder } from './../src/builders';
@@ -19,6 +19,9 @@ import { RawModel } from './mocks/models/RawModel';
 import { Model, Connection } from '../src/decorators';
 import { ModelBase } from "./../src/model";
 import { Model3 } from './mocks/models/Model3';
+import { ModelDiscBase } from './mocks/models/ModelDiscBase';
+import { ModelDisc1 } from './mocks/models/ModelDisc1';
+import { ModelDisc2 } from './mocks/models/ModelDisc2';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -62,7 +65,7 @@ describe("General model tests", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        expect(models.length).to.eq(12);
+        expect(models.length).to.eq(15);
         expect(models[1].name).to.eq("Model1");
         expect(models[2].name).to.eq("Model2");
         expect(models[1].type.name).to.eq("Model1");
@@ -727,6 +730,7 @@ describe("General model tests", () => {
             afterData(data: any[]) {
                 return data;
             },
+            modelCreation(_ : any) : ModelBase<any> { return null; },
 
             // tslint:disable-next-line: no-empty
             async afterHydration(_data: Array<ModelBase<any>>) { }
@@ -740,5 +744,115 @@ describe("General model tests", () => {
         expect(spy.calledOnce).to.be.true;
         expect(spy2.calledOnce).to.be.true;
 
-    })
+    });
+
+    
+});
+
+describe("Model discrimination tests", () => {
+
+    beforeEach(() => {
+        DI.register(ConnectionConf).as(Configuration);
+        DI.register(SpinaJsDefaultLog).as(LogModule);
+        DI.register(FakeSqliteDriver).as("sqlite");
+        DI.register(FakeMysqlDriver).as("mysql");
+
+        DI.register(FakeSelectQueryCompiler).as(SelectQueryCompiler);
+        DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
+        DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
+        DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+
+
+        DI.register(DbPropertyHydrator).as(ModelHydrator);
+        DI.register(NonDbPropertyHydrator).as(ModelHydrator);
+        DI.register(OneToOneRelationHydrator).as(ModelHydrator);
+        DI.register(JunctionModelPropertyHydrator).as(ModelHydrator);
+
+        DI.resolve(LogModule);
+        DI.resolve<Orm>(Orm);
+
+        const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
+ 
+        tableInfoStub.withArgs("Discrimination", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Value",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }, {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "disck_key",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }]);
+        }));
+    });
+
+    afterEach(async () => {
+        DI.clear();
+
+        sinon.restore();
+    });
+
+    it("should create models base on discrimination map", async() =>{ 
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                disc_key: "base"
+            },
+            {
+                Id: 2,
+                disc_key: "two"
+            },
+            {
+                Id: 3,
+                disc_key: "one"
+            }]);
+        }));
+
+        await db();
+
+        const result = await ModelDiscBase.all();
+
+        expect(result).to.be.not.null;
+        expect(result[0]).instanceOf(ModelDiscBase);
+        expect(result[1]).instanceOf(ModelDisc2);
+        expect(result[2]).instanceOf(ModelDisc1);
+
+
+    });
 });

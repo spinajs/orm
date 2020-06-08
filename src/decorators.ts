@@ -1,4 +1,4 @@
-import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor } from './interfaces';
+import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor, IDiscriminationEntry } from './interfaces';
 import 'reflect-metadata';
 import { ModelBase, extractModelDescriptor } from './model';
 import { InvalidOperation } from '@spinajs/exceptions';
@@ -201,11 +201,15 @@ export function JunctionTable() {
  * @param fieldName db field name to look for
  * @param discriminationMap field - model mapping 
  */
-export function DiscriminationMap(fieldName: string, discriminationMap: Map<string, Constructor<ModelBase<any>>>) {
+export function DiscriminationMap(fieldName: string, discriminationMap: IDiscriminationEntry[]) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
     model.DiscriminationMap.Field = fieldName;
-    model.DiscriminationMap.Models = discriminationMap;
-  });
+    model.DiscriminationMap.Models = new Map<string, Constructor<ModelBase<any>>>();
+
+    discriminationMap.forEach(d => {
+      model.DiscriminationMap.Models.set(d.Key, d.Value);
+    });
+  }, true);
 }
 
 /**

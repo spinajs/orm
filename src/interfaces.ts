@@ -197,6 +197,12 @@ export interface IDiscriminationMap {
   Models: Map<string, Constructor<ModelBase<any>>>;
 }
 
+export interface IDiscriminationEntry
+{
+  Key : string;
+  Value: Constructor<ModelBase<any>>;
+}
+
 export enum RelationType {
   One,
   Many,
