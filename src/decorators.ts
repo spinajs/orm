@@ -47,7 +47,11 @@ export function extractDecoratorDescriptor(
         UniqueColumns: [],
         Relations: new Map<string, IRelationDescriptor>(),
         Name: target.constructor.name,
-        JunctionModelProperties: []
+        JunctionModelProperties: [],
+        DiscriminationMap: {
+          Field: "",
+          Models: null
+        }
       };
 
       if (!base) {
@@ -191,20 +195,33 @@ export function JunctionTable() {
 }
 
 /**
+ * 
+ * Marks model to have discrimination map. 
+ * 
+ * @param fieldName db field name to look for
+ * @param discriminationMap field - model mapping 
+ */
+export function DiscriminationMap(fieldName: string, discriminationMap: Map<string, Constructor<ModelBase<any>>>) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
+    model.DiscriminationMap.Field = fieldName;
+    model.DiscriminationMap.Models = discriminationMap;
+  });
+}
+
+/**
  * Marks relation as recursive. When relation is populated it loads all to the top
  * 
  */
 export function Recursive() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
 
-    if(!model.Relations.has(propertyKey))
-    {
+    if (!model.Relations.has(propertyKey)) {
       throw new InvalidOperation(`cannot set recursive on not existing relation ( relation ${propertyKey} on model ${model.Name} )`);
     }
 
     const relation = model.Relations.get(propertyKey);
 
-    if(relation.Type !== RelationType.One){
+    if (relation.Type !== RelationType.One) {
       throw new InvalidOperation(`cannot set recursive on non one-to-one relation ( relation ${propertyKey} on model ${model.Name} )`);
     }
 

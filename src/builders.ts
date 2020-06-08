@@ -102,7 +102,19 @@ export class Builder<T = any> {
           }
 
           const models = transformedResult.map(r => {
-            return new this._model(r);
+            let model = null;
+            for (const middleware of this._middlewares) {
+              model = middleware.modelCreation(r);
+              if (model !== null) {
+                break;
+              }
+            }
+
+            if (model === null) {
+              model = new this._model(r);
+            }
+
+            return model;
           });
 
           const afterMiddlewarePromises = this._middlewares.reduce((prev, current) => {

@@ -42,6 +42,7 @@ export abstract class OrmRelation implements IOrmRelation {
     public abstract execute(callback?: (this: SelectQueryBuilder, relation: OrmRelation) => void): void;
 }
 
+
 class HasManyRelationMiddleware implements IBuilderMiddleware {
 
     constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
@@ -53,12 +54,15 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
 
     }
 
+    public modelCreation(_: any): ModelBase<any> { return null }
+
     public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
         const hydrateMiddleware = {
             afterData(data: any[]) { return data; },
+            modelCreation(_: any): ModelBase<any> { return null },
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => {
@@ -76,7 +80,7 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
 
 class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
-    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor : IModelDescrtiptor) {
 
     }
 
@@ -84,23 +88,25 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
         return data;
     }
 
+    public modelCreation(_: any): ModelBase<any> { return null }
+
     public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
         const hydrateMiddleware = {
             afterData(data: any[]) { return data; },
+            modelCreation(_: any): ModelBase<any> { return null },
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
-                const roots = relationData.filter( rd => (rd as any)[self._description.ForeignKey] === 0 || (rd as any)[self._description.ForeignKey] === null );
-                const leafs = roots.map( r => {
+                const roots = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === 0 || (rd as any)[self._description.ForeignKey] === null);
+                const leafs = roots.map(r => {
 
                     return fillRecursive(r);
 
-                    function fillRecursive(parent : any) : any
-                    {
+                    function fillRecursive(parent: any): any {
                         const child = relationData.find(rd => (rd as any)[self._description.ForeignKey] === parent[self._description.PrimaryKey]);
-                        if(!child){
+                        if (!child) {
                             return parent;
                         }
 
@@ -110,15 +116,16 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
                 });
 
-               
+
 
                 data.forEach(d => {
-                    (d as any)[self._description.Name] = leafs.find( l => (l as any)[self._description.PrimaryKey] === (d as any)[self._description.PrimaryKey])[self._description.Name];
+                    (d as any)[self._description.Name] = leafs.find(l => (l as any)[self._description.PrimaryKey] === (d as any)[self._description.PrimaryKey])[self._description.Name];
                 })
             }
         }
 
         this._relationQuery.whereIn(this._description.PrimaryKey, pks);
+        this._relationQuery.middleware(new DiscriminationMapMiddleware(this._targetModelDescriptor));
         this._relationQuery.middleware(hydrateMiddleware)
         return await this._relationQuery;
     }
@@ -126,7 +133,7 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
 class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
-    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor : IModelDescrtiptor) {
 
     }
 
@@ -134,6 +141,8 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
         return data;
 
     }
+
+    public modelCreation(_: any): ModelBase<any> { return null }
 
     public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
@@ -143,6 +152,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
             afterData(data: any[]) {
                 return data.map(d => Object.assign({}, d.ForeignModel, { JunctionModel: self.pickProps(d, ["ForeignModel"]) }));
             },
+            modelCreation(_: any): ModelBase<any> { return null },
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => {
@@ -156,6 +166,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
         this._relationQuery.whereIn(this._description.ForeignKey, pks);
         this._relationQuery.middleware(new BelongsToRelationResultTransformMiddleware());
+        this._relationQuery.middleware(new DiscriminationMapMiddleware(this._targetModelDescriptor));
         this._relationQuery.middleware(hydrateMiddleware)
         return await this._relationQuery;
     }
@@ -191,6 +202,8 @@ class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
         });
     }
 
+    public modelCreation(_: any): ModelBase<any> { return null }
+
     // tslint:disable-next-line: no-empty
     public async afterHydration(_data: Array<ModelBase<any>>) {
     }
@@ -218,7 +231,32 @@ class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
             return a[b];
         }, obj);
     }
+}
 
+export class DiscriminationMapMiddleware implements IBuilderMiddleware {
+
+    constructor(protected _description: IModelDescrtiptor) { }
+
+    public afterData(data: any[]): any[] {
+        return data;
+    }
+
+    public modelCreation(data: any): ModelBase<any> {
+
+        if (this._description.DiscriminationMap && this._description.DiscriminationMap.Field) {
+
+            const distValue = data[this._description.DiscriminationMap.Field];
+            if(distValue && this._description.DiscriminationMap.Models.has(distValue)){
+                return new (this._description.DiscriminationMap.Models.get(distValue) as any)(data);
+            }
+        }
+
+        return null;
+    }
+
+    // tslint:disable-next-line: no-empty
+    public async afterHydration(_data: Array<ModelBase<any>>) {
+    }
 }
 
 
@@ -276,7 +314,7 @@ export class BelongsToRecursiveRelation extends OrmRelation {
             callback.call(this._relationQuery, [this]);
         }
 
-        this._query.middleware(new BelongsToRelationRecursiveMiddleware(this._relationQuery, this._description));
+        this._query.middleware(new BelongsToRelationRecursiveMiddleware(this._relationQuery, this._description, this._targetModelDescriptor));
     }
 }
 
@@ -299,8 +337,8 @@ export class OneToManyRelation extends OrmRelation {
             callback.call(this._relationQuery, [this]);
         }
 
+        this._query.middleware(new DiscriminationMapMiddleware(this._targetModelDescriptor));
         this._query.middleware(new HasManyRelationMiddleware(this._relationQuery, this._description));
-
     }
 
 }
@@ -372,6 +410,6 @@ export class ManyToManyRelation extends OrmRelation {
 
         this._joinQuery.mergeStatements(this._relationQuery);
 
-        this._query.middleware(new HasManyToManyRelationMiddleware(this._joinQuery, joinRelationDescriptor));
+        this._query.middleware(new HasManyToManyRelationMiddleware(this._joinQuery, joinRelationDescriptor, this._targetModelDescriptor));
     }
 }

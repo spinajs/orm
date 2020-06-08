@@ -1,3 +1,4 @@
+import { DiscriminationMapMiddleware } from './relations';
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { IModelDescrtiptor, RelationType } from './interfaces';
 import { WhereFunction } from './types';
@@ -291,6 +292,7 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
   const cnt = driver.Container;
   const qr = cnt.resolve<T>(query, [driver, model]);
 
+  qr.middleware(new DiscriminationMapMiddleware(dsc));
   qr.setTable(dsc.TableName);
 
   if (driver.Options.Database) {
@@ -379,6 +381,8 @@ export const MODEL_STATIC_MIXINS = {
 
         return data;
       },
+
+      modelCreation(_: any): ModelBase<any> { return null ;},
 
       // tslint:disable-next-line: no-empty
       async afterHydration(_data: Array<ModelBase<any>>) { }

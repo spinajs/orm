@@ -179,6 +179,22 @@ export interface IModelDescrtiptor {
   /** Name of model */
   Name: string;
 
+  /**
+   * Model discrimination map that  allows to create different models based on db field value
+   */
+  DiscriminationMap: IDiscriminationMap;
+}
+
+export interface IDiscriminationMap {
+  /**
+   * DB field that holds inheritance value
+   */
+  Field: string;
+
+  /**
+   * Field values mapped for proper models
+   */
+  Models: Map<string, Constructor<ModelBase<any>>>;
 }
 
 export enum RelationType {
@@ -474,17 +490,16 @@ export interface IWhereBuilder {
   clearWhere(): this;
 }
 
-export interface IWithRecursiveBuilder
-{
-  CteRecursive : IQueryStatement;
+export interface IWithRecursiveBuilder {
+  CteRecursive: IQueryStatement;
 
-  withRecursive(recKeyName : string, pkKeyName : string) : this;
+  withRecursive(recKeyName: string, pkKeyName: string): this;
 }
 
 export interface IJoinBuilder {
   JoinStatements: IQueryStatement[];
 
-  clearJoins() : this;
+  clearJoins(): this;
 
   innerJoin(query: RawQuery): this;
   innerJoin(table: string, foreignKey: string, primaryKey: string): this;
@@ -642,12 +657,23 @@ export interface IBuilderMiddleware {
   /**
    * 
    * Executed AFTER query is executed in DB and fetcher raw data
+   * Use it to transform DB data before everything else
    * 
    * @param data raw data fetched from DB
    */
   afterData(data: any[]): any[];
 
   /**
+   * Executed when model is about to create. Use it to
+   * override model creation logic. If null is returned, default model
+   * is executed
+   * 
+   * @param data raw data to create
+   */
+  modelCreation(data: any): ModelBase<any>;
+
+  /**
+   * executed after model was created ( all returned data by query is executed)
    * 
    * @param data hydrated data. Models are created and hydrated with data
    */
