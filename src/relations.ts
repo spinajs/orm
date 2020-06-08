@@ -74,6 +74,56 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
     }
 }
 
+class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
+
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
+
+    }
+
+    public afterData(data: any[]): any[] {
+        return data;
+    }
+
+    public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+
+        const self = this;
+        const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
+        const hydrateMiddleware = {
+            afterData(data: any[]) { return data; },
+            async afterHydration(relationData: Array<ModelBase<any>>) {
+
+                const roots = relationData.filter( rd => (rd as any)[self._description.ForeignKey] === 0 || (rd as any)[self._description.ForeignKey] === null );
+                const leafs = roots.map( r => {
+
+                    return fillRecursive(r);
+
+                    function fillRecursive(parent : any) : any
+                    {
+                        const child = relationData.find(rd => (rd as any)[self._description.ForeignKey] === parent[self._description.PrimaryKey]);
+                        if(!child){
+                            return parent;
+                        }
+
+                        (child as any)[self._description.Name] = parent;
+                        return fillRecursive(child);
+                    }
+
+                });
+
+               
+
+                data.forEach(d => {
+                    (d as any)[self._description.Name] = leafs.find( l => (l as any)[self._description.PrimaryKey] === (d as any)[self._description.PrimaryKey])[self._description.Name];
+                })
+            }
+        }
+
+        this._relationQuery.whereIn(this._description.PrimaryKey, pks);
+        this._relationQuery.middleware(hydrateMiddleware)
+        return await this._relationQuery;
+    }
+}
+
 class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
     constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor) {
@@ -184,7 +234,7 @@ export class BelongsToRelation extends OrmRelation {
 
         this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
 
-        this._targetModelDescriptor.Columns.forEach( c=> {
+        this._targetModelDescriptor.Columns.forEach(c => {
             this._relationQuery.select(c.Name, `${this.Alias}.${c.Name}`);
         })
     }
@@ -214,24 +264,19 @@ export class BelongsToRecursiveRelation extends OrmRelation {
     constructor(_orm: Orm, _query: SelectQueryBuilder<any>, _description: IRelationDescriptor, _parentRelation?: OrmRelation) {
         super(_orm, _query, _description, _parentRelation);
 
-        this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
-
-        this._targetModelDescriptor.Columns.forEach( c=> {
+        this._relationQuery.withRecursive(this._description.ForeignKey, this._description.PrimaryKey).from(this._targetModelDescriptor.TableName, this.Alias);
+        this._targetModelDescriptor.Columns.forEach(c => {
             this._relationQuery.select(c.Name, `${this.Alias}.${c.Name}`);
-        })
+        });
     }
 
     public execute(callback: (this: SelectQueryBuilder, relation: OrmRelation) => void) {
-
-        this._query.setAlias(`$${this._description.SourceModel.name}$`)
-        this._query.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.ForeignKey, `${this._description.PrimaryKey}`);
 
         if (callback) {
             callback.call(this._relationQuery, [this]);
         }
 
-        this._query.mergeStatements(this._relationQuery);
-        this._query.middleware(new BelongsToRelationResultTransformMiddleware());
+        this._query.middleware(new BelongsToRelationRecursiveMiddleware(this._relationQuery, this._description));
     }
 }
 

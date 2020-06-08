@@ -62,7 +62,7 @@ describe("General model tests", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        expect(models.length).to.eq(11);
+        expect(models.length).to.eq(12);
         expect(models[1].name).to.eq("Model1");
         expect(models[2].name).to.eq("Model2");
         expect(models[1].type.name).to.eq("Model1");

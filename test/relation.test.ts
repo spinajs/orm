@@ -1,3 +1,4 @@
+import { RelationRecursive } from './mocks/models/RelationRecursive';
 import { ManyToManyRelation } from './../src/relations';
 import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator, JunctionModelPropertyHydrator } from './../src/hydrators';
 import { Model1 } from './mocks/models/Model1';
@@ -240,6 +241,53 @@ describe("Orm relations tests", () => {
                 Unique: false
             }]);
         }));
+
+        tableInfoStub.withArgs("RelationRecursive", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Value",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }, {
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "parent_id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            }]);
+        }));
     });
 
     afterEach(async () => {
@@ -401,6 +449,47 @@ describe("Orm relations tests", () => {
         expect(dehydrated.OwnerId).to.eq(2);
     })
 
+    it("BelongsTo recursive should work", async () => {
+        await db();
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 3,
+                Value: "Leaf",
+                parent_id: 2
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 3,
+                Value: "Leaf",
+                parent_id: 2
+            }, {
+                Id: 2,
+                parent_id: 1,
+                Value: "Child1"
+            },
+            {
+                Id: 1,
+                Value: "Root",
+                parent_id: null
+            }]);
+        }));
+
+        const result = await RelationRecursive.where({ Id: 3}).populate("Parent").first<RelationRecursive>();
+
+        expect(result).to.be.not.null;
+        expect(result.Id).to.eq(3);
+        expect(result.Parent).to.include({
+            Id: 2,
+            Value: "Child1" 
+        });
+        expect(result.Parent.Parent).to.include({
+            Id: 1,
+            Value: "Root" 
+        });
+        expect(result.Parent.Parent.Parent).to.be.undefined;
+    });
+
     it("HasMany relation should be executed", async () => {
 
         await db();
@@ -467,9 +556,9 @@ describe("Orm relations tests", () => {
         const query = RelationModel2.where({ Id: 1 }).populate("Many", function () {
             this.populate("Owner");
         }).first<RelationModel2>();
- 
+
         const result = await query;
- 
+
         expect(result.Many[0].Owner).to.be.not.null;
         expect(result.Many[1].Owner).to.be.not.null;
 

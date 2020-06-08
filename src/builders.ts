@@ -43,7 +43,7 @@ import {
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { ModelBase, extractModelDescriptor } from './model';
-import { OrmRelation, BelongsToRelation, IOrmRelation, OneToManyRelation, ManyToManyRelation } from './relations';
+import { OrmRelation, BelongsToRelation, IOrmRelation, OneToManyRelation, ManyToManyRelation, BelongsToRecursiveRelation } from './relations';
 import { Orm } from './orm';
 
 function isWhereOperator(val: any) {
@@ -829,17 +829,27 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     }
 
     const relDescription = descriptor.Relations.get(relation);
-    switch (relDescription.Type) {
-      case RelationType.One:
-        relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription, this._owner]);
-        break;
-      case RelationType.Many:
-        relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
-        break;
-      case RelationType.ManyToMany:
-        relInstance = this._container.resolve<ManyToManyRelation>(ManyToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
-        break;
+    if (relDescription.Type === RelationType.One && relDescription.Recursive) {
+      relInstance = this._container.resolve<BelongsToRecursiveRelation>(BelongsToRecursiveRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+    } else {
+
+      if (relDescription.Recursive) {
+        throw new InvalidOperation(`cannot mark relation as recursive with non one-to-one relation type`);
+      }
+
+      switch (relDescription.Type) {
+        case RelationType.One:
+          relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+          break;
+        case RelationType.Many:
+          relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+          break;
+        case RelationType.ManyToMany:
+          relInstance = this._container.resolve<ManyToManyRelation>(ManyToManyRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+          break;
+      }
     }
+
 
     relInstance.execute(callback);
 
