@@ -1,4 +1,4 @@
-import { DiscriminationMapMiddleware } from './relations';
+import { DiscriminationMapMiddleware, OrmRelation } from './relations';
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { IModelDescrtiptor, RelationType } from './interfaces';
 import { WhereFunction } from './types';
@@ -15,6 +15,7 @@ import { DI } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
+import { InvalidOperation } from '@spinajs/exceptions';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
   const descriptor: any = {};
@@ -224,6 +225,33 @@ export abstract class ModelBase<T> {
   }
 
   /**
+   * Loads or reloads model relation ( if relations was not loaded already with initial query)
+   * 
+   * @param relation relation to load
+   */
+  public async populate(relation: string, callback?: (this: SelectQueryBuilder<this>, relation: OrmRelation) => void) {
+
+    if (!this.ModelDescriptor.Relations.has(relation)) {
+      throw new InvalidOperation(`relation ${relation} not exists on model ${this.constructor.name}`);
+    }
+
+    const relDesc = this.ModelDescriptor.Relations.get(relation);
+
+    /**
+     * Do little cheat - we construct query that loads initial model with given relation.
+     * Then we only assign relation property. 
+     * 
+     * TODO: create only relation query without loading its owner.
+     */
+    const result = await (this.constructor as any).where(this.PrimaryKeyName, this.PrimaryKeyValue).populate(relation, callback).firstOrFail();
+
+
+    if (result) {
+      (this as any)[relDesc.Name] = result[relDesc.Name];
+    }
+  }
+
+  /**
    * Save all changes to db. It creates new entry id db or updates existing one if
    * primary key exists
    */
@@ -265,6 +293,14 @@ export abstract class ModelBase<T> {
 
     if (this.ModelDescriptor.Timestamps.CreatedAt) {
       (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
+    }
+
+    for (const [, rel] of this.ModelDescriptor.Relations) {
+      if (rel.Type === RelationType.Many || rel.Type === RelationType.ManyToMany) {
+        (this as any)[rel.Name] = [];
+      } else {
+        (this as any)[rel.Name] = null;
+      }
     }
   }
 }
@@ -382,7 +418,7 @@ export const MODEL_STATIC_MIXINS = {
         return data;
       },
 
-      modelCreation(_: any): ModelBase<any> { return null ;},
+      modelCreation(_: any): ModelBase<any> { return null; },
 
       // tslint:disable-next-line: no-empty
       async afterHydration(_data: Array<ModelBase<any>>) { }

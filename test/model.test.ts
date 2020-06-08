@@ -314,6 +314,7 @@ describe("General model tests", () => {
         expect(result.PrimaryKeyValue).to.eq(1);
     })
 
+
     it("firstOrCreate should work with data", async () => {
 
         // @ts-ignore
@@ -730,7 +731,7 @@ describe("General model tests", () => {
             afterData(data: any[]) {
                 return data;
             },
-            modelCreation(_ : any) : ModelBase<any> { return null; },
+            modelCreation(_: any): ModelBase<any> { return null; },
 
             // tslint:disable-next-line: no-empty
             async afterHydration(_data: Array<ModelBase<any>>) { }
@@ -746,7 +747,7 @@ describe("General model tests", () => {
 
     });
 
-    
+
 });
 
 describe("Model discrimination tests", () => {
@@ -772,7 +773,7 @@ describe("Model discrimination tests", () => {
         DI.resolve<Orm>(Orm);
 
         const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
- 
+
         tableInfoStub.withArgs("Discrimination", undefined).returns(new Promise(res => {
             res([{
                 Type: "INT",
@@ -827,7 +828,7 @@ describe("Model discrimination tests", () => {
         sinon.restore();
     });
 
-    it("should create models base on discrimination map", async() =>{ 
+    it("should create models base on discrimination map", async () => {
 
         sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
             res([{

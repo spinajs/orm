@@ -487,7 +487,45 @@ describe("Orm relations tests", () => {
             Id: 1,
             Value: "Root" 
         });
-        expect(result.Parent.Parent.Parent).to.be.undefined;
+        expect(result.Parent.Parent.Parent).to.be.null;
+    });
+
+    
+    it("populate should load missing relation data", async () => {
+
+        
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property2: "property2",
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property2: "property2",
+            }]);
+        })).onThirdCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                RelId2: 1
+            },
+            {
+                Id: 2,
+                RelId2: 1
+            }]);
+        }));
+
+        await db();
+
+        const result = await RelationModel2.where({ Id: 1 }).first<RelationModel2>();
+        
+        expect(result.Many).to.be.empty;
+
+        await result.populate("Many");
+
+        expect(result.Many).to.be.not.empty;
+        expect(result.Many[0]).instanceOf(Model1);
+        expect(result.Many[0]).to.include({ Id: 1, RelId2: 1});
     });
 
     it("HasMany relation should be executed", async () => {
