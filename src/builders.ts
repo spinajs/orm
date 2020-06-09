@@ -1277,6 +1277,16 @@ export class ForeignKeyBuilder {
     return this;
   }
 
+  /**
+   * Shorhand for on update and on delete cascade settings
+   */
+  public cascade() {
+    this.OnUpdateAction = ReferentialAction.Cascade;
+    this.OnDeleteAction = ReferentialAction.Cascade;
+
+    return this;
+  }
+
 }
 
 @NewInstance()
