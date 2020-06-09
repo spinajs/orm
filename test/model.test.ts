@@ -22,6 +22,7 @@ import { Model3 } from './mocks/models/Model3';
 import { ModelDiscBase } from './mocks/models/ModelDiscBase';
 import { ModelDisc1 } from './mocks/models/ModelDisc1';
 import { ModelDisc2 } from './mocks/models/ModelDisc2';
+import { Model6 } from './mocks/models/Model6';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -65,7 +66,7 @@ describe("General model tests", () => {
         const orm = await db();
         const models = await orm.Models;
 
-        expect(models.length).to.eq(15);
+        expect(models.length).to.eq(16);
         expect(models[1].name).to.eq("Model1");
         expect(models[2].name).to.eq("Model2");
         expect(models[1].type.name).to.eq("Model1");
@@ -438,25 +439,66 @@ describe("General model tests", () => {
 
     })
 
-    it("Model save should update created_at", async () => {
+    it("Model should get id when save with ignore", async () => {
 
-        // @ts-ignore
-        const orm = await db();
+        await db();
+        const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
+        tableInfoStub.withArgs("TestTable6", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property6",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: true
+            }]);
+        }));
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res(0)
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 1
+            }]);
+        }));
 
         sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
         });
 
-        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
-            res([]);
-        }));
+        const model = new Model6({
+            Property6: "test"
+        });
 
-        const model = new Model1();
-        await model.save();
+        await model.save(true);
 
-        expect(model.CreatedAt).to.be.not.null;
-    })
+        expect(model.Id).to.eq(1);
+    });
+
+
 
     it("Model delete should delete if no soft delete", async () => {
 

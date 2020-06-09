@@ -281,11 +281,24 @@ export abstract class ModelBase<T> {
 
       const id = await query.values(this.dehydrate());
 
-      if (this.ModelDescriptor.Timestamps.CreatedAt) {
-        (this as any)[this.ModelDescriptor.Timestamps.CreatedAt] = new Date();
+      // ignore fired, we dont have insert ID
+      if (ignoreOnDuplicate && (id as any) === 0) {
+
+        const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
+        const idRes = await query.columns([this.PrimaryKeyName]).where(function () {
+          description.Columns.filter(c => c.Unique).forEach(c => {
+            this.where(c.Name, (this as any)[c.Name]);
+          });
+        }).first();
+
+        this.PrimaryKeyValue = (idRes as any)[this.PrimaryKeyName];
+
+
+      } else {
+        this.PrimaryKeyValue = id;
       }
 
-      this.PrimaryKeyValue = id;
+
     }
   }
 
