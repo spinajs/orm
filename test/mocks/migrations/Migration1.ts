@@ -14,6 +14,4 @@ export class Migration1 extends OrmMigration {
     public async down(_connection: OrmDriver): Promise<void> {
 
     }
-
-
 }

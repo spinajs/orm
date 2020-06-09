@@ -24,6 +24,7 @@ import {
   RelationType,
   IBuilderMiddleware,
   IWithRecursiveBuilder,
+  ReferentialAction,
 } from './interfaces';
 import {
   BetweenStatement,
@@ -1208,6 +1209,77 @@ export class IndexQueryBuilder extends Builder {
 }
 
 @NewInstance()
+export class ForeignKeyBuilder {
+
+  public ForeignKeyField: string;
+
+  public Table: string;
+
+  public PrimaryKey: string;
+
+  public OnDeleteAction: ReferentialAction;
+
+  public OnUpdateAction: ReferentialAction;
+
+  constructor() {
+    this.OnDeleteAction = ReferentialAction.NoAction;
+    this.OnUpdateAction = ReferentialAction.NoAction;
+  }
+
+  /**
+   * 
+   * Referenced field in child table
+   * 
+   * @param fkName name of foreign field in child table
+   */
+  public foreignKey(fkName: string) {
+    this.ForeignKeyField = fkName;
+
+    return this;
+  }
+
+  /**
+   * 
+   * Referenced parent table & key
+   * 
+   * @param table parent table
+   * @param pKey parant table key field
+   */
+  public references(table: string, pKey: string) {
+    this.Table = table;
+    this.PrimaryKey = pKey;
+
+    return this;
+  }
+
+  /**
+   * 
+   * On delete action
+   * 
+   * @param action action to take on delete
+   */
+  public onDelete(action: ReferentialAction) {
+    this.OnDeleteAction = action;
+
+    return this;
+
+  }
+
+  /**
+   * 
+   * On update action
+   * 
+   * @param action action to take on update
+   */
+  public onUpdate(action: ReferentialAction) {
+    this.OnUpdateAction = action;
+
+    return this;
+  }
+
+}
+
+@NewInstance()
 export class ColumnQueryBuilder {
   public Name: string;
   public Unique: boolean;
@@ -1319,11 +1391,19 @@ export class TableQueryBuilder extends QueryBuilder {
   public enum: (name: string, values: any[]) => ColumnQueryBuilder;
   public json: (name: string) => ColumnQueryBuilder;
 
-  get Columns() {
+  public set: (name: string, allowed: string[]) => ColumnQueryBuilder;
+
+  public get Columns() {
     return this._columns;
   }
 
+  public get ForeignKeys() {
+    return this._foreignKeys;
+  }
+
   protected _columns: ColumnQueryBuilder[];
+
+  protected _foreignKeys: ForeignKeyBuilder[];
 
   protected _comment: string;
 
@@ -1335,6 +1415,7 @@ export class TableQueryBuilder extends QueryBuilder {
     this._charset = '';
     this._comment = '';
     this._columns = [];
+    this._foreignKeys = [];
 
     this.setTable(name);
 
@@ -1354,6 +1435,15 @@ export class TableQueryBuilder extends QueryBuilder {
 
   public charset(charset: string) {
     this._charset = charset;
+  }
+
+  public foreignKey(foreignKey: string) {
+
+    const builder = new ForeignKeyBuilder();
+    builder.foreignKey(foreignKey);
+    this._foreignKeys.push(builder);
+
+    return builder;
   }
 
   public toDB(): ICompilerOutput {

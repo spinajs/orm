@@ -109,6 +109,7 @@ export enum ColumnType {
   TIMESTAMP = 'timestamp',
   ENUM = 'enum',
   JSON = 'json',
+  SET =  'set'
 }
 
 export enum SORT_ORDER {

@@ -59,6 +59,7 @@ export abstract class WithRecursiveStatement extends QueryStatement {
   public abstract build(): IQueryStatementResult;
 }
 
+
 @NewInstance()
 export abstract class BetweenStatement extends QueryStatement {
   protected _val: any[];

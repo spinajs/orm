@@ -16,6 +16,17 @@ export enum QueryContext {
 }
 
 /**
+ * Foreign key referential actions 
+ */
+export enum ReferentialAction {
+  Cascade = "CASCADE",
+  SetNull = "SET NULL",
+  Restrict = "RESTRICT",
+  NoAction = "NO ACTION",
+  SetDefault = "SET DEFAULT"
+}
+
+/**
  * Transaction mode when migration DB
  */
 export enum MigrationTransactionMode {
@@ -197,9 +208,8 @@ export interface IDiscriminationMap {
   Models: Map<string, Constructor<ModelBase<any>>>;
 }
 
-export interface IDiscriminationEntry
-{
-  Key : string;
+export interface IDiscriminationEntry {
+  Key: string;
   Value: Constructor<ModelBase<any>>;
 }
 
@@ -613,6 +623,11 @@ export abstract class JoinQueryCompiler implements IQueryCompiler {
 
 @NewInstance()
 export abstract class IndexQueryCompiler implements IQueryCompiler {
+  public abstract compile(): ICompilerOutput;
+}
+
+@NewInstance()
+export abstract class ForeignKeyQueryCompiler implements IQueryCompiler {
   public abstract compile(): ICompilerOutput;
 }
 
