@@ -1091,12 +1091,18 @@ export class InsertQueryBuilder extends QueryBuilder {
 
   protected _columns: ColumnStatement[];
 
+  protected _ignore : boolean;
+
   @use(ColumnsBuilder)
   /// @ts-ignore
   private this: this;
 
-  get Values() {
+  public get Values() {
     return this._values;
+  }
+
+  public get Ignore(){
+    return this._ignore;
   }
 
   constructor(container: Container, driver: OrmDriver, model: Constructor<any>) {
@@ -1107,6 +1113,15 @@ export class InsertQueryBuilder extends QueryBuilder {
     this._values = [];
 
     this._queryContext = QueryContext.Insert;
+  }
+
+  /**
+   * Sets insert to ignore on duplicate
+   */
+  public ignore(){
+    this._ignore = true;
+
+    return this;
   }
 
   public values(data: {} | Array<{}>) {

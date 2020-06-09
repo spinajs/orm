@@ -263,7 +263,7 @@ export abstract class ModelBase<T> {
    * Save all changes to db. It creates new entry id db or updates existing one if
    * primary key exists
    */
-  public async save() {
+  public async save(ignoreOnDuplicate: boolean = false) {
     if (this.PrimaryKeyValue) {
       const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
 
@@ -274,6 +274,11 @@ export abstract class ModelBase<T> {
       await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
     } else {
       const { query } = _createQuery(this.constructor, InsertQueryBuilder);
+
+      if (ignoreOnDuplicate) {
+        query.ignore();
+      }
+
       const id = await query.values(this.dehydrate());
 
       if (this.ModelDescriptor.Timestamps.CreatedAt) {
@@ -356,7 +361,7 @@ export const MODEL_STATIC_MIXINS = {
 
     const { query } = _createQuery(this as any, SelectQueryBuilder, false);
     return query;
-    
+
   },
 
   where(
