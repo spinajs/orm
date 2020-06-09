@@ -136,6 +136,14 @@ export abstract class ModelBase<T> {
   }
 
   /**
+   * Creates raw query on this model. used for quering db for partial data or to perform some kind of operations
+   * that dont need full ORM model to involve
+   */
+  public static query<T>(): SelectQueryBuilder<T> {
+    throw Error('Not implemented');
+  }
+
+  /**
    *
    * Checks if model with pk key / unique fields exists and if not creates one and saves to db
    * NOTE: it checks for unique fields too.
@@ -309,7 +317,7 @@ function _descriptor(model: Class<any>) {
   return (model as any)[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor;
 }
 
-function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>) {
+function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>, injectModel: boolean = true) {
   const dsc = _descriptor(model);
 
   if (!dsc) {
@@ -326,7 +334,7 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
   }
 
   const cnt = driver.Container;
-  const qr = cnt.resolve<T>(query, [driver, model]);
+  const qr = cnt.resolve<T>(query, [driver, injectModel ? model : null]);
 
   qr.middleware(new DiscriminationMapMiddleware(dsc));
   qr.setTable(dsc.TableName);
@@ -343,6 +351,14 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
 }
 
 export const MODEL_STATIC_MIXINS = {
+
+  query(): SelectQueryBuilder {
+
+    const { query } = _createQuery(this as any, SelectQueryBuilder, false);
+    return query;
+    
+  },
+
   where(
     column: string | boolean | WhereFunction | RawQuery | {},
     operator?: WhereOperators | any,
