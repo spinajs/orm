@@ -16,10 +16,10 @@ const CFG_PROPS = ['Database', 'User', 'Host', 'Port', 'Filename', 'Driver', 'Na
 const MIGRATION_TABLE_NAME = 'spinajs_migration';
 
 export class Orm extends AsyncModule {
-  @ListFromFiles('/**/*.{ts,js}', 'system.dirs.models')
+  @ListFromFiles('/**/!(*.d).{ts,js}', 'system.dirs.models')
   public Models: Array<ClassInfo<ModelBase<any>>>;
 
-  @ListFromFiles('/**/*.{ts,js}', 'system.dirs.migrations')
+  @ListFromFiles('/**/!(*.d).{ts,js}', 'system.dirs.migrations')
   public Migrations: Array<ClassInfo<OrmMigration>>;
 
   public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
