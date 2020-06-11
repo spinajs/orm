@@ -15,6 +15,24 @@ export enum QueryContext {
   Transaction,
 }
 
+export enum InsertBehaviour {
+
+  /**
+   * On duplicate entry ignore & fetch only model primary key
+   */
+  OnDuplicateIgnore,
+
+  /**
+   * On duplicate update entry ( when unique constraint is hit update db from model data)
+   */
+  OnDuplicateUpdate,
+
+  /**
+   * Throw error if model hits constraint ( primary or unique keys )
+   */
+  None
+}
+
 /**
  * Foreign key referential actions 
  */

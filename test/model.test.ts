@@ -11,7 +11,7 @@ import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
 import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
-import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler } from '../src/interfaces';
+import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, InsertBehaviour } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -493,7 +493,7 @@ describe("General model tests", () => {
             Property6: "test"
         });
 
-        await model.save(true);
+        await model.save(InsertBehaviour.OnDuplicateIgnore);
 
         expect(model.Id).to.eq(1);
     });

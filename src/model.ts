@@ -1,6 +1,6 @@
 import { DiscriminationMapMiddleware, OrmRelation } from './relations';
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
-import { IModelDescrtiptor, RelationType } from './interfaces';
+import { IModelDescrtiptor, RelationType, InsertBehaviour } from './interfaces';
 import { WhereFunction } from './types';
 import {
   RawQuery,
@@ -263,7 +263,7 @@ export abstract class ModelBase<T> {
    * Save all changes to db. It creates new entry id db or updates existing one if
    * primary key exists
    */
-  public async save(ignoreOnDuplicate: boolean = false) {
+  public async save(insertBehaviour: InsertBehaviour = InsertBehaviour.None) {
     if (this.PrimaryKeyValue) {
       const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
 
@@ -273,16 +273,21 @@ export abstract class ModelBase<T> {
 
       await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
     } else {
-      const { query } = _createQuery(this.constructor, InsertQueryBuilder);
+      const { query, description } = _createQuery(this.constructor, InsertQueryBuilder);
 
-      if (ignoreOnDuplicate) {
-        query.ignore();
+      switch (insertBehaviour) {
+        case InsertBehaviour.OnDuplicateIgnore:
+          query.ignore();
+          break;
+        case InsertBehaviour.OnDuplicateUpdate:
+          query.onDuplicate().update(description.Columns.filter(c => !c.PrimaryKey).map(c => c.Name));
+          break;
       }
 
       const id = await query.values(this.dehydrate());
 
       // ignore fired, we dont have insert ID
-      if (ignoreOnDuplicate && (id as any) === 0) {
+      if (insertBehaviour !== InsertBehaviour.None && (id as any) === 0 && !this.PrimaryKeyValue) {
 
         const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
         const idRes = await query.columns([this.PrimaryKeyName]).where(function () {

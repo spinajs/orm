@@ -81,7 +81,7 @@ export class Orm extends AsyncModule {
     }
 
     return true;
-    
+
     async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
       const migrationTable = await connection.tableInfo(tableName);
       if (!migrationTable) {
@@ -180,6 +180,10 @@ export class Orm extends AsyncModule {
         `Found ORM driver ${c.Options.Name} with parameters ${JSON.stringify(_.pick(c.Options, CFG_PROPS))}`,
       );
     });
+
+    if (this.Configuration.get("db.defaultConnection")) {
+      this.Connections.set("default", connections.find(c => c.Options.Name === this.Configuration.get("db.defaultConnection")));
+    }
   }
 
   private applyModelMixins() {
