@@ -441,7 +441,6 @@ describe("General model tests", () => {
 
     it("Model should get id when save with ignore", async () => {
 
-        await db();
         const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
         tableInfoStub.withArgs("TestTable6", undefined).returns(new Promise(res => {
             res([{
@@ -476,6 +475,8 @@ describe("General model tests", () => {
             }]);
         }));
 
+
+
         sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
             res(0)
         })).onSecondCall().returns(new Promise((res) => {
@@ -488,6 +489,8 @@ describe("General model tests", () => {
             expression: "",
             bindings: []
         });
+
+        await db();
 
         const model = new Model6({
             Property6: "test"

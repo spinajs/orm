@@ -330,6 +330,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
   protected _container: Container;
   protected _columns: IQueryStatement[];
   protected _tableAlias: string;
+  protected _model?: Constructor<ModelBase<any>>;
 
   constructor() {
     this._columns = [];
@@ -351,8 +352,10 @@ export class ColumnsBuilder implements IColumnsBuilder {
 
   public columns(names: string[]) {
 
+    const descriptor = extractModelDescriptor(this._model);
+
     this._columns = names.map(n => {
-      return this._container.resolve<ColumnStatement>(ColumnStatement, [n, null, this._tableAlias]);
+      return this._container.resolve<ColumnStatement>(ColumnStatement, [n, null, this._tableAlias, descriptor?.Columns.find(c => c.Name === n)]);
     });
 
     return this;
@@ -360,9 +363,12 @@ export class ColumnsBuilder implements IColumnsBuilder {
 
   public select(column: string | RawQuery | Map<string, string>, alias?: string) {
 
+    const descriptor = extractModelDescriptor(this._model);
+
+
     if (column instanceof Map) {
       column.forEach((alias, colName) => {
-        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias, this._tableAlias]));
+        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias, this._tableAlias, descriptor?.Columns.find(c => c.Name === colName)]));
       });
     }
 
@@ -372,7 +378,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
       );
     } else {
       this._columns.push(
-        this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias, this._tableAlias]),
+        this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias, this._tableAlias, descriptor?.Columns.find(c => c.Name === column)]),
       );
     }
 
@@ -1091,7 +1097,7 @@ export class InsertQueryBuilder extends QueryBuilder {
 
   protected _columns: ColumnStatement[];
 
-  protected _ignore : boolean;
+  protected _ignore: boolean;
 
   @use(ColumnsBuilder)
   /// @ts-ignore
@@ -1101,7 +1107,7 @@ export class InsertQueryBuilder extends QueryBuilder {
     return this._values;
   }
 
-  public get Ignore(){
+  public get Ignore() {
     return this._ignore;
   }
 
@@ -1118,7 +1124,7 @@ export class InsertQueryBuilder extends QueryBuilder {
   /**
    * Sets insert to ignore on duplicate
    */
-  public ignore(){
+  public ignore() {
     this._ignore = true;
 
     return this;

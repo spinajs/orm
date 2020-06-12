@@ -2,6 +2,7 @@ import { SelectQueryBuilder, WhereBuilder, RawQuery } from './builders';
 import { ColumnMethods, WhereOperators, JoinMethod } from './enums';
 import { NewInstance } from '@spinajs/di';
 import _ from 'lodash';
+import { IColumnDescriptor } from './interfaces';
 
 export interface IQueryStatementResult {
   Statements: string[];
@@ -195,13 +196,19 @@ export abstract class ColumnStatement extends QueryStatement {
   protected _column: string | RawQuery;
   protected _alias: string;
   protected _tableAlias: string;
+  protected _descriptor : IColumnDescriptor;
 
-  constructor(column: string | RawQuery, alias: string, tableAlias: string) {
+  constructor(column: string | RawQuery, alias: string, tableAlias: string, descriptor : IColumnDescriptor) {
     super(tableAlias)
 
     this._column = column || '';
     this._alias = alias || '';
     this._tableAlias = tableAlias;
+    this._descriptor = descriptor;
+  }
+
+  public get Descriptor(){
+    return this._descriptor;
   }
 
   public get Column() {
@@ -244,7 +251,7 @@ export abstract class ColumnMethodStatement extends ColumnStatement {
   protected _method: ColumnMethods;
 
   constructor(column: string, method: ColumnMethods, alias: string, tableAlias: string) {
-    super(column, alias, tableAlias);
+    super(column, alias, tableAlias, null);
     this._method = method;
   }
 

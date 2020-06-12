@@ -18,6 +18,12 @@ import * as _ from 'lodash';
 import { InvalidOperation } from '@spinajs/exceptions';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
+
+  if(!target)
+  {
+    return null;
+  }
+  
   const descriptor: any = {};
 
   _reduce(target);
@@ -264,6 +270,7 @@ export abstract class ModelBase<T> {
    * primary key exists
    */
   public async save(insertBehaviour: InsertBehaviour = InsertBehaviour.None) {
+    const self = this;
     if (this.PrimaryKeyValue) {
       const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
 
@@ -291,8 +298,8 @@ export abstract class ModelBase<T> {
 
         const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
         const idRes = await query.columns([this.PrimaryKeyName]).where(function () {
-          description.Columns.filter(c => c.Unique).forEach(c => {
-            this.where(c.Name, (this as any)[c.Name]);
+          description.UniqueColumns.forEach(c => {
+            this.where(c, (self as any)[c]);
           });
         }).first();
 
