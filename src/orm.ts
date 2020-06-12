@@ -117,7 +117,7 @@ export class Orm extends AsyncModule {
   }
 
   public async resolveAsync(): Promise<void> {
-    const migrateOnStartup = this.Configuration.get<boolean>('db.migrateOnStartup', false);
+    const migrateOnStartup = this.Configuration.get<boolean>('db.MigrateOnStartup', false);
 
     await this.createConnections();
 
