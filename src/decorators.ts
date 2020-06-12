@@ -1,7 +1,7 @@
-import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor, IDiscriminationEntry } from './interfaces';
+import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor, IDiscriminationEntry, DatetimeValueConverter, ValueConverter, SetValueConverter } from './interfaces';
 import 'reflect-metadata';
 import { ModelBase, extractModelDescriptor } from './model';
-import { InvalidOperation } from '@spinajs/exceptions';
+import { InvalidOperation, InvalidArgument } from '@spinajs/exceptions';
 
 export const MODEL_DESCTRIPTION_SYMBOL = Symbol.for('MODEL_DESCRIPTOR');
 export const MIGRATION_DESCRIPTION_SYMBOL = Symbol.for('MIGRATION_DESCRIPTOR');
@@ -30,6 +30,7 @@ export function extractDecoratorDescriptor(
 
     if (!metadata) {
       metadata = {
+        Converters: new Map<string, Constructor<ValueConverter>>(),
         Columns: [],
         Connection: null,
         PrimaryKey: '',
@@ -305,5 +306,42 @@ export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, target
       JunctionModelTargetModelFKey_Name: junctionModelTargetPk ?? `${targetModelDescriptor.Name.toLowerCase()}_id`,
       JunctionModelSourceModelFKey_Name: junctionModelSourcePk ?? `${model.Name.toLowerCase()}_id`
     });
+  });
+}
+
+/**
+ * Mark field as datetime type. It will ensure that conversion to & from DB is valid, eg. sqlite DB 
+ * saves datetime as TEXT and ISO8601 strings
+ */
+export function DateTime() {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Date') {
+      throw Error(`Proprety  ${propertyKey} must be Date type`);
+    }
+
+    if (model.Converters.has(propertyKey)) {
+      throw new InvalidArgument(`property ${propertyKey} already have data converter attached`);
+    }
+
+    model.Converters.set(propertyKey, DatetimeValueConverter);
+  });
+}
+
+/**
+ * Mark field as SET type. It will ensure that conversion to & from DB is valid, eg. to emulate field type SET in sqlite
+ */
+export function Set() {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    if (type.name !== 'Array') {
+      throw Error(`Proprety  ${propertyKey} must be an array type`);
+    }
+
+    if (model.Converters.has(propertyKey)) {
+      throw new InvalidArgument(`property ${propertyKey} already have data converter attached`);
+    }
+
+    model.Converters.set(propertyKey, SetValueConverter);
   });
 }

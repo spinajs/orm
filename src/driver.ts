@@ -26,11 +26,10 @@ export abstract class OrmDriver extends SyncModule {
   @Logger({ module: 'ORM' })
   protected Log: Log;
 
-  constructor(container: IContainer, options: IDriverOptions) {
+  constructor(options: IDriverOptions) {
     super();
 
     this.Options = options;
-    this.Container = container;
   }
 
   /**
@@ -68,10 +67,11 @@ export abstract class OrmDriver extends SyncModule {
   public abstract tableInfo(name: string, schema?: string): Promise<IColumnDescriptor[]>;
 
   public resolve(container: IContainer) {
-    container.register(DbPropertyHydrator).as(ModelHydrator);
-    container.register(NonDbPropertyHydrator).as(ModelHydrator);
-    container.register(OneToOneRelationHydrator).as(ModelHydrator);
-    container.register(JunctionModelPropertyHydrator).as(ModelHydrator);
+    this.Container = container.child();
+    this.Container.register(DbPropertyHydrator).as(ModelHydrator);
+    this.Container.register(NonDbPropertyHydrator).as(ModelHydrator);
+    this.Container.register(OneToOneRelationHydrator).as(ModelHydrator);
+    this.Container.register(JunctionModelPropertyHydrator).as(ModelHydrator);
   }
 
   /**

@@ -619,8 +619,8 @@ describe("Orm relations tests", () => {
                 model4_id: 1,
                 model5_id: 2,
                 JoinProperty: "joinProp1",
-                '$ForeignModel$.Property5': "prop5",
-                '$ForeignModel$.Id': 2,
+                '$ManyOwners$.Property5': "prop5",
+                '$ManyOwners$.Id': 2,
 
             },
             {
@@ -628,8 +628,8 @@ describe("Orm relations tests", () => {
                 model4_id: 1,
                 model5_id: 3,
                 JoinProperty: "joinProp2",
-                '$ForeignModel$.Property5': "prop5",
-                '$ForeignModel$.Id': 3,
+                '$ManyOwners$.Property5': "prop5",
+                '$ManyOwners$.Id': 3,
             }]);
         }));
 

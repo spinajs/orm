@@ -1,3 +1,4 @@
+import { ValueConverter } from './../src/interfaces';
 import { join, normalize, resolve } from 'path';
 import { IColumnDescriptor, ColumnQueryCompiler, SelectQueryCompiler, ICompilerOutput, DeleteQueryCompiler, InsertQueryCompiler, UpdateQueryCompiler, TableQueryCompiler, QueryBuilder } from '../src';
 import { IContainer } from '@spinajs/di';
@@ -81,11 +82,10 @@ export class FakeSqliteDriver extends OrmDriver {
 
     // tslint:disable-next-line: no-empty
     public resolve(_container: IContainer): void {
-
+        this.Container = _container;
     }
 
-    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void>
-    {
+    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
         return;
     }
 }
@@ -121,9 +121,18 @@ export class FakeMysqlDriver extends OrmDriver {
 
     }
 
-    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void>
-    {
+    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
         return;
+    }
+}
+
+export class FakeConverter extends ValueConverter {
+    public toDB(val: any): any {
+        return val;
+    }
+
+    public fromDB(val: any): any {
+        return val;
     }
 }
 

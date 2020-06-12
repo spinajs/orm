@@ -19,13 +19,11 @@ import { InvalidOperation } from '@spinajs/exceptions';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
 
-  if(!target)
-  {
+  if (!target) {
     return null;
   }
-  
-  const descriptor: any = {};
 
+  let descriptor: any = null;
   _reduce(target);
   return descriptor;
 
@@ -35,6 +33,8 @@ export function extractModelDescriptor(target: any): IModelDescrtiptor {
     }
 
     if (t[MODEL_DESCTRIPTION_SYMBOL]) {
+      descriptor = descriptor ?? {};
+
       _.mergeWith(descriptor, t[MODEL_DESCTRIPTION_SYMBOL], (a: any, b: any) => {
         if (!a) {
           return b;

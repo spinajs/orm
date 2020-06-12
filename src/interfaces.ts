@@ -5,6 +5,7 @@ import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { NewInstance } from '@spinajs/di';
 import { ModelBase } from './model';
+import { MethodNotImplemented } from '@spinajs/exceptions';
 
 export enum QueryContext {
   Insert,
@@ -196,6 +197,11 @@ export interface IModelDescrtiptor {
    * List of unique columns ( UNIQUE constraint )
    */
   UniqueColumns: string[];
+
+  /**
+   * Converters attached to fields
+   */
+  Converters : Map<string, Constructor<ValueConverter>>;
 
   /**
    * List of unique columns ( UNIQUE constraint )
@@ -719,4 +725,37 @@ export interface IBuilderMiddleware {
    * @param data hydrated data. Models are created and hydrated with data
    */
   afterHydration(data: Array<ModelBase<any>>): Promise<any[] | void>;
+}
+
+export class ValueConverter implements IValueConverter {
+
+  /**
+   * Converts value to database type
+   *
+   * @param value - value to convert
+   */
+  public toDB(_value: any): any {
+    throw new MethodNotImplemented();
+  }
+
+  /**
+   * Converts value from database type eg. mysql timestamp to DateTime
+   *
+   * @param value - value to convert
+   */
+  public fromDB(_value: any): any {
+    throw new MethodNotImplemented();
+  }
+}
+
+/**
+ * Converter for DATETIME field (eg. mysql datetime)
+ */
+export class DatetimeValueConverter extends ValueConverter {
+}
+
+/**
+ * Converter for set field (eg. mysql SET)
+ */
+export class SetValueConverter extends ValueConverter {
 }

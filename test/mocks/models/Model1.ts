@@ -1,4 +1,4 @@
-import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete, BelongsTo } from "../../../src/decorators";
+import { Connection, Primary,  Model, Archived, CreatedAt, UpdatedAt, SoftDelete, BelongsTo, DateTime } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 import { Model4 } from "./Model4";
 
@@ -11,6 +11,7 @@ export class Model1 extends ModelBase<Model1>
     public Id: number;
 
     @Archived()
+    @DateTime()
     public ArchivedAt : Date;
 
     @CreatedAt()

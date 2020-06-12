@@ -10,8 +10,8 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
-import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, InsertBehaviour } from '../src/interfaces';
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeConverter } from "./misc";
+import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, InsertBehaviour, DatetimeValueConverter } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -49,6 +49,7 @@ describe("General model tests", () => {
 
         DI.register(DbPropertyHydrator).as(ModelHydrator);
         DI.register(NonDbPropertyHydrator).as(ModelHydrator);
+        DI.register(FakeConverter).as(DatetimeValueConverter);
 
 
         DI.resolve(LogModule);
@@ -152,6 +153,49 @@ describe("General model tests", () => {
         expect(result[0]).instanceOf(Model1);
 
     })
+
+    it("Converter should be executed", async () => {
+
+        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise((res) => {
+            res([
+                {
+                    Type: "DATE",
+                    MaxLength: 0,
+                    Comment: "",
+                    DefaultValue: null,
+                    NativeType: "INT",
+                    Unsigned: false,
+                    Nullable: true,
+                    PrimaryKey: true,
+                    AutoIncrement: true,
+                    Name: "ArchivedAt",
+                    Converter: null,
+                    Schema: "sqlite",
+                    Unique: false
+                }
+            ]);
+        }));
+
+        
+        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
+            res([
+                {
+                    Id: 1,
+                    ArchivedAt: new Date(),
+                    CreatedAt: new Date()
+                }
+            ]);
+        }));
+
+        await db();
+
+        const fromDb = sinon.spy(FakeConverter.prototype, "fromDB");
+
+        await Model1.find<Model1>(1);
+
+        expect(fromDb.called).to.be.true;
+        expect(fromDb.returnValues[0]).to.be.not.null;
+    });
 
     it("Find mixin should work for single val", async () => {
 
@@ -623,52 +667,6 @@ describe("General model tests", () => {
         expect(test2.Foo.has("zar")).to.be.true;
     });
 
-    it("hydrate should call converter if avaible", async () => {
-
-
-        const converterStub = {
-            fromDB(val: any): any { return val; },
-            toDB(val: any): any { return val; }
-        };
-        const fromDB = sinon.stub(converterStub, "fromDB").withArgs("1234/12/13 13:13").returns(new Date());
-
-        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
-            expression: "",
-            bindings: []
-        });
-
-        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
-            res([{
-                CreatedAt: "1234/12/13 13:13"
-            }]);
-        }));
-
-        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
-            res([{
-                Type: "TIMESTAMP",
-                MaxLength: 0,
-                Comment: "",
-                DefaultValue: null,
-                NativeType: "TIMESTAMP",
-                Unsigned: false,
-                Nullable: true,
-                PrimaryKey: false,
-                AutoIncrement: false,
-                Name: "CreatedAt",
-                Converter: converterStub,
-                Schema: "test",
-                Unique: false
-            }]);
-        }));
-
-        // @ts-ignore
-        const orm = await db();
-        const model = await Model1.find<Model1>(1);
-
-        expect(fromDB.calledOnce).to.be.true;
-        expect(model).instanceOf(Model1);
-        expect(model.CreatedAt).instanceOf(Date);
-    })
 
     it("Orm should load column info for models", async () => {
         const tb = sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {

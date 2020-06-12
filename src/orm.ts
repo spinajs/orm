@@ -4,7 +4,7 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from '@spinajs/log';
 import { ClassInfo, ListFromFiles } from '@spinajs/reflection';
 import _ from 'lodash';
-import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactionMode } from './interfaces';
+import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactionMode, IModelDescrtiptor } from './interfaces';
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model';
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
@@ -97,7 +97,7 @@ export class Orm extends AsyncModule {
     }
   }
 
-  /**
+  /** 
    * This function is exposed mainly for unit testing purposes. It reloads table information for models
    * ORM always try to load table at resolve time
    */
@@ -112,6 +112,14 @@ export class Orm extends AsyncModule {
             m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), 'Name');
           }
         }
+
+        for (const [key, val] of descriptor.Converters) {
+          const column = (m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor).Columns.find(c => c.Name === key);
+          if (column) {
+            column.Converter = this.Container.hasRegistered(val) ? this.Container.resolve(val) : null;
+          }
+        }
+
       }
     }
   }
@@ -168,7 +176,7 @@ export class Orm extends AsyncModule {
     const connections = await Promise.all(
       this.Configuration.get<IDriverOptions[]>('db.Connections', [])
         .map(c => {
-          return this.Container.resolve<OrmDriver>(c.Driver, [this.Container, c]);
+          return this.Container.resolve<OrmDriver>(c.Driver, [c]);
         })
         .filter(c => c !== null)
         .map(c => c.connect()),

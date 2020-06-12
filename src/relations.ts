@@ -80,7 +80,7 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
 
 class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
-    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor : IModelDescrtiptor) {
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor: IModelDescrtiptor) {
 
     }
 
@@ -133,7 +133,7 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
 class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
-    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor : IModelDescrtiptor) {
+    constructor(protected _relationQuery: SelectQueryBuilder, protected _description: IRelationDescriptor, protected _targetModelDescriptor: IModelDescrtiptor) {
 
     }
 
@@ -150,7 +150,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
         const hydrateMiddleware = {
             afterData(data: any[]) {
-                return data.map(d => Object.assign({}, d.ForeignModel, { JunctionModel: self.pickProps(d, ["ForeignModel"]) }));
+                return data.map(d => Object.assign({}, d[self._description.Name], { JunctionModel: self.pickProps(d, [self._description.Name]) }));
             },
             modelCreation(_: any): ModelBase<any> { return null },
             async afterHydration(relationData: Array<ModelBase<any>>) {
@@ -246,7 +246,7 @@ export class DiscriminationMapMiddleware implements IBuilderMiddleware {
         if (this._description.DiscriminationMap && this._description.DiscriminationMap.Field) {
 
             const distValue = data[this._description.DiscriminationMap.Field];
-            if(distValue && this._description.DiscriminationMap.Models.has(distValue)){
+            if (distValue && this._description.DiscriminationMap.Models.has(distValue)) {
                 return new (this._description.DiscriminationMap.Models.get(distValue) as any)(data);
             }
         }
@@ -379,23 +379,23 @@ export class ManyToManyRelation extends OrmRelation {
             this._joinQuery.schema(driver.Options.Database);
         }
 
-        this._joinQuery.from(this._joinModelDescriptor.TableName);
+        this._joinQuery.from(this._joinModelDescriptor.TableName, `$${this._joinModelDescriptor.TableName}$`);
         this._joinQuery.columns(this._joinModelDescriptor.Columns.map((c) => {
             return c.Name;
         }));
 
         this._relationQuery.from(this._targetModelDescriptor.TableName, this.Alias);
-        this._relationQuery.columns(this._targetModelDescriptor.Columns.map((c) => {
-            return `${this.Alias}.${c.Name}`;
-        }));
+        this._targetModelDescriptor.Columns.forEach(c => {
+            this._relationQuery.select(c.Name, `${this.Alias}.${c.Name}`)
+        });
     }
 
     public execute(callback?: (this: SelectQueryBuilder<any>, relation: OrmRelation) => void): void {
 
-        this._relationQuery.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.JunctionModelTargetModelFKey_Name, `${this._description.ForeignKey}`);
+        this._joinQuery.leftJoin(this._targetModelDescriptor.TableName, this.Alias, this._description.JunctionModelTargetModelFKey_Name, this._description.ForeignKey);
 
         if (callback) {
-            callback.call(this._joinQuery, [this]);
+            callback.call(this._relationQuery, [this]);
         }
 
         const joinRelationDescriptor = {
