@@ -166,7 +166,7 @@ export class Orm extends AsyncModule {
 
   private async createConnections() {
     const connections = await Promise.all(
-      this.Configuration.get<IDriverOptions[]>('db.connections', [])
+      this.Configuration.get<IDriverOptions[]>('db.Connections', [])
         .map(c => {
           return this.Container.resolve<OrmDriver>(c.Driver, [this.Container, c]);
         })
@@ -181,8 +181,8 @@ export class Orm extends AsyncModule {
       );
     });
 
-    if (this.Configuration.get("db.defaultConnection")) {
-      this.Connections.set("default", connections.find(c => c.Options.Name === this.Configuration.get("db.defaultConnection")));
+    if (this.Configuration.get("db.DefaultConnection")) {
+      this.Connections.set("default", connections.find(c => c.Options.Name === this.Configuration.get("db.DefaultConnection")));
     }
   }
 

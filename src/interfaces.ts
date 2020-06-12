@@ -136,6 +136,8 @@ export interface IDriverOptions {
     };
   };
 
+  DefaultConnection: boolean;
+
   /**
    * Debug queries sent to orm driver. It writes raw queries queries to log for debug purposes
    */
