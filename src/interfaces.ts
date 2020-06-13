@@ -220,6 +220,11 @@ export interface IModelDescrtiptor {
    * Model discrimination map that  allows to create different models based on db field value
    */
   DiscriminationMap: IDiscriminationMap;
+
+  /**
+   * Orm driver that this model
+   */
+  Driver : OrmDriver;
 }
 
 export interface IDiscriminationMap {

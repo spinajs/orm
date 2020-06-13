@@ -247,7 +247,11 @@ export class DiscriminationMapMiddleware implements IBuilderMiddleware {
 
             const distValue = data[this._description.DiscriminationMap.Field];
             if (distValue && this._description.DiscriminationMap.Models.has(distValue)) {
-                return new (this._description.DiscriminationMap.Models.get(distValue) as any)(data);
+               
+                const result = new (this._description.DiscriminationMap.Models.get(distValue) as any)();
+                result.hydrate(data);
+
+                return result;
             }
         }
 

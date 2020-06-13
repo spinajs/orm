@@ -111,14 +111,16 @@ export class Orm extends AsyncModule {
           if (columns) {
             m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), 'Name');
           }
-        }
 
-        for (const [key, val] of descriptor.Converters) {
-          const column = (m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor).Columns.find(c => c.Name === key);
-          if (column) {
-            column.Converter = this.Container.hasRegistered(val) ? this.Container.resolve(val) : null;
+          for (const [key, val] of descriptor.Converters) {
+            const column = (m.type[MODEL_DESCTRIPTION_SYMBOL] as IModelDescrtiptor).Columns.find(c => c.Name === key);
+            if (column) {
+              column.Converter = connection.Container.hasRegistered(val) ? connection.Container.resolve(val) : null;
+            }
           }
         }
+
+       
 
       }
     }
@@ -202,4 +204,5 @@ export class Orm extends AsyncModule {
       }
     });
   }
+ 
 }

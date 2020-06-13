@@ -1,5 +1,5 @@
 import { QueryContext } from './interfaces';
-import { SyncModule, IContainer } from '@spinajs/di';
+import { SyncModule, IContainer, DI } from '@spinajs/di';
 import { IDriverOptions, IColumnDescriptor } from '.';
 import {
   UpdateQueryBuilder,
@@ -68,10 +68,14 @@ export abstract class OrmDriver extends SyncModule {
 
   public resolve(container: IContainer) {
     this.Container = container.child();
-    this.Container.register(DbPropertyHydrator).as(ModelHydrator);
-    this.Container.register(NonDbPropertyHydrator).as(ModelHydrator);
-    this.Container.register(OneToOneRelationHydrator).as(ModelHydrator);
-    this.Container.register(JunctionModelPropertyHydrator).as(ModelHydrator);
+
+    /**
+     * Hydrators are registered globally
+     */
+    DI.register(DbPropertyHydrator).as(ModelHydrator);
+    DI.register(NonDbPropertyHydrator).as(ModelHydrator);
+    DI.register(OneToOneRelationHydrator).as(ModelHydrator);
+    DI.register(JunctionModelPropertyHydrator).as(ModelHydrator);
   }
 
   /**

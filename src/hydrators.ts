@@ -4,7 +4,7 @@ export abstract class ModelHydrator {
   public abstract hydrate(target: any, values: any): void;
 }
 
- 
+
 
 export class OneToOneRelationHydrator extends ModelHydrator {
   public hydrate<T>(target: ModelBase<T>, values: any): void {
@@ -16,7 +16,11 @@ export class OneToOneRelationHydrator extends ModelHydrator {
 
     for (const [key, val] of descriptor.Relations) {
       if (values[key] != null) {
-        (target as any)[key] = new val.TargetModel(values[key]);
+
+        const entity = target as any;
+        entity[key] = new val.TargetModel();
+        entity[key].hydrate(values[key]);
+
         delete (target as any)[val.ForeignKey];
       }
     }
@@ -59,17 +63,17 @@ export class NonDbPropertyHydrator extends ModelHydrator {
   }
 }
 
-export class JunctionModelPropertyHydrator extends ModelHydrator{
+export class JunctionModelPropertyHydrator extends ModelHydrator {
   public hydrate<T>(target: ModelBase<T>, values: any): void {
-    
+
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
     }
 
-    for(const jt of descriptor.JunctionModelProperties){
-     (target as any)[jt.Name] = new jt.Model(values.JunctionModel); 
+    for (const jt of descriptor.JunctionModelProperties) {
+      (target as any)[jt.Name] = new jt.Model(values.JunctionModel);
     }
   }
-  
+
 }

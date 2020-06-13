@@ -192,8 +192,8 @@ export abstract class ModelBase<T> {
   constructor(data?: any) {
     this.defaults();
 
-    if (data) {
-      this.hydrate(data);
+    if(data){
+      Object.assign(this, data);
     }
   }
 

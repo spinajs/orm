@@ -112,7 +112,8 @@ export class Builder<T = any> {
             }
 
             if (model === null) {
-              model = new this._model(r);
+              model = new this._model();
+              model.hydrate(r);
             }
 
             return model;

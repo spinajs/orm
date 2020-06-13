@@ -30,6 +30,7 @@ export function extractDecoratorDescriptor(
 
     if (!metadata) {
       metadata = {
+        Driver: null,
         Converters: new Map<string, Constructor<ValueConverter>>(),
         Columns: [],
         Connection: null,
@@ -122,6 +123,9 @@ export function CreatedAt() {
     }
 
     model.Timestamps.CreatedAt = propertyKey;
+
+    // add converter for this field
+    model.Converters.set(propertyKey, DatetimeValueConverter);
   });
 }
 
@@ -137,6 +141,9 @@ export function UpdatedAt() {
     }
 
     model.Timestamps.UpdatedAt = propertyKey;
+
+    // add converter for this field
+    model.Converters.set(propertyKey, DatetimeValueConverter);
   });
 }
 
@@ -152,6 +159,9 @@ export function SoftDelete() {
     }
 
     model.SoftDelete.DeletedAt = propertyKey;
+
+    // add converter for this field
+    model.Converters.set(propertyKey, DatetimeValueConverter);
   });
 }
 
@@ -168,6 +178,9 @@ export function Archived() {
     }
 
     model.Archived.ArchivedAt = propertyKey;
+
+    // add converter for this field
+    model.Converters.set(propertyKey, DatetimeValueConverter);
   });
 }
 

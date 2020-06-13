@@ -54,6 +54,7 @@ describe("General model tests", () => {
 
         DI.resolve(LogModule);
     });
+     
 
     afterEach(async () => {
         DI.clear();
@@ -154,7 +155,48 @@ describe("General model tests", () => {
 
     })
 
-    it("Converter should be executed", async () => {
+    it("Converter should be executed when dehydrated", async () => {
+
+        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise((res) => {
+            res([
+                {
+                    Type: "DATE",
+                    MaxLength: 0,
+                    Comment: "",
+                    DefaultValue: null,
+                    NativeType: "INT",
+                    Unsigned: false,
+                    Nullable: true,
+                    PrimaryKey: true,
+                    AutoIncrement: true,
+                    Name: "ArchivedAt",
+                    Converter: null,
+                    Schema: "sqlite",
+                    Unique: false
+                }
+            ]);
+        }));
+
+        sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
+            expression: "",
+            bindings: []
+        });
+
+        await db();
+
+        const toDb = sinon.spy(FakeConverter.prototype, "toDB");
+
+        const model = new Model1({
+            ArchivedAt: new Date()
+        });
+
+        await model.save();
+
+        expect(toDb.called).to.be.true;
+        expect(toDb.args[0]).to.be.not.null;
+    });
+
+    it("Converter should be executed when hydrated", async () => {
 
         sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise((res) => {
             res([
@@ -600,56 +642,6 @@ describe("General model tests", () => {
 
     })
 
-    it("dehydrate should call converter if avaible", async () => {
-
-        const converterStub = {
-            fromDB(val: any): any { return val; },
-            toDB(val: any): any { return val; }
-        };
-        const toDB = sinon.stub(converterStub, "toDB").returns("1234/12/12 12:12");
-
-        sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
-            expression: "",
-            bindings: []
-        });
-
-        const compiler = sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
-            expression: "",
-            bindings: []
-        });
-
-        sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
-            res([]);
-        }));
-
-        sinon.stub(FakeSqliteDriver.prototype, "tableInfo").returns(new Promise(res => {
-            res([{
-                Type: "TIMESTAMP",
-                MaxLength: 0,
-                Comment: "",
-                DefaultValue: null,
-                NativeType: "TIMESTAMP",
-                Unsigned: false,
-                Nullable: true,
-                PrimaryKey: false,
-                AutoIncrement: false,
-                Name: "CreatedAt",
-                Converter: converterStub,
-                Schema: "test",
-                Unique: false
-            }]);
-        }));
-
-        // @ts-ignore
-        const orm = await db();
-        const model = new Model1();
-
-        await model.save();
-
-        expect(toDB.calledOnce).to.be.true;
-        expect(compiler.calledOnce).to.be.true;
-    })
-
     it("hydrate should set non db properties", async () => {
 
         const test = new Model3();
@@ -789,8 +781,6 @@ describe("General model tests", () => {
         expect(spy2.calledOnce).to.be.true;
 
     });
-
-
 });
 
 describe("Model discrimination tests", () => {
