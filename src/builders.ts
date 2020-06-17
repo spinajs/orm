@@ -1423,6 +1423,13 @@ export class TableQueryBuilder extends QueryBuilder {
   public enum: (name: string, values: any[]) => ColumnQueryBuilder;
   public json: (name: string) => ColumnQueryBuilder;
 
+  public binary: (name: string, size: number) => ColumnQueryBuilder;
+
+  public tinyblob: (name: string) => ColumnQueryBuilder;
+  public mediumblob: (name: string) => ColumnQueryBuilder;
+  public longblob: (name: string) => ColumnQueryBuilder;
+
+
   public set: (name: string, allowed: string[]) => ColumnQueryBuilder;
 
   public get Columns() {

@@ -109,7 +109,12 @@ export enum ColumnType {
   TIMESTAMP = 'timestamp',
   ENUM = 'enum',
   JSON = 'json',
-  SET =  'set'
+  SET =  'set',
+  BINARY = 'binary',
+  TINY_BLOB = 'tinyblob',
+  MEDIUM_BLOB = 'mediumblob',
+  LONG_BLOB = 'longblob',
+
 }
 
 export enum SORT_ORDER {
