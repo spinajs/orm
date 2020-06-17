@@ -66,12 +66,13 @@
     "all": true
   },
   "dependencies": {
-    "@spinajs/configuration": "^1.0.5",
-    "@spinajs/di": "^1.0.3",
-    "@spinajs/exceptions": "^1.0.0",
-    "@spinajs/log": "^1.0.0",
-    "@spinajs/reflection": "^1.0.4",
+    "@spinajs/configuration": "^1.0.9",
+    "@spinajs/di": "^1.0.16",
+    "@spinajs/exceptions": "^1.0.3",
+    "@spinajs/log": "^1.0.5",
+    "@spinajs/reflection": "^1.0.5",
     "lodash": "^4.17.14",
-    "typescript-mix": "^3.1.3"
+    "typescript-mix": "^3.1.3",
+    "uuid": "^8.1.0"
   }
 }

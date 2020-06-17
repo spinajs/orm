@@ -128,6 +128,24 @@
     glob "^7.1.4"
     lodash "^4.17.14"
 
+"@spinajs/configuration@^1.0.5":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@spinajs/configuration/-/configuration-1.0.6.tgz#fd1499912f2ffedebdd3131f7c95c8f9e17918ef"
+  integrity sha512-Vs8bZBaw3ijRUjqXUxqUXl/mXdmqOd3MfT13W2OI4/P9tMaJKJLJDOG0+wfUP1/9A6iIalvehrvm6Mf39Dbaow==
+  dependencies:
+    "@spinajs/di" "^1.0.11"
+    glob "^7.1.4"
+    lodash "^4.17.14"
+
+"@spinajs/di@^1.0.11":
+  version "1.0.12"
+  resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.0.12.tgz#bdd46c8515db2acaf550fb5ed3a76e374556b194"
+  integrity sha512-CEpj8qD0npauLyAS0h5Mz4g36fRVQGOnkR+QWtlpMLaHyVqe/Tyt0sVR/rfLqfUUDCSuryOYUtWg9G4TZZ+8xw==
+  dependencies:
+    "@spinajs/exceptions" "^1.0.0"
+    lodash "^4.17.14"
+    reflect-metadata "^0.1.13"
+
 "@spinajs/di@^1.0.2", "@spinajs/di@^1.0.3":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.0.5.tgz#904ebfdbcf38cf3e7ea36bd603a6a6c755ce091c"
@@ -153,16 +171,15 @@
     chalk "^3.0.0"
     lodash "^4.17.14"
 
-"@spinajs/reflection@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@spinajs/reflection/-/reflection-1.0.0.tgz#27658ae1e7039fb70c7d3f692ff062d8244238ff"
-  integrity sha512-8+zIWZnd73NRCXMN/Yfx+uYkuHQ8nSWNQmA9MVl/8NrUKR2Y30c1Pbi0+6hht/kwVYlE2DnJc9YiROxMtUUSyw==
+"@spinajs/reflection@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@spinajs/reflection/-/reflection-1.0.4.tgz#dd308494161d654c551f451b95d875d805201862"
+  integrity sha512-vBtk3Di3+jTaD8PP+IMIqOcJmBJk1mBGCMU1eUnDfgoV57fNA+Tug4MYqHQT/l3e8xejGwrJ1ZfdW9tUw5z5kA==
   dependencies:
     "@spinajs/configuration" "^1.0.0"
     "@spinajs/di" "^1.0.3"
     "@spinajs/exceptions" "^1.0.0"
     "@types/mocha" "^5.2.7"
-    lodash "^4.17.14"
 
 "@types/chai-as-promised@^7.1.0":
   version "7.1.2"
@@ -1864,6 +1881,11 @@ uuid@^3.3.2:
   version "3.3.3"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.3.tgz#4568f0216e78760ee1dbf3a4d2cf53e224112866"
   integrity sha512-pW0No1RGHgzlpHJO1nsVrHKpOEIxkGg1xB+v0ZmdNH5OAeAwzAVrCnI2/6Mtx+Uys6iaylxa+D3g4j63IKKjSQ==
+
+uuid@^8.1.0:
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.1.0.tgz#6f1536eb43249f473abc6bd58ff983da1ca30d8d"
+  integrity sha512-CI18flHDznR0lq54xBycOVmphdCYnQLKn8abKn7PXUiKUGdEd+/l9LWNJmugXel4hXq7S+RMNl34ecyC9TntWg==
 
 validate-npm-package-license@^3.0.1:
   version "3.0.4"
