@@ -11,7 +11,7 @@ export function dir(path: string) {
 }
 
 export class ConnectionConf extends Configuration {
-
+ 
     protected conf = {
         log: {
             name: 'spine-framework',
@@ -46,6 +46,12 @@ export class ConnectionConf extends Configuration {
             ]
         }
     }
+
+    // tslint:disable-next-line: no-empty
+    public resolve(_container: IContainer): void {
+         
+    }
+
 
     public get(path: string[], defaultValue?: any): any {
         return _.get(this.conf, path, defaultValue);
