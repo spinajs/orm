@@ -519,11 +519,11 @@ describe("Orm relations tests", () => {
 
         const result = await RelationModel2.where({ Id: 1 }).first<RelationModel2>();
         
-        expect(result.Many).to.be.empty;
+        expect(result.Many.length).to.eq(0);
 
-        await result.populate("Many");
+        await result.Many.populate();
 
-        expect(result.Many).to.be.not.empty;
+        expect(result.Many.length).to.be.gt(0);
         expect(result.Many[0]).instanceOf(Model1);
         expect(result.Many[0]).to.include({ Id: 1, RelId2: 1});
     });
@@ -598,7 +598,7 @@ describe("Orm relations tests", () => {
         const result = await query;
 
         expect(result.Many[0].Owner).to.be.not.null;
-        expect(result.Many[1].Owner).to.be.not.null;
+        expect(result.Many[0].Owner).to.be.not.null;
 
         callback.restore();
 

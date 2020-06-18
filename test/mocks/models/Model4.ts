@@ -2,6 +2,7 @@ import { Connection, Primary,  Model, HasManyToMany } from "../../../src/decorat
 import { ModelBase } from "../../../src/model";
 import { Model5 } from "./Model5";
 import { JunctionModel } from "./JunctionModel";
+import { Relation } from "../../../src/relations";
 
 @Connection("sqlite")
 @Model("TestTable4")
@@ -14,5 +15,5 @@ export class Model4 extends ModelBase<Model4>
     public Property4: string;
 
     @HasManyToMany(JunctionModel,Model5)
-    public ManyOwners : Model5[];
+    public ManyOwners : Relation<Model5>;
 }

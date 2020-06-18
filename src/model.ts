@@ -1,4 +1,4 @@
-import { DiscriminationMapMiddleware, OrmRelation } from './relations';
+import { DiscriminationMapMiddleware, OneToManyRelationList, ManyToManyRelationList } from './relations';
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { IModelDescrtiptor, RelationType, InsertBehaviour } from './interfaces';
 import { WhereFunction } from './types';
@@ -15,7 +15,6 @@ import { DI } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
-import { InvalidOperation } from '@spinajs/exceptions';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
 
@@ -192,7 +191,7 @@ export abstract class ModelBase<T> {
   constructor(data?: any) {
     this.defaults();
 
-    if(data){
+    if (data) {
       Object.assign(this, data);
     }
   }
@@ -236,33 +235,6 @@ export abstract class ModelBase<T> {
       return;
     }
     await (this.constructor as any).destroy(this.PrimaryKeyValue);
-  }
-
-  /**
-   * Loads or reloads model relation ( if relations was not loaded already with initial query)
-   * 
-   * @param relation relation to load
-   */
-  public async populate(relation: string, callback?: (this: SelectQueryBuilder<this>, relation: OrmRelation) => void) {
-
-    if (!this.ModelDescriptor.Relations.has(relation)) {
-      throw new InvalidOperation(`relation ${relation} not exists on model ${this.constructor.name}`);
-    }
-
-    const relDesc = this.ModelDescriptor.Relations.get(relation);
-
-    /**
-     * Do little cheat - we construct query that loads initial model with given relation.
-     * Then we only assign relation property. 
-     * 
-     * TODO: create only relation query without loading its owner.
-     */
-    const result = await (this.constructor as any).where(this.PrimaryKeyName, this.PrimaryKeyValue).populate(relation, callback).firstOrFail();
-
-
-    if (result) {
-      (this as any)[relDesc.Name] = result[relDesc.Name];
-    }
   }
 
   /**
@@ -334,8 +306,10 @@ export abstract class ModelBase<T> {
     }
 
     for (const [, rel] of this.ModelDescriptor.Relations) {
-      if (rel.Type === RelationType.Many || rel.Type === RelationType.ManyToMany) {
-        (this as any)[rel.Name] = [];
+      if (rel.Type === RelationType.Many) {
+        (this as any)[rel.Name] = new OneToManyRelationList(this, rel.TargetModel, rel, []);
+      } else if (rel.Type === RelationType.ManyToMany) {
+        (this as any)[rel.Name] = new ManyToManyRelationList(this, rel.TargetModel, rel, []);
       } else {
         (this as any)[rel.Name] = null;
       }

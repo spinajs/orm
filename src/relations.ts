@@ -1,9 +1,10 @@
-import { InvalidOperation } from '@spinajs/exceptions';
-import { IRelationDescriptor, IModelDescrtiptor, IBuilderMiddleware, RelationType } from './interfaces';
+import { InvalidOperation, InvalidArgument } from '@spinajs/exceptions';
+import { IRelationDescriptor, IModelDescrtiptor, IBuilderMiddleware, RelationType, InsertBehaviour } from './interfaces';
 import { NewInstance, DI } from '@spinajs/di';
-import { SelectQueryBuilder } from './builders';
+import { SelectQueryBuilder, DeleteQueryBuilder } from './builders';
 import { extractModelDescriptor, ModelBase } from './model';
 import { Orm } from './orm';
+import _ from 'lodash';
 
 export interface IOrmRelation {
     execute(callback?: (this: SelectQueryBuilder, relation: OrmRelation) => void): void;
@@ -20,17 +21,11 @@ export abstract class OrmRelation implements IOrmRelation {
     }
 
     constructor(protected _orm: Orm, protected _query: SelectQueryBuilder<any>, protected _description: IRelationDescriptor, protected parentRelation?: OrmRelation) {
-        this._targetModel = this._orm.Models.find(m => m.name === this._description.TargetModel.name)?.type ?? undefined;
-
-        if (this._targetModel === undefined) {
-            throw new InvalidOperation(`model ${this._description.TargetModel} not exists in orm module`);
-        }
+        this._targetModel = this._description.TargetModel ?? undefined;
 
         this._targetModelDescriptor = extractModelDescriptor(this._targetModel);
 
-        const orm = DI.get<Orm>(Orm);
-        const driver = orm.Connections.get(this._targetModelDescriptor.Connection);
-
+        const driver = this._orm.Connections.get(this._targetModelDescriptor.Connection);
         const cnt = driver.Container;
         this._relationQuery = cnt.resolve<SelectQueryBuilder>(SelectQueryBuilder, [driver, this._targetModel, this]);
 
@@ -56,7 +51,7 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
 
     public modelCreation(_: any): ModelBase<any> { return null }
 
-    public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+    public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
@@ -66,8 +61,9 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => {
-                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
-                })
+                    const relData = relationData.filter(rd => (rd as any)[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                    (d as any)[self._description.Name] = new OneToManyRelationList(d, self._description.TargetModel, self._description, relData);
+                });
 
             }
         }
@@ -90,7 +86,7 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
 
     public modelCreation(_: any): ModelBase<any> { return null }
 
-    public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+    public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
@@ -144,7 +140,7 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
 
     public modelCreation(_: any): ModelBase<any> { return null }
 
-    public async  afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+    public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
 
         const self = this;
         const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
@@ -156,7 +152,8 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
             async afterHydration(relationData: Array<ModelBase<any>>) {
 
                 data.forEach(d => {
-                    (d as any)[self._description.Name] = relationData.filter(rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                    const relData = relationData.filter(rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey]);
+                    (d as any)[self._description.Name] = new OneToManyRelationList(d, self._description.TargetModel, self._description, relData);
                 });
 
                 relationData.forEach(d => delete (d as any).JunctionModel);
@@ -247,7 +244,7 @@ export class DiscriminationMapMiddleware implements IBuilderMiddleware {
 
             const distValue = data[this._description.DiscriminationMap.Field];
             if (distValue && this._description.DiscriminationMap.Models.has(distValue)) {
-               
+
                 const result = new (this._description.DiscriminationMap.Models.get(distValue) as any)();
                 result.hydrate(data);
 
@@ -332,7 +329,6 @@ export class OneToManyRelation extends OrmRelation {
         this._relationQuery.columns(this._targetModelDescriptor.Columns.map((c) => {
             return c.Name;
         }));
-
     }
 
     public execute(callback?: (this: SelectQueryBuilder<any>, relation: OrmRelation) => void): void {
@@ -415,5 +411,151 @@ export class ManyToManyRelation extends OrmRelation {
         this._joinQuery.mergeStatements(this._relationQuery);
 
         this._query.middleware(new HasManyToManyRelationMiddleware(this._joinQuery, joinRelationDescriptor, this._targetModelDescriptor));
+    }
+}
+
+/**
+ * Iterable list of populated relation entities
+ * 
+ * It allows to add / remove objects to relation
+ */
+export abstract class Relation<R extends ModelBase<any>> extends Array<R> {
+
+    protected TargetModelDescriptor: IModelDescrtiptor;
+
+    protected Orm: Orm;
+
+    constructor(protected owner: ModelBase<any>, protected model: Constructor<R>, protected Relation: IRelationDescriptor, objects?: R[]) {
+        super();
+
+        if (objects) {
+            this.push(...objects);
+        }
+
+        this.TargetModelDescriptor = extractModelDescriptor(model);
+        this.Orm = DI.get(Orm);
+    }
+
+
+
+    /**
+     * Removes from relation & deletes from db
+     * 
+     * @param obj data to remove
+     */
+    public abstract async remove(obj: R | R[]): Promise<void>;
+
+    /**
+     * 
+     * Add to relation & saves to db
+     * 
+     * @param obj data to add
+     */
+    public abstract async add(obj: R | R[], mode?: InsertBehaviour): Promise<void>;
+
+    /**
+     * Delete all objects from relation
+     */
+    public async clear(): Promise<void> {
+        await this.remove(this);
+    }
+
+    /**
+     * Populates this relation
+     */
+    public async populate(callback?: (this: SelectQueryBuilder<this>, relation: OrmRelation) => void): Promise<void> {
+
+        /**
+         * Do little cheat - we construct query that loads initial model with given relation.
+         * Then we only assign relation property. 
+         * 
+         * TODO: create only relation query without loading its owner.
+         */
+        const result = await (this.owner.constructor as any)
+            .where(this.owner.PrimaryKeyName, this.owner.PrimaryKeyValue)
+            .populate(this.Relation.Name, callback)
+            .firstOrFail();
+
+
+        if (result) {
+            this.splice(0, this.length);
+            this.push(...result[this.Relation.Name]);
+        }
+    }
+}
+
+export class ManyToManyRelationList<T extends ModelBase<any>> extends Relation<T>
+{
+    public async remove(obj: T | T[]): Promise<void> {
+
+        const self = this;
+        const data = (Array.isArray(obj) ? obj : [obj]).map((d) => (d as ModelBase<any>).PrimaryKeyValue);
+        const driver = this.Orm.Connections.get(this.TargetModelDescriptor.Connection);
+        const jmodelDescriptor = extractModelDescriptor(this.Relation.JunctionModel);
+
+        if (!driver) {
+            throw new InvalidArgument(`connection ${this.TargetModelDescriptor.Connection} not exists`);
+        }
+
+        const query = driver.Container.resolve<DeleteQueryBuilder>(DeleteQueryBuilder, [driver, this.Relation.JunctionModel])
+            .from(jmodelDescriptor.TableName)
+            .where(function () {
+                this.whereIn(self.Relation.JunctionModelTargetModelFKey_Name, data);
+                this.andWhere(self.Relation.JunctionModelSourceModelFKey_Name, self.owner.PrimaryKeyValue);
+            });
+
+        await query;
+
+        _.remove(this, (o) => data.indexOf(o.PrimaryKeyValue) !== -1);
+    }
+
+
+    public async add(obj: T | T[], mode?: InsertBehaviour): Promise<void> {
+
+        const data = Array.isArray(obj) ? obj : [obj];
+        data.forEach(d => {
+            (d as any)[this.Relation.JunctionModelSourceModelFKey_Name] = this.owner.PrimaryKeyValue;
+            (d as any)[this.Relation.JunctionModelTargetModelFKey_Name] = d.PrimaryKeyValue;
+        });
+
+        for (const m of data) {
+            await m.save(mode);
+        }
+
+        this.push(...data);
+    }
+}
+
+export class OneToManyRelationList<T extends ModelBase<any>> extends Relation<T> {
+
+    public async remove(obj: T | T[]): Promise<void> {
+
+        const data = (Array.isArray(obj) ? obj : [obj]).map((d) => (d as ModelBase<any>).PrimaryKeyValue);
+        const driver = this.Orm.Connections.get(this.TargetModelDescriptor.Connection);
+
+        if (!driver) {
+            throw new InvalidArgument(`connection ${this.TargetModelDescriptor.Connection} not exists`);
+        }
+
+        const query = driver.Container.resolve<DeleteQueryBuilder>(DeleteQueryBuilder, [driver, this.Relation.TargetModel])
+            .whereIn(this.Relation.ForeignKey, data);
+        await query;
+
+        _.remove(this, (o) => data.indexOf(o.PrimaryKeyValue) !== -1);
+    }
+
+
+    public async add(obj: T | T[], mode?: InsertBehaviour): Promise<void> {
+
+        const data = Array.isArray(obj) ? obj : [obj];
+        data.forEach(d => {
+            (d as any)[this.Relation.ForeignKey] = this.owner.PrimaryKeyValue;
+        });
+
+        for (const m of data) {
+            await m.save(mode);
+        }
+
+        this.push(...data);
     }
 }
