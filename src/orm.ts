@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncModule, Container } from '@spinajs/di';
+import { AsyncModule, Container, IContainer } from '@spinajs/di';
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from '@spinajs/log';
 import { ClassInfo, ListFromFiles } from '@spinajs/reflection';
@@ -24,8 +24,7 @@ export class Orm extends AsyncModule {
 
   public Connections: Map<string, OrmDriver> = new Map<string, OrmDriver>();
 
-  @Autoinject()
-  public Container: Container;
+  public Container: IContainer;
 
   @Logger({ module: 'ORM' })
   protected Log: Log;
@@ -120,13 +119,14 @@ export class Orm extends AsyncModule {
           }
         }
 
-       
+
 
       }
     }
   }
 
-  public async resolveAsync(): Promise<void> {
+  public async resolveAsync(container: IContainer): Promise<void> {
+    this.Container = container;
     const migrateOnStartup = this.Configuration.get<boolean>('db.MigrateOnStartup', false);
 
     await this.createConnections();
@@ -204,5 +204,5 @@ export class Orm extends AsyncModule {
       }
     });
   }
- 
+
 }
