@@ -1,5 +1,5 @@
 import { Configuration } from '@spinajs/configuration';
-import { AsyncModule, Container, IContainer } from '@spinajs/di';
+import { AsyncModule, IContainer } from '@spinajs/di';
 import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from '@spinajs/log';
 import { ClassInfo, ListFromFiles } from '@spinajs/reflection';
@@ -8,6 +8,7 @@ import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactio
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model';
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
+import { resetBehavior } from 'sinon';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -32,68 +33,71 @@ export class Orm extends AsyncModule {
   @Autoinject()
   protected Configuration: Configuration;
 
-  public async migrateUp(name?: string): Promise<boolean> {
-    const migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
+  /**
+   * 
+   * Migrates schema up ( fill function is not executed )
+   * 
+   * @param name migration file name
+   */
+  public async migrateUp(name?: string): Promise<void> {
 
-    for (const m of migrations) {
-      const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
-      const cn = this.Connections.get(md.Connection);
-      const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
+    const self = this;
 
-      await _ensureMigrationTable(cn, migrationTableName);
+    await this.executeAvaibleMigrations(name, async (migration: OrmMigration, driver: OrmDriver) => {
 
-      const exists = await cn
-        .select()
-        .from(migrationTableName)
-        .where({ Migration: m.name })
-        .first();
-      if (exists) {
-        this.Log.debug(`Migration ${m.name} already exists in migration table. Migration has been skipped`);
-        continue;
+      const trFunction = async (driver: OrmDriver) => {
+        await migration.up(driver);
+
+        await driver
+          .insert()
+          .into(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
+          .values({
+            Migration: migration.constructor.name,
+            CreatedAt: new Date(),
+          });
+      };
+
+      if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
+        await driver.transaction(trFunction);
+      } else {
+        await trFunction(driver);
       }
 
-      try {
-        const migration = this.Container.resolve(m.type, [cn]) as OrmMigration;
-        const trFunction = async (driver: OrmDriver) => {
-          await migration.up(driver);
+      self.Log.info(`Migration ${migration.constructor.name} success !`)
+    }, false);
+  }
 
-          await driver
-            .insert()
-            .into(migrationTableName)
-            .values({
-              Migration: m.name,
-              CreatedAt: new Date(),
-            });
-        };
+  /**
+   * 
+   * Migrates schema up ( fill function is not executed )
+   * 
+   * @param name migration file name
+   */
+  public async migrateDown(name?: string): Promise<void> {
 
-        if (cn.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
-          await cn.transaction(trFunction);
-        } else {
-          await trFunction(cn);
-        }
+    const self = this;
 
-        this.Log.info(`Migration ${m.name} from file ${m.file} applied succesyfull`);
-      } catch (ex) {
-        this.Log.error(ex, `Cannot execute migration ${m.name} from file ${m.file}`);
-        return false;
+    await this.executeAvaibleMigrations(name, async (migration: OrmMigration, driver: OrmDriver) => {
+
+      const trFunction = async (driver: OrmDriver) => {
+        await migration.down(driver);
+
+        await driver
+          .del()
+          .from(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
+          .where({
+            Migration: migration.constructor.name
+          });
+      };
+
+      if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
+        await driver.transaction(trFunction);
+      } else {
+        await trFunction(driver);
       }
-    }
 
-    return true;
-
-    async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
-      const migrationTable = await connection.tableInfo(tableName);
-      if (!migrationTable) {
-        await connection.schema().createTable(tableName, table => {
-          table
-            .int('Id')
-            .autoIncrement()
-            .primaryKey();
-          table.string('Migration').notNull();
-          table.dateTime('CreatedAt').notNull();
-        });
-      }
-    }
+      self.Log.info(`Migration down ${migration.constructor.name} success !`)
+    }, true);
   }
 
   /** 
@@ -118,26 +122,19 @@ export class Orm extends AsyncModule {
             }
           }
         }
-
-
-
       }
     }
   }
 
   public async resolveAsync(container: IContainer): Promise<void> {
     this.Container = container;
-    const migrateOnStartup = this.Configuration.get<boolean>('db.MigrateOnStartup', false);
 
     await this.createConnections();
-
-    if (migrateOnStartup) {
-      await this.migrateUp();
-    }
-
+    await this.prepareMigrations();
+    await this.migrateUp();
     await this.reloadTableInfo();
-
     this.applyModelMixins();
+
   }
 
   /**
@@ -205,4 +202,53 @@ export class Orm extends AsyncModule {
     });
   }
 
+  private async executeAvaibleMigrations(name: string, callback: (migration: OrmMigration, driver: OrmDriver) => Promise<void>, down: boolean) {
+    let migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
+
+    if (down) {
+      migrations = migrations.reverse();
+    }
+
+    return Promise.all(migrations.map((m) => {
+      return async () => {
+        const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
+        const cn = this.Connections.get(md.Connection);
+        const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
+
+
+        const exists = await cn
+          .select()
+          .from(migrationTableName)
+          .where({ Migration: m.name })
+          .first();
+
+        if (!exists) {
+          const migration = await this.Container.resolve(m.type, [cn]) as OrmMigration;
+          await callback(migration, cn);
+        }
+      }
+    }));
+  }
+
+  private prepareMigrations() {
+
+    const actions: Array<Promise<void>> = [];
+
+    for (const [_, connection] of this.Connections) {
+      const migrationTableName = connection.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
+      actions.push(_ensureMigrationTable(connection, migrationTableName));
+    }
+
+    return Promise.all(actions);
+
+    async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
+      const migrationTable = await connection.tableInfo(tableName);
+      if (!migrationTable) {
+        await connection.schema().createTable(tableName, table => {
+          table.string('Migration').unique().notNull();
+          table.dateTime('CreatedAt').notNull();
+        });
+      }
+    }
+  }
 }

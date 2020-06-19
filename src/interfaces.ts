@@ -422,8 +422,31 @@ export interface IModelSoftDeleteDescriptor {
 
 @NewInstance()
 export abstract class OrmMigration {
+
+  /**
+   * 
+   * Migrate up - create tables, indices etc.
+   * Be aware that model function are not avaible yet. To fill tables with 
+   * data use fill function
+   * 
+   * @param connection 
+   */
   public abstract up(connection: OrmDriver): Promise<void>;
+
+  /**
+   * Migrate down - undo changes made in up
+   * @param connection 
+   */
   public abstract down(connection: OrmDriver): Promise<void>;
+
+
+  /**
+   * 
+   * Fills table with initial data if needed
+   * 
+   * @param connection 
+   */
+  public abstract fill(connection: OrmDriver): Promise<void>;
 }
 
 /**
