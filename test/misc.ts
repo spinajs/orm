@@ -123,8 +123,8 @@ export class FakeMysqlDriver extends OrmDriver {
     }
 
     // tslint:disable-next-line: no-empty
-    public resolve(_container: IContainer): void {
-
+    public resolve(container: IContainer): void {
+        this.Container = container;
     }
 
     public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
@@ -156,7 +156,10 @@ export class FakeSelectQueryCompiler extends SelectQueryCompiler {
 export class FakeDeleteQueryCompiler extends DeleteQueryCompiler {
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 
 }
@@ -170,7 +173,10 @@ export class FakeInsertQueryCompiler extends InsertQueryCompiler {
 
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 
 }
@@ -183,7 +189,10 @@ export class FakeUpdateQueryCompiler extends UpdateQueryCompiler {
     }
 
     public compile(): ICompilerOutput {
-        return null;
+        return {
+            expression: null,
+            bindings: null
+        };
     }
 
 }

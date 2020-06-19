@@ -4,9 +4,10 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { ConnectionConf, FakeSqliteDriver, FakeMysqlDriver } from "./misc";
+import { ConnectionConf, FakeSqliteDriver, FakeMysqlDriver, FakeTableQueryCompiler, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeUpdateQueryCompiler, FakeInsertQueryCompiler } from "./misc";
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
+import { TableQueryCompiler, InsertQueryCompiler, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler } from "../src";
 
 
 const expect = chai.expect;
@@ -24,6 +25,11 @@ describe("Orm general", () => {
         DI.register(SpinaJsDefaultLog).as(LogModule);
         DI.register(FakeSqliteDriver).as("sqlite");
         DI.register(FakeMysqlDriver).as("mysql");
+        DI.register(FakeSelectQueryCompiler).as(SelectQueryCompiler);
+        DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
+        DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
+        DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+        DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
 
 
         DI.resolve(LogModule);

@@ -10,8 +10,8 @@ import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
 import { Orm } from '../src/orm';
-import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeConverter } from "./misc";
-import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, InsertBehaviour, DatetimeValueConverter } from '../src/interfaces';
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeConverter, FakeTableQueryCompiler } from "./misc";
+import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, InsertBehaviour, DatetimeValueConverter, TableQueryCompiler } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -45,6 +45,8 @@ describe("General model tests", () => {
         DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
         DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
         DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+        DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
+
 
 
         DI.register(DbPropertyHydrator).as(ModelHydrator);
@@ -54,7 +56,7 @@ describe("General model tests", () => {
 
         DI.resolve(LogModule);
     });
-     
+
 
     afterEach(async () => {
         DI.clear();
@@ -218,7 +220,7 @@ describe("General model tests", () => {
             ]);
         }));
 
-        
+
         sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
             res([
                 {
@@ -512,9 +514,9 @@ describe("General model tests", () => {
             bindings: []
         });
 
-        sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => {
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onCall(0).returns(new Promise((res) => { res([]); })).onCall(1).returns(new Promise((res) => {
             res([{ Id: 1 }]);
-        })).onCall(1).returns(new Promise((res) => {
+        })).onCall(2).returns(new Promise((res) => {
             res([1]);
         }));
 
@@ -563,20 +565,23 @@ describe("General model tests", () => {
 
 
 
-        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
-            res(0)
-        })).onSecondCall().returns(new Promise((res) => {
-            res([{
-                Id: 1
-            }]);
-        }));
+
+
+        await db();
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute")
+            .onCall(0).returns(new Promise((res) => {
+                res(0)
+            })).onCall(1).returns(new Promise((res) => {
+                res([{
+                    Id: 1
+                }]);
+            }));
 
         sinon.stub(FakeInsertQueryCompiler.prototype, "compile").returns({
             expression: "",
             bindings: []
         });
-
-        await db();
 
         const model = new Model6({
             Property6: "test"
@@ -795,6 +800,8 @@ describe("Model discrimination tests", () => {
         DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
         DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
         DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+        DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
+
 
 
         DI.register(DbPropertyHydrator).as(ModelHydrator);
@@ -863,6 +870,10 @@ describe("Model discrimination tests", () => {
 
     it("should create models base on discrimination map", async () => {
 
+
+
+        await db();
+
         sinon.stub(FakeSqliteDriver.prototype, "execute").returns(new Promise((res) => {
             res([{
                 Id: 1,
@@ -877,8 +888,6 @@ describe("Model discrimination tests", () => {
                 disc_key: "one"
             }]);
         }));
-
-        await db();
 
         const result = await ModelDiscBase.all();
 

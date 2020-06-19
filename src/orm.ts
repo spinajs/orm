@@ -8,7 +8,6 @@ import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactio
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model';
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
-import { resetBehavior } from 'sinon';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -209,23 +208,22 @@ export class Orm extends AsyncModule {
       migrations = migrations.reverse();
     }
 
-    return Promise.all(migrations.map((m) => {
-      return async () => {
-        const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
-        const cn = this.Connections.get(md.Connection);
-        const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
+    return Promise.all(migrations.map(async (m) => {
+
+      const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
+      const cn = this.Connections.get(md.Connection);
+      const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
 
 
-        const exists = await cn
-          .select()
-          .from(migrationTableName)
-          .where({ Migration: m.name })
-          .first();
+      const exists = await cn
+        .select()
+        .from(migrationTableName)
+        .where({ Migration: m.name })
+        .first();
 
-        if (!exists) {
-          const migration = await this.Container.resolve(m.type, [cn]) as OrmMigration;
-          await callback(migration, cn);
-        }
+      if (!exists) {
+        const migration = await this.Container.resolve(m.type, [cn]) as OrmMigration;
+        await callback(migration, cn);
       }
     }));
   }

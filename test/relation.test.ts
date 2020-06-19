@@ -8,8 +8,8 @@ import { DI } from "@spinajs/di";
 import * as chai from 'chai';
 import * as _ from "lodash";
 import 'mocha';
-import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver } from "./misc";
-import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, RelationType } from '../src/interfaces';
+import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, FakeInsertQueryCompiler, FakeUpdateQueryCompiler, ConnectionConf, FakeMysqlDriver, FakeTableQueryCompiler } from "./misc";
+import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, RelationType, TableQueryCompiler } from '../src/interfaces';
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -40,6 +40,8 @@ describe("Orm relations tests", () => {
         DI.register(FakeDeleteQueryCompiler).as(DeleteQueryCompiler);
         DI.register(FakeUpdateQueryCompiler).as(UpdateQueryCompiler);
         DI.register(FakeInsertQueryCompiler).as(InsertQueryCompiler);
+        DI.register(FakeTableQueryCompiler).as(TableQueryCompiler);
+
 
 
         DI.register(DbPropertyHydrator).as(ModelHydrator);
@@ -494,6 +496,10 @@ describe("Orm relations tests", () => {
     it("populate should load missing relation data", async () => {
 
         
+        
+
+        await db();
+
         sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
             res([{
                 Id: 1,
@@ -514,8 +520,6 @@ describe("Orm relations tests", () => {
                 RelId2: 1
             }]);
         }));
-
-        await db();
 
         const result = await RelationModel2.where({ Id: 1 }).first<RelationModel2>();
         

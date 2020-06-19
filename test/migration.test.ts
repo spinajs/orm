@@ -10,7 +10,7 @@ import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, DbPropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1";
-
+import { OrmDriver} from "../src/driver";
 
 const expect = chai.expect;
 
@@ -128,6 +128,12 @@ describe("Orm migrations", () => {
         @Migration("sqlite")
         // @ts-ignore
         class Test extends OrmMigration {
+           
+            // tslint:disable-next-line: no-empty
+            public async up(_: OrmDriver) {} 
+
+            // tslint:disable-next-line: no-empty
+            public async down(_: OrmDriver) {} 
 
         }
 
@@ -139,6 +145,8 @@ describe("Orm migrations", () => {
             }
         }
 
+        const fakeUp = sinon.spy(Test.prototype, "up");
+
         const container = DI.child();
         container.register(FakeOrm).as(Orm);
 
@@ -146,6 +154,7 @@ describe("Orm migrations", () => {
         const migrations = await orm.Migrations;
 
         expect(migrations.find(m => m.name === "Test")).to.be.not.null;
+        expect(fakeUp.calledOnce).to.be.true;
 
     });
 });
