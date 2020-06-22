@@ -1,3 +1,4 @@
+import { UuidConverter } from './converters';
 import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor, IDiscriminationEntry, DatetimeValueConverter, ValueConverter, SetValueConverter } from './interfaces';
 import 'reflect-metadata';
 import { ModelBase, extractModelDescriptor } from './model';
@@ -199,10 +200,12 @@ export function Uuid() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
     const columnDesc = model.Columns.find(c => c.Name === propertyKey);
     if (!columnDesc) {
-
       // we dont want to fill all props, they will be loaded from db and mergeg with this
       model.Columns.push({ Name: propertyKey, Uuid: true, } as any)
     }
+
+    model.Converters.set(propertyKey, UuidConverter);
+
   },true);
 }
 

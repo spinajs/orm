@@ -513,12 +513,15 @@ export class ManyToManyRelationList<T extends ModelBase<any>> extends Relation<T
     public async add(obj: T | T[], mode?: InsertBehaviour): Promise<void> {
 
         const data = Array.isArray(obj) ? obj : [obj];
-        data.forEach(d => {
-            (d as any)[this.Relation.JunctionModelSourceModelFKey_Name] = this.owner.PrimaryKeyValue;
-            (d as any)[this.Relation.JunctionModelTargetModelFKey_Name] = d.PrimaryKeyValue;
+        const relEntities = data.map(d => {
+            const relEntity = new this.Relation.JunctionModel();
+            (relEntity as any)[this.Relation.JunctionModelSourceModelFKey_Name] = this.owner.PrimaryKeyValue;
+            (relEntity as any)[this.Relation.JunctionModelTargetModelFKey_Name] = d.PrimaryKeyValue;
+
+            return relEntity;
         });
 
-        for (const m of data) {
+        for (const m of relEntities) {
             await m.save(mode);
         }
 

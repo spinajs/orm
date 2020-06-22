@@ -9,3 +9,4 @@ export * from './types';
 export * from './decorators';
 export * from './hydrators';
 export * from './driver';
+export * from './converters';
