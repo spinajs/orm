@@ -87,6 +87,7 @@ describe("Orm migrations", () => {
                     }
                 },
                 db: {
+                    MigrateOnStartup: true,
                     Connections: [
                         {
                             Driver: "sqlite",

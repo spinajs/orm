@@ -174,7 +174,8 @@ describe("General model tests", () => {
                     Name: "ArchivedAt",
                     Converter: null,
                     Schema: "sqlite",
-                    Unique: false
+                    Unique: false,
+                    Uuid: false
                 }
             ]);
         }));
@@ -215,7 +216,8 @@ describe("General model tests", () => {
                     Name: "ArchivedAt",
                     Converter: null,
                     Schema: "sqlite",
-                    Unique: false
+                    Unique: false,
+                    Uuid: false
                 }
             ]);
         }));
@@ -527,6 +529,53 @@ describe("General model tests", () => {
 
     })
 
+    it("Model should create uuid", async () => {
+
+        const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
+        tableInfoStub.withArgs("TestTable6", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property6",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: true,
+                Uuid: false
+            }]);
+        }));
+
+        await db();
+
+        const model = new Model6({
+            Property6: "test"
+        });
+
+        expect(model.Id).to.be.not.null;
+    });
+
     it("Model should get id when save with ignore", async () => {
 
         const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
@@ -544,7 +593,8 @@ describe("General model tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
             },
             {
                 Type: "VARCHAR",
@@ -559,7 +609,8 @@ describe("General model tests", () => {
                 Name: "Property6",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: true
+                Unique: true,
+                Uuid: false
             }]);
         }));
 
@@ -589,7 +640,7 @@ describe("General model tests", () => {
 
         await model.save(InsertBehaviour.OnDuplicateIgnore);
 
-        expect(model.Id).to.eq(1);
+        expect(typeof model.Id).to.eq('string');
     });
 
 
@@ -828,7 +879,8 @@ describe("Model discrimination tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
             },
             {
                 Type: "VARCHAR",
@@ -843,7 +895,8 @@ describe("Model discrimination tests", () => {
                 Name: "Value",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
             }, {
                 Type: "VARCHAR",
                 MaxLength: 0,
@@ -857,7 +910,8 @@ describe("Model discrimination tests", () => {
                 Name: "disck_key",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
             }]);
         }));
     });

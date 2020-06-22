@@ -15,6 +15,7 @@ import { DI } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
 
@@ -270,8 +271,8 @@ export abstract class ModelBase<T> {
 
         const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
         const idRes = await query.columns([this.PrimaryKeyName]).where(function () {
-          description.UniqueColumns.forEach(c => {
-            this.where(c, (self as any)[c]);
+          description.Columns.filter(c => c.Unique).forEach(c => {
+            this.where(c, (self as any)[c.Name]);
           });
         }).first();
 
@@ -298,7 +299,13 @@ export abstract class ModelBase<T> {
    */
   protected defaults() {
     this.ModelDescriptor.Columns?.forEach(c => {
-      (this as any)[c.Name] = c.DefaultValue;
+      
+      if(c.Uuid){
+        (this as any)[c.Name] = uuidv4();
+      }
+      else{
+        (this as any)[c.Name] = c.DefaultValue;
+      }
     });
 
     if (this.ModelDescriptor.Timestamps.CreatedAt) {
@@ -491,8 +498,8 @@ export const MODEL_STATIC_MIXINS = {
     }
 
     // check for all unique columns ( unique constrain )
-    description.UniqueColumns.forEach(u => {
-      query.orWhere(u, data[u]);
+    description.Columns.filter(c => c.Unique).forEach(c => {
+      query.orWhere(c, data[c.Name]);
     });
 
     let entity = (await query.first()) as any;
@@ -515,8 +522,8 @@ export const MODEL_STATIC_MIXINS = {
     }
 
     // check for all unique columns ( unique constrain )
-    description.UniqueColumns.forEach(u => {
-      query.orWhere(u, data[u]);
+    description.Columns.filter( c=> c.Unique ).forEach(c => {
+      query.orWhere(c, data[c.Name]);
     });
 
     let entity = (await query.first()) as any;

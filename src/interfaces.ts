@@ -194,14 +194,9 @@ export interface IModelDescrtiptor {
   Columns: IColumnDescriptor[];
 
   /**
-   * List of unique columns ( UNIQUE constraint )
-   */
-  UniqueColumns: string[];
-
-  /**
    * Converters attached to fields
    */
-  Converters : Map<string, Constructor<ValueConverter>>;
+  Converters: Map<string, Constructor<ValueConverter>>;
 
   /**
    * List of unique columns ( UNIQUE constraint )
@@ -224,7 +219,7 @@ export interface IModelDescrtiptor {
   /**
    * Orm driver that this model
    */
-  Driver : OrmDriver;
+  Driver: OrmDriver;
 }
 
 export interface IDiscriminationMap {
@@ -374,6 +369,11 @@ export interface IColumnDescriptor {
    * Does have unique constraint
    */
   Unique: boolean;
+
+  /**
+   * Is uuid generated column
+   */
+  Uuid : boolean;
 }
 
 /**
@@ -439,14 +439,6 @@ export abstract class OrmMigration {
    */
   public abstract down(connection: OrmDriver): Promise<void>;
 
-
-  /**
-   * 
-   * Fills table with initial data if needed
-   * 
-   * @param connection 
-   */
-  public abstract fill(connection: OrmDriver): Promise<void>;
 }
 
 /**

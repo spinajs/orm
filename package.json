@@ -1,6 +1,6 @@
 {
   "name": "@spinajs/orm",
-  "version": "1.0.46",
+  "version": "1.0.47",
   "description": "SpinaJS Orm module",
   "main": "lib/index.js",
   "private": false,
@@ -71,6 +71,7 @@
     "@spinajs/exceptions": "^1.0.3",
     "@spinajs/log": "^1.0.7",
     "@spinajs/reflection": "^1.0.7",
+    "@types/uuid": "^8.0.0",
     "lodash": "^4.17.14",
     "typescript-mix": "^3.1.3",
     "uuid": "^8.1.0"

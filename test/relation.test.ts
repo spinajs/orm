@@ -68,7 +68,8 @@ describe("Orm relations tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
             }, {
                 Type: "INT",
                 MaxLength: 0,
@@ -82,7 +83,9 @@ describe("Orm relations tests", () => {
                 Name: "OwnerId",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "VARCHAR",
@@ -97,7 +100,9 @@ describe("Orm relations tests", () => {
                 Name: "Property1",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
 
@@ -115,7 +120,9 @@ describe("Orm relations tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }, {
                 Type: "INT",
                 MaxLength: 0,
@@ -129,7 +136,9 @@ describe("Orm relations tests", () => {
                 Name: "OwnerId",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "VARCHAR",
@@ -144,7 +153,9 @@ describe("Orm relations tests", () => {
                 Name: "Property2",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
         tableInfoStub.withArgs("TestTable1", undefined).returns(new Promise(res => {
@@ -161,7 +172,9 @@ describe("Orm relations tests", () => {
                 Name: "RelId2",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
         tableInfoStub.withArgs("JunctionTable", undefined).returns(new Promise(res => {
@@ -178,7 +191,9 @@ describe("Orm relations tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "INT",
@@ -193,7 +208,9 @@ describe("Orm relations tests", () => {
                 Name: "model4_id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "INT",
@@ -208,7 +225,9 @@ describe("Orm relations tests", () => {
                 Name: "model5_id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
         tableInfoStub.withArgs("TestTable5", undefined).returns(new Promise(res => {
@@ -225,7 +244,9 @@ describe("Orm relations tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "VARCHAR",
@@ -240,7 +261,9 @@ describe("Orm relations tests", () => {
                 Name: "Property5",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
 
@@ -258,7 +281,9 @@ describe("Orm relations tests", () => {
                 Name: "Id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             },
             {
                 Type: "VARCHAR",
@@ -273,7 +298,9 @@ describe("Orm relations tests", () => {
                 Name: "Value",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }, {
                 Type: "INT",
                 MaxLength: 0,
@@ -287,7 +314,9 @@ describe("Orm relations tests", () => {
                 Name: "parent_id",
                 Converter: null,
                 Schema: "sqlite",
-                Unique: false
+                Unique: false,
+                Uuid: false
+
             }]);
         }));
     });

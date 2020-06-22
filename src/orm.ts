@@ -8,6 +8,7 @@ import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactio
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model';
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
+import { InvalidOperation } from '@spinajs/exceptions';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -111,7 +112,9 @@ export class Orm extends AsyncModule {
         if (connection) {
           const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
           if (columns) {
-            m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(descriptor.Columns.concat(columns), 'Name');
+            m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(_.map(columns, (c) => {
+              return _.assign(c, _.find(descriptor.Columns, { Name: c.Name }));
+            }), "Name")
           }
 
           for (const [key, val] of descriptor.Converters) {
@@ -127,10 +130,16 @@ export class Orm extends AsyncModule {
 
   public async resolveAsync(container: IContainer): Promise<void> {
     this.Container = container;
+    const migrateOnStartup = this.Configuration.get<boolean>('db.MigrateOnStartup', false);
 
     await this.createConnections();
-    await this.prepareMigrations();
-    await this.migrateUp();
+
+    if (migrateOnStartup) {
+      await this.prepareMigrations();
+      await this.migrateUp();
+    }
+
+
     await this.reloadTableInfo();
     this.applyModelMixins();
 
@@ -187,9 +196,16 @@ export class Orm extends AsyncModule {
       );
     });
 
-    if (this.Configuration.get("db.DefaultConnection")) {
-      this.Connections.set("default", connections.find(c => c.Options.Name === this.Configuration.get("db.DefaultConnection")));
+    const defaultConnection = this.Configuration.get<string>("db.DefaultConnection");
+    if (defaultConnection) {
+
+      if (!this.Connections.has(defaultConnection)) {
+        throw new InvalidOperation(`default connection ${defaultConnection} not exists`);
+      }
+
+      this.Connections.set("default", this.Connections.get(defaultConnection));
     }
+
   }
 
   private applyModelMixins() {
@@ -208,8 +224,7 @@ export class Orm extends AsyncModule {
       migrations = migrations.reverse();
     }
 
-    return Promise.all(migrations.map(async (m) => {
-
+    for (const m of migrations) {
       const md = (m.type as any)[MIGRATION_DESCRIPTION_SYMBOL] as IMigrationDescriptor;
       const cn = this.Connections.get(md.Connection);
       const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
@@ -225,24 +240,16 @@ export class Orm extends AsyncModule {
         const migration = await this.Container.resolve(m.type, [cn]) as OrmMigration;
         await callback(migration, cn);
       }
-    }));
+    }
   }
 
-  private prepareMigrations() {
-
-    const actions: Array<Promise<void>> = [];
+  private async prepareMigrations() {
 
     for (const [_, connection] of this.Connections) {
       const migrationTableName = connection.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
-      actions.push(_ensureMigrationTable(connection, migrationTableName));
-    }
-
-    return Promise.all(actions);
-
-    async function _ensureMigrationTable(connection: OrmDriver, tableName: string) {
-      const migrationTable = await connection.tableInfo(tableName);
+      const migrationTable = await connection.tableInfo(migrationTableName);
       if (!migrationTable) {
-        await connection.schema().createTable(tableName, table => {
+        await connection.schema().createTable(migrationTableName, table => {
           table.string('Migration').unique().notNull();
           table.dateTime('CreatedAt').notNull();
         });

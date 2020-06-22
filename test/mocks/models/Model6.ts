@@ -1,4 +1,4 @@
-import { Connection, Primary,  Model } from "../../../src/decorators";
+import { Connection, Primary,  Model, Uuid } from "../../../src/decorators";
 import { ModelBase } from "../../../src/model";
 
 @Connection("sqlite")
@@ -7,6 +7,7 @@ import { ModelBase } from "../../../src/model";
 export class Model6 extends ModelBase<Model5>
 {
     @Primary()
+    @Uuid()
     public Id: number;
  
     public Property6: string;

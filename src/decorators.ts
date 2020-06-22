@@ -46,7 +46,6 @@ export function extractDecoratorDescriptor(
           CreatedAt: '',
           UpdatedAt: '',
         },
-        UniqueColumns: [],
         Relations: new Map<string, IRelationDescriptor>(),
         Name: target.constructor.name,
         JunctionModelProperties: [],
@@ -193,10 +192,18 @@ export function Primary() {
   });
 }
 
-export function Unique() {
+/**
+ * Marks columns as UUID. Column will be generated ad creation
+ */
+export function Uuid() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
-    model.UniqueColumns.push(propertyKey);
-  });
+    const columnDesc = model.Columns.find(c => c.Name === propertyKey);
+    if (!columnDesc) {
+
+      // we dont want to fill all props, they will be loaded from db and mergeg with this
+      model.Columns.push({ Name: propertyKey, Uuid: true, } as any)
+    }
+  },true);
 }
 
 export function JunctionTable() {
@@ -285,7 +292,7 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
       Type: RelationType.Many,
       SourceModel: target.constructor,
       TargetModel: targetModel,
-      ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
+      ForeignKey: foreignKey ?? `${model.Name.toLowerCase()}_id`,
       PrimaryKey: primaryKey ?? model.PrimaryKey,
       Recursive: false,
     });

@@ -28,6 +28,7 @@ export class ConnectionConf extends Configuration {
             }
         },
         db: {
+            MigrateOnStartup: true,
             Connections: [
                 {
                     Driver: "sqlite",
