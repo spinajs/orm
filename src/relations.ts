@@ -68,9 +68,14 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
             }
         }
 
-        this._relationQuery.whereIn(this._description.ForeignKey, pks);
-        this._relationQuery.middleware(hydrateMiddleware)
-        return await this._relationQuery;
+        if(pks.length !== 0){
+            this._relationQuery.whereIn(this._description.ForeignKey, pks);
+            this._relationQuery.middleware(hydrateMiddleware)
+            return await this._relationQuery;
+        }
+
+        return [];
+        
     }
 }
 
@@ -161,11 +166,16 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
             }
         }
 
-        this._relationQuery.whereIn(this._description.ForeignKey, pks);
-        this._relationQuery.middleware(new BelongsToRelationResultTransformMiddleware());
-        this._relationQuery.middleware(new DiscriminationMapMiddleware(this._targetModelDescriptor));
-        this._relationQuery.middleware(hydrateMiddleware)
-        return await this._relationQuery;
+        if(pks.length !== 0){
+            this._relationQuery.whereIn(this._description.ForeignKey, pks);
+            this._relationQuery.middleware(new BelongsToRelationResultTransformMiddleware());
+            this._relationQuery.middleware(new DiscriminationMapMiddleware(this._targetModelDescriptor));
+            this._relationQuery.middleware(hydrateMiddleware)
+            return await this._relationQuery;
+        }
+        
+        return [];
+       
     }
 
     private pickProps(source: any, except: string[]) {
