@@ -87,7 +87,9 @@ describe("Orm migrations", () => {
                     }
                 },
                 db: {
-                    MigrateOnStartup: true,
+                    Migration:{
+                        Startup: true,
+                    },
                     Connections: [
                         {
                             Driver: "sqlite",
@@ -126,6 +128,42 @@ describe("Orm migrations", () => {
     })
 
     it("Should register migration programatically", async () => {
+
+        class FakeTransactionConf extends ConnectionConf {
+            protected conf = {
+                log: {
+                    name: 'spine-framework',
+                    /**
+                     * streams to log to. See more on bunyan docs
+                     */
+                    streams: null as any
+                },
+                system: {
+                    dirs: {
+                        migrations: [dir("./mocks/migrations")],
+                        models: [dir("./mocks/models")],
+
+                    }
+                },
+                db: {
+                    Migration:{
+                        Startup: true,
+                    },
+                    Connections: [
+                        {
+                            Driver: "sqlite",
+                            Filename: "foo.sqlite",
+                            Name: "sqlite",
+                            Migration: {
+                                Transaction: {
+                                    Mode: MigrationTransactionMode.None
+                                }
+                            }
+                        },
+                    ]
+                }
+            }
+        }
         @Migration("sqlite")
         // @ts-ignore
         class Test extends OrmMigration {
@@ -141,7 +179,6 @@ describe("Orm migrations", () => {
         class FakeOrm extends Orm {
             constructor() {
                 super();
-
                 this.registerMigration(Test);
             }
         }
@@ -149,6 +186,7 @@ describe("Orm migrations", () => {
         const fakeUp = sinon.spy(Test.prototype, "up");
 
         const container = DI.child();
+        container.register(FakeTransactionConf).as(Configuration);
         container.register(FakeOrm).as(Orm);
 
         const orm = await container.resolve(Orm);

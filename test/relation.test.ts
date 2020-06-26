@@ -1,3 +1,4 @@
+import { ModelNested1 } from './mocks/models/ModelNested1';
 import { RelationRecursive } from './mocks/models/RelationRecursive';
 import { ManyToManyRelation } from './../src/relations';
 import { NonDbPropertyHydrator, DbPropertyHydrator, ModelHydrator, OneToOneRelationHydrator, JunctionModelPropertyHydrator } from './../src/hydrators';
@@ -230,6 +231,114 @@ describe("Orm relations tests", () => {
 
             }]);
         }));
+        tableInfoStub.withArgs("ModelNested3", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property3",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            }]);
+        }));
+        tableInfoStub.withArgs("ModelNested2", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property2",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            }]);
+        }));
+        tableInfoStub.withArgs("ModelNested1", undefined).returns(new Promise(res => {
+            res([{
+                Type: "INT",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "INT",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Id",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            },
+            {
+                Type: "VARCHAR",
+                MaxLength: 0,
+                Comment: "",
+                DefaultValue: null,
+                NativeType: "VARCHAR",
+                Unsigned: false,
+                Nullable: true,
+                PrimaryKey: true,
+                AutoIncrement: true,
+                Name: "Property1",
+                Converter: null,
+                Schema: "sqlite",
+                Unique: false,
+                Uuid: false
+
+            }]);
+        }));
         tableInfoStub.withArgs("TestTable5", undefined).returns(new Promise(res => {
             res([{
                 Type: "INT",
@@ -409,6 +518,45 @@ describe("Orm relations tests", () => {
 
     })
 
+    it("HasMany nested relation is executed", async () => {
+
+        sinon.stub(FakeSqliteDriver.prototype, "execute").onFirstCall().returns(new Promise((res) => {
+            res([{
+                Id: 1,
+                Property1: "Property1",
+            }]);
+        })).onSecondCall().returns(new Promise((res) => {
+            res([{
+                Id: 2,
+                Property2: "property2",
+                rel_1: 1
+            }]);
+        })).onThirdCall().returns(new Promise((res) => {
+            res([{
+                Id: 3,
+                Property3: "property3",
+                rel_2: 2
+            }]);
+        }));
+
+        await db();
+        const callback = sinon.spy(OneToManyRelation.prototype, "execute");
+
+        const result = await ModelNested1.where({ Id: 1 }).populate("HasMany1", function () {
+            this.populate("HasMany2");
+        }).first<ModelNested1>();
+
+        expect(callback.calledTwice).to.be.true;
+        expect(result).to.be.not.null;
+        expect(result.HasMany1.length).to.eq(1);
+        expect(result.HasMany1[0].HasMany2.length).to.eq(1);
+
+
+        callback.restore();
+
+    })
+
+    
     it("Belongs to nested relation is executed", async () => {
 
         await db();

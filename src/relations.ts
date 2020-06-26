@@ -17,7 +17,7 @@ export abstract class OrmRelation implements IOrmRelation {
     protected _relationQuery: SelectQueryBuilder;
 
     get Alias(): string {
-        return this.parentRelation !== undefined ? `${this.parentRelation.Alias}.$${this._description.Name}$` : `$${this._description.Name}$`;
+        return this.parentRelation ? `${this.parentRelation.Alias}.$${this._description.Name}$` : `$${this._description.Name}$`;
     }
 
     constructor(protected _orm: Orm, protected _query: SelectQueryBuilder<any>, protected _description: IRelationDescriptor, protected parentRelation?: OrmRelation) {

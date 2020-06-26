@@ -105,6 +105,8 @@ export class Orm extends AsyncModule {
    * ORM always try to load table at resolve time
    */
   public async reloadTableInfo() {
+
+
     for (const m of this.Models) {
       const descriptor = extractModelDescriptor(m.type);
       if (descriptor) {
@@ -130,7 +132,7 @@ export class Orm extends AsyncModule {
 
   public async resolveAsync(container: IContainer): Promise<void> {
     this.Container = container;
-    const migrateOnStartup = this.Configuration.get<boolean>('db.MigrateOnStartup', false);
+    const migrateOnStartup = this.Configuration.get<boolean>('db.Migration.Startup', false);
 
     await this.createConnections();
 
@@ -249,16 +251,16 @@ export class Orm extends AsyncModule {
       const migrationTableName = connection.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
 
       let migrationTable = null;
-      
+
       // if there is no info on migraiton table or query throws we assume table not exists
       try {
-        
+
         migrationTable = await connection.tableInfo(migrationTableName);
 
-      // tslint:disable-next-line: no-empty
+        // tslint:disable-next-line: no-empty
       } catch{ }
 
-      
+
       if (!migrationTable) {
         await connection.schema().createTable(migrationTableName, table => {
           table.string('Migration').unique().notNull();
