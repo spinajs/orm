@@ -44,7 +44,14 @@ import {
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { ModelBase, extractModelDescriptor } from './model';
-import { OrmRelation, BelongsToRelation, IOrmRelation, OneToManyRelation, ManyToManyRelation, BelongsToRecursiveRelation } from './relations';
+import {
+  OrmRelation,
+  BelongsToRelation,
+  IOrmRelation,
+  OneToManyRelation,
+  ManyToManyRelation,
+  BelongsToRecursiveRelation,
+} from './relations';
 import { Orm } from './orm';
 
 function isWhereOperator(val: any) {
@@ -58,11 +65,9 @@ export class Builder<T = any> {
   protected _container: Container;
   protected _model?: Constructor<ModelBase<any>>;
 
-
   protected _nonSelect: boolean;
   protected _queryContext: QueryContext;
   protected _middlewares: IBuilderMiddleware[] = [];
-
 
   constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
     this._driver = driver;
@@ -89,11 +94,7 @@ export class Builder<T = any> {
 
     return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
       try {
-
-
-
         if (this._model && !this._nonSelect) {
-
           let transformedResult = result;
 
           if (this._middlewares.length > 0) {
@@ -125,21 +126,14 @@ export class Builder<T = any> {
 
           if (this._middlewares.length > 0) {
             Promise.all(afterMiddlewarePromises).then(() => {
-              resolve(
-                models
-              );
+              resolve(models);
             }, reject);
           } else {
-            resolve(
-              models
-            );
+            resolve(models);
           }
         } else {
-          resolve(
-            result
-          );
+          resolve(result);
         }
-
       } catch (err) {
         reject(err);
       }
@@ -229,7 +223,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
 
   /**
    * Sets table alias for query
-   * 
+   *
    * @param alias sql table alias
    */
   public setAlias(alias: string) {
@@ -352,24 +346,33 @@ export class ColumnsBuilder implements IColumnsBuilder {
   }
 
   public columns(names: string[]) {
-
     const descriptor = extractModelDescriptor(this._model);
 
     this._columns = names.map(n => {
-      return this._container.resolve<ColumnStatement>(ColumnStatement, [n, null, this._tableAlias, descriptor?.Columns.find(c => c.Name === n)]);
+      return this._container.resolve<ColumnStatement>(ColumnStatement, [
+        n,
+        null,
+        this._tableAlias,
+        descriptor?.Columns.find(c => c.Name === n),
+      ]);
     });
 
     return this;
   }
 
   public select(column: string | RawQuery | Map<string, string>, alias?: string) {
-
     const descriptor = extractModelDescriptor(this._model);
-
 
     if (column instanceof Map) {
       column.forEach((alias, colName) => {
-        this._columns.push(this._container.resolve<ColumnStatement>(ColumnStatement, [colName, alias, this._tableAlias, descriptor?.Columns.find(c => c.Name === colName)]));
+        this._columns.push(
+          this._container.resolve<ColumnStatement>(ColumnStatement, [
+            colName,
+            alias,
+            this._tableAlias,
+            descriptor?.Columns.find(c => c.Name === colName),
+          ]),
+        );
       });
     }
 
@@ -379,7 +382,12 @@ export class ColumnsBuilder implements IColumnsBuilder {
       );
     } else {
       this._columns.push(
-        this._container.resolve<ColumnStatement>(ColumnStatement, [column, alias, this._tableAlias, descriptor?.Columns.find(c => c.Name === column)]),
+        this._container.resolve<ColumnStatement>(ColumnStatement, [
+          column,
+          alias,
+          this._tableAlias,
+          descriptor?.Columns.find(c => c.Name === column),
+        ]),
       );
     }
 
@@ -428,7 +436,6 @@ export class JoinBuilder implements IJoinBuilder {
   }
 
   public clearJoins(): this {
-
     this._joinStatements = [];
 
     return this;
@@ -436,63 +443,116 @@ export class JoinBuilder implements IJoinBuilder {
 
   public innerJoin(query: RawQuery): this;
   public innerJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public innerJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.INNER, ...arguments)
+  public innerJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.INNER, ...arguments);
     return this;
   }
 
   public leftJoin(query: RawQuery): this;
   public leftJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public leftJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.LEFT, ...arguments)
+  public leftJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.LEFT, ...arguments);
     return this;
   }
 
   public leftOuterJoin(query: RawQuery): this;
   public leftOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public leftOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.LEFT_OUTER, ...arguments)
+  public leftOuterJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.LEFT_OUTER, ...arguments);
     return this;
   }
 
   public rightJoin(query: RawQuery): this;
   public rightJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public rightJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.RIGHT, ...arguments)
+  public rightJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.RIGHT, ...arguments);
     return this;
   }
 
   public rightOuterJoin(query: RawQuery): this;
   public rightOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public rightOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.RIGHT_OUTER, ...arguments)
+  public rightOuterJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.RIGHT_OUTER, ...arguments);
     return this;
   }
 
   public fullOuterJoin(query: RawQuery): this;
   public fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public fullOuterJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.FULL_OUTER, ...arguments)
+  public fullOuterJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.FULL_OUTER, ...arguments);
     return this;
   }
 
   public crossJoin(query: RawQuery): this;
   public crossJoin(table: string, foreignKey: string, primaryKey: string): this;
-  public crossJoin(_table: string | RawQuery, _AliasOrForeignKey?: string, _fkOrPkKey?: string, _primaryKey?: string): this {
-    this.addJoinStatement.call(this, JoinMethod.CROSS, ...arguments)
+  public crossJoin(
+    _table: string | RawQuery,
+    _AliasOrForeignKey?: string,
+    _fkOrPkKey?: string,
+    _primaryKey?: string,
+  ): this {
+    this.addJoinStatement.call(this, JoinMethod.CROSS, ...arguments);
     return this;
   }
 
-  private addJoinStatement(method: JoinMethod, table: string | RawQuery, AliasOrForeignKey?: string, fkOrPkKey?: string, primaryKey?: string) {
-
+  private addJoinStatement(
+    method: JoinMethod,
+    table: string | RawQuery,
+    AliasOrForeignKey?: string,
+    fkOrPkKey?: string,
+    primaryKey?: string,
+  ) {
     let stmt: JoinStatement = null;
 
     if (arguments.length === 4) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, AliasOrForeignKey, fkOrPkKey, null, this._tableAlias]);
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [
+        table,
+        method,
+        AliasOrForeignKey,
+        fkOrPkKey,
+        null,
+        this._tableAlias,
+      ]);
     } else if (arguments.length === 5) {
-      stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method, fkOrPkKey, primaryKey, AliasOrForeignKey, this._tableAlias]);
-    }
-    else {
+      stmt = this._container.resolve<JoinStatement>(JoinStatement, [
+        table,
+        method,
+        fkOrPkKey,
+        primaryKey,
+        AliasOrForeignKey,
+        this._tableAlias,
+      ]);
+    } else {
       stmt = this._container.resolve<JoinStatement>(JoinStatement, [table, method]);
     }
 
@@ -511,10 +571,14 @@ export class WithRecursiveBuilder implements IWithRecursiveBuilder {
   }
 
   public withRecursive(rcKeyName: string, pkName: string) {
-    this._cteStatement = this._container.resolve<WithRecursiveStatement>(WithRecursiveStatement, ["cte", this, rcKeyName, pkName]);
+    this._cteStatement = this._container.resolve<WithRecursiveStatement>(WithRecursiveStatement, [
+      'cte',
+      this,
+      rcKeyName,
+      pkName,
+    ]);
     return this;
   }
-
 }
 
 @NewInstance()
@@ -555,7 +619,11 @@ export class WhereBuilder implements IWhereBuilder {
 
     if (column instanceof RawQuery) {
       this.Statements.push(
-        this._container.resolve<RawQueryStatement>(RawQueryStatement, [column.Query, column.Bindings, self._tableAlias]),
+        this._container.resolve<RawQueryStatement>(RawQueryStatement, [
+          column.Query,
+          column.Bindings,
+          self._tableAlias,
+        ]),
       );
       return this;
     }
@@ -656,7 +724,12 @@ export class WhereBuilder implements IWhereBuilder {
 
   public whereNotNull(column: string): this {
     this._statements.push(
-      this._container.resolve<WhereStatement>(WhereStatement, [column, WhereOperators.NOT_NULL, null, this._tableAlias]),
+      this._container.resolve<WhereStatement>(WhereStatement, [
+        column,
+        WhereOperators.NOT_NULL,
+        null,
+        this._tableAlias,
+      ]),
     );
 
     return this;
@@ -736,7 +809,7 @@ export class WhereBuilder implements IWhereBuilder {
 }
 
 // tslint:disable-next-line
-export interface SelectQueryBuilder extends ISelectQueryBuilder { }
+export interface SelectQueryBuilder extends ISelectQueryBuilder {}
 
 export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   /**
@@ -815,15 +888,14 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   public setAlias(alias: string) {
     this._tableAlias = alias;
 
-    this._columns.forEach(c => c.TableAlias = alias);
-    this._joinStatements.forEach(c => c.TableAlias = alias);
-    this._statements.forEach(c => c.TableAlias = alias);
+    this._columns.forEach(c => (c.TableAlias = alias));
+    this._joinStatements.forEach(c => (c.TableAlias = alias));
+    this._statements.forEach(c => (c.TableAlias = alias));
 
     return this;
   }
 
   public clone(): this {
-
     const builder = new SelectQueryBuilder<T>(this._container, this._driver, this._model, this._owner);
 
     builder._columns = this._columns.slice(0);
@@ -840,7 +912,6 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   }
 
   public populate<R = this>(relation: string, callback?: (this: SelectQueryBuilder<R>, relation: OrmRelation) => void) {
-
     let relInstance: OrmRelation = null;
     const descriptor = extractModelDescriptor(this._model);
 
@@ -850,26 +921,44 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
     const relDescription = descriptor.Relations.get(relation);
     if (relDescription.Type === RelationType.One && relDescription.Recursive) {
-      relInstance = this._container.resolve<BelongsToRecursiveRelation>(BelongsToRecursiveRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+      relInstance = this._container.resolve<BelongsToRecursiveRelation>(BelongsToRecursiveRelation, [
+        this._container.get(Orm),
+        this,
+        relDescription,
+        this._owner,
+      ]);
     } else {
-
       if (relDescription.Recursive) {
         throw new InvalidOperation(`cannot mark relation as recursive with non one-to-one relation type`);
       }
 
       switch (relDescription.Type) {
         case RelationType.One:
-          relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [this._container.get(Orm), this, relDescription, this._owner]);
+          relInstance = this._container.resolve<BelongsToRelation>(BelongsToRelation, [
+            this._container.get(Orm),
+            this,
+            relDescription,
+            this._owner,
+          ]);
           break;
         case RelationType.Many:
-          relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [this._container.get(Orm), this, relDescription, null]);
+          relInstance = this._container.resolve<OneToManyRelation>(OneToManyRelation, [
+            this._container.get(Orm),
+            this,
+            relDescription,
+            null,
+          ]);
           break;
         case RelationType.ManyToMany:
-          relInstance = this._container.resolve<ManyToManyRelation>(ManyToManyRelation, [this._container.get(Orm), this, relDescription, null]);
+          relInstance = this._container.resolve<ManyToManyRelation>(ManyToManyRelation, [
+            this._container.get(Orm),
+            this,
+            relDescription,
+            null,
+          ]);
           break;
       }
     }
-
 
     relInstance.execute(callback);
 
@@ -888,35 +977,60 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
   public min(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MIN, as, this._tableAlias]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [
+        column,
+        ColumnMethods.MIN,
+        as,
+        this._tableAlias,
+      ]),
     );
     return this;
   }
 
   public max(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.MAX, as, this._tableAlias]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [
+        column,
+        ColumnMethods.MAX,
+        as,
+        this._tableAlias,
+      ]),
     );
     return this;
   }
 
   public count(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.COUNT, as, this._tableAlias]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [
+        column,
+        ColumnMethods.COUNT,
+        as,
+        this._tableAlias,
+      ]),
     );
     return this;
   }
 
   public sum(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.SUM, as, this._tableAlias]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [
+        column,
+        ColumnMethods.SUM,
+        as,
+        this._tableAlias,
+      ]),
     );
     return this;
   }
 
   public avg(column: string, as?: string): this {
     this._columns.push(
-      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [column, ColumnMethods.AVG, as, this._tableAlias]),
+      this._container.resolve<ColumnMethodStatement>(ColumnMethodStatement, [
+        column,
+        ColumnMethods.AVG,
+        as,
+        this._tableAlias,
+      ]),
     );
     return this;
   }
@@ -955,7 +1069,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 }
 
 // tslint:disable-next-line
-export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder { }
+export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder {}
 export class DeleteQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -1047,7 +1161,7 @@ export class OnDuplicateQueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface UpdateQueryBuilder extends IWhereBuilder { }
+export interface UpdateQueryBuilder extends IWhereBuilder {}
 export class UpdateQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -1092,7 +1206,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface InsertQueryBuilder extends IColumnsBuilder { }
+export interface InsertQueryBuilder extends IColumnsBuilder {}
 export class InsertQueryBuilder extends QueryBuilder {
   public DuplicateQueryBuilder: OnDuplicateQueryBuilder;
 
@@ -1234,7 +1348,6 @@ export class IndexQueryBuilder extends Builder {
 
 @NewInstance()
 export class ForeignKeyBuilder {
-
   public ForeignKeyField: string;
 
   public Table: string;
@@ -1251,9 +1364,9 @@ export class ForeignKeyBuilder {
   }
 
   /**
-   * 
+   *
    * Referenced field in child table
-   * 
+   *
    * @param fkName name of foreign field in child table
    */
   public foreignKey(fkName: string) {
@@ -1263,9 +1376,9 @@ export class ForeignKeyBuilder {
   }
 
   /**
-   * 
+   *
    * Referenced parent table & key
-   * 
+   *
    * @param table parent table
    * @param pKey parant table key field
    */
@@ -1277,22 +1390,21 @@ export class ForeignKeyBuilder {
   }
 
   /**
-   * 
+   *
    * On delete action
-   * 
+   *
    * @param action action to take on delete
    */
   public onDelete(action: ReferentialAction) {
     this.OnDeleteAction = action;
 
     return this;
-
   }
 
   /**
-   * 
+   *
    * On update action
-   * 
+   *
    * @param action action to take on update
    */
   public onUpdate(action: ReferentialAction) {
@@ -1310,7 +1422,6 @@ export class ForeignKeyBuilder {
 
     return this;
   }
-
 }
 
 @NewInstance()
@@ -1431,7 +1542,6 @@ export class TableQueryBuilder extends QueryBuilder {
   public mediumblob: (name: string) => ColumnQueryBuilder;
   public longblob: (name: string) => ColumnQueryBuilder;
 
-
   public set: (name: string, allowed: string[]) => ColumnQueryBuilder;
 
   public get Columns() {
@@ -1479,7 +1589,6 @@ export class TableQueryBuilder extends QueryBuilder {
   }
 
   public foreignKey(foreignKey: string) {
-
     const builder = new ForeignKeyBuilder();
     builder.foreignKey(foreignKey);
     this._foreignKeys.push(builder);
@@ -1497,7 +1606,7 @@ export class TableQueryBuilder extends QueryBuilder {
 @NewInstance()
 @Inject(Container)
 export class SchemaQueryBuilder {
-  constructor(protected container: Container, protected driver: OrmDriver) { }
+  constructor(protected container: Container, protected driver: OrmDriver) {}
 
   public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
     const builder = new TableQueryBuilder(this.container, this.driver, name);
@@ -1508,7 +1617,7 @@ export class SchemaQueryBuilder {
 }
 
 Object.values(ColumnType).forEach(type => {
-  (TableQueryBuilder.prototype as any)[type] = function (name: string, ...args: any[]) {
+  (TableQueryBuilder.prototype as any)[type] = function(name: string, ...args: any[]) {
     const _builder = new ColumnQueryBuilder(name, type, ...args);
     this._columns.push(_builder);
     return _builder;

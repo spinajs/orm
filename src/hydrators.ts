@@ -4,11 +4,8 @@ export abstract class ModelHydrator {
   public abstract hydrate(target: any, values: any): void;
 }
 
-
-
 export class OneToOneRelationHydrator extends ModelHydrator {
   public hydrate<T>(target: ModelBase<T>, values: any): void {
-
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
@@ -16,7 +13,6 @@ export class OneToOneRelationHydrator extends ModelHydrator {
 
     for (const [key, val] of descriptor.Relations) {
       if (values[key] != null) {
-
         const entity = target as any;
         entity[key] = new val.TargetModel();
         entity[key].hydrate(values[key]);
@@ -36,9 +32,7 @@ export class DbPropertyHydrator extends ModelHydrator {
 
     // filter out model joined properties
     // we handle it in later
-    const keys = Object.keys(values).filter(
-      k => descriptor.Columns?.find(c => c.Name === k),
-    );
+    const keys = Object.keys(values).filter(k => descriptor.Columns?.find(c => c.Name === k));
     keys.forEach(k => {
       const column = descriptor.Columns?.find(c => c.Name === k);
       (target as any)[k] = column.Converter ? column.Converter.fromDB(values[k]) : values[k];
@@ -54,9 +48,7 @@ export class NonDbPropertyHydrator extends ModelHydrator {
     }
 
     // get only properties that are not in DB
-    const keys = Object.keys(values).filter(
-      k => descriptor.Columns?.find(c => c.Name === k) === undefined,
-    );
+    const keys = Object.keys(values).filter(k => descriptor.Columns?.find(c => c.Name === k) === undefined);
     keys.forEach(k => {
       (target as any)[k] = values[k];
     });
@@ -65,7 +57,6 @@ export class NonDbPropertyHydrator extends ModelHydrator {
 
 export class JunctionModelPropertyHydrator extends ModelHydrator {
   public hydrate<T>(target: ModelBase<T>, values: any): void {
-
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
@@ -78,5 +69,4 @@ export class JunctionModelPropertyHydrator extends ModelHydrator {
       (target as any)[jt.Name] = entity;
     }
   }
-
 }

@@ -10,14 +10,12 @@ export interface IQueryStatementResult {
 }
 
 export interface IQueryStatement {
-
   TableAlias: string;
 
   build(): IQueryStatementResult;
 }
 
 export abstract class QueryStatement implements IQueryStatement {
-
   protected _tableAlias: string;
 
   public get TableAlias() {
@@ -52,14 +50,17 @@ export abstract class RawQueryStatement extends QueryStatement {
 
 @NewInstance()
 export abstract class WithRecursiveStatement extends QueryStatement {
-  constructor(protected _name: string, protected _query: SelectQueryBuilder, protected _rcKeyName: string, protected _pkName: string) {
+  constructor(
+    protected _name: string,
+    protected _query: SelectQueryBuilder,
+    protected _rcKeyName: string,
+    protected _pkName: string,
+  ) {
     super(null);
-
   }
 
   public abstract build(): IQueryStatementResult;
 }
-
 
 @NewInstance()
 export abstract class BetweenStatement extends QueryStatement {
@@ -82,7 +83,7 @@ export abstract class WhereQueryStatement extends QueryStatement {
   protected _builder: WhereBuilder;
 
   constructor(builder: WhereBuilder, tableAlias: string) {
-    super(tableAlias)
+    super(tableAlias);
     this._builder = builder;
   }
 
@@ -96,7 +97,7 @@ export abstract class WhereStatement extends QueryStatement {
   protected _value: any;
 
   constructor(column: string, operator: WhereOperators, value: any, tableAlias: string) {
-    super(tableAlias)
+    super(tableAlias);
     this._column = column;
     this._operator = operator;
     this._value = value;
@@ -115,8 +116,15 @@ export abstract class JoinStatement extends QueryStatement {
   protected _alias: string;
   protected _tableAlias: string;
 
-  constructor(table: string | RawQuery, method: JoinMethod, foreignKey: string, primaryKey: string, alias: string, tableAlias: string) {
-    super(tableAlias)
+  constructor(
+    table: string | RawQuery,
+    method: JoinMethod,
+    foreignKey: string,
+    primaryKey: string,
+    alias: string,
+    tableAlias: string,
+  ) {
+    super(tableAlias);
 
     this._method = method;
 
@@ -141,7 +149,7 @@ export abstract class InStatement extends QueryStatement {
   protected _column: string;
 
   constructor(column: string, val: any[], not: boolean, tableAlias: string) {
-    super(tableAlias)
+    super(tableAlias);
 
     this._val = val || [];
     this._not = not || false;
@@ -155,7 +163,7 @@ export abstract class InStatement extends QueryStatement {
 export abstract class SelectQueryStatement extends QueryStatement {
   protected _builder: SelectQueryBuilder;
   constructor(builder: SelectQueryBuilder, tableAlias?: string) {
-    super(tableAlias)
+    super(tableAlias);
     this._builder = builder;
   }
 
@@ -182,7 +190,7 @@ export abstract class InSetStatement extends QueryStatement {
   protected _column: string;
 
   constructor(column: string, val: any[], not: boolean, tableAlias: string) {
-    super(tableAlias)
+    super(tableAlias);
 
     this._val = val || [];
     this._not = not || false;
@@ -196,10 +204,10 @@ export abstract class ColumnStatement extends QueryStatement {
   protected _column: string | RawQuery;
   protected _alias: string;
   protected _tableAlias: string;
-  protected _descriptor : IColumnDescriptor;
+  protected _descriptor: IColumnDescriptor;
 
-  constructor(column: string | RawQuery, alias: string, tableAlias: string, descriptor : IColumnDescriptor) {
-    super(tableAlias)
+  constructor(column: string | RawQuery, alias: string, tableAlias: string, descriptor: IColumnDescriptor) {
+    super(tableAlias);
 
     this._column = column || '';
     this._alias = alias || '';
@@ -207,7 +215,7 @@ export abstract class ColumnStatement extends QueryStatement {
     this._descriptor = descriptor;
   }
 
-  public get Descriptor(){
+  public get Descriptor() {
     return this._descriptor;
   }
 

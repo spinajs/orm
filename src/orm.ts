@@ -4,7 +4,13 @@ import { Autoinject } from '@spinajs/di';
 import { Log, Logger } from '@spinajs/log';
 import { ClassInfo, ListFromFiles } from '@spinajs/reflection';
 import _ from 'lodash';
-import { IDriverOptions, IMigrationDescriptor, OrmMigration, MigrationTransactionMode, IModelDescrtiptor } from './interfaces';
+import {
+  IDriverOptions,
+  IMigrationDescriptor,
+  OrmMigration,
+  MigrationTransactionMode,
+  IModelDescrtiptor,
+} from './interfaces';
 import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model';
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
@@ -34,79 +40,81 @@ export class Orm extends AsyncModule {
   protected Configuration: Configuration;
 
   /**
-   * 
+   *
    * Migrates schema up ( fill function is not executed )
-   * 
+   *
    * @param name migration file name
    */
   public async migrateUp(name?: string): Promise<void> {
-
     const self = this;
 
-    await this.executeAvaibleMigrations(name, async (migration: OrmMigration, driver: OrmDriver) => {
+    await this.executeAvaibleMigrations(
+      name,
+      async (migration: OrmMigration, driver: OrmDriver) => {
+        const trFunction = async (driver: OrmDriver) => {
+          await migration.up(driver);
 
-      const trFunction = async (driver: OrmDriver) => {
-        await migration.up(driver);
+          await driver
+            .insert()
+            .into(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
+            .values({
+              Migration: migration.constructor.name,
+              CreatedAt: new Date(),
+            });
+        };
 
-        await driver
-          .insert()
-          .into(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
-          .values({
-            Migration: migration.constructor.name,
-            CreatedAt: new Date(),
-          });
-      };
+        if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
+          await driver.transaction(trFunction);
+        } else {
+          await trFunction(driver);
+        }
 
-      if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
-        await driver.transaction(trFunction);
-      } else {
-        await trFunction(driver);
-      }
-
-      self.Log.info(`Migration ${migration.constructor.name} success !`)
-    }, false);
+        self.Log.info(`Migration ${migration.constructor.name} success !`);
+      },
+      false,
+    );
   }
 
   /**
-   * 
+   *
    * Migrates schema up ( fill function is not executed )
-   * 
+   *
    * @param name migration file name
    */
   public async migrateDown(name?: string): Promise<void> {
-
     const self = this;
 
-    await this.executeAvaibleMigrations(name, async (migration: OrmMigration, driver: OrmDriver) => {
+    await this.executeAvaibleMigrations(
+      name,
+      async (migration: OrmMigration, driver: OrmDriver) => {
+        const trFunction = async (driver: OrmDriver) => {
+          await migration.down(driver);
 
-      const trFunction = async (driver: OrmDriver) => {
-        await migration.down(driver);
+          await driver
+            .del()
+            .from(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
+            .where({
+              Migration: migration.constructor.name,
+            });
+        };
 
-        await driver
-          .del()
-          .from(driver.Options.Migration?.Table ?? MIGRATION_TABLE_NAME)
-          .where({
-            Migration: migration.constructor.name
-          });
-      };
+        if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
+          await driver.transaction(trFunction);
+        } else {
+          await trFunction(driver);
+        }
 
-      if (driver.Options.Migration?.Transaction?.Mode === MigrationTransactionMode.PerMigration) {
-        await driver.transaction(trFunction);
-      } else {
-        await trFunction(driver);
-      }
-
-      self.Log.info(`Migration down ${migration.constructor.name} success !`)
-    }, true);
+        self.Log.info(`Migration down ${migration.constructor.name} success !`);
+      },
+      true,
+    );
   }
 
-  /** 
+  /**
    * This function is exposed mainly for unit testing purposes. It reloads table information for models
    * ORM always try to load table at resolve time
    */
   public async reloadTableInfo() {
-
-
     for (const m of this.Models) {
       const descriptor = extractModelDescriptor(m.type);
       if (descriptor) {
@@ -114,9 +122,12 @@ export class Orm extends AsyncModule {
         if (connection) {
           const columns = await connection.tableInfo(descriptor.TableName, connection.Options.Database);
           if (columns) {
-            m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(_.map(columns, (c) => {
-              return _.assign(c, _.find(descriptor.Columns, { Name: c.Name }));
-            }), "Name")
+            m.type[MODEL_DESCTRIPTION_SYMBOL].Columns = _.uniqBy(
+              _.map(columns, c => {
+                return _.assign(c, _.find(descriptor.Columns, { Name: c.Name }));
+              }),
+              'Name',
+            );
           }
 
           for (const [key, val] of descriptor.Converters) {
@@ -141,10 +152,8 @@ export class Orm extends AsyncModule {
       await this.migrateUp();
     }
 
-
     await this.reloadTableInfo();
     this.applyModelMixins();
-
   }
 
   /**
@@ -198,16 +207,14 @@ export class Orm extends AsyncModule {
       );
     });
 
-    const defaultConnection = this.Configuration.get<string>("db.DefaultConnection");
+    const defaultConnection = this.Configuration.get<string>('db.DefaultConnection');
     if (defaultConnection) {
-
       if (!this.Connections.has(defaultConnection)) {
         throw new InvalidOperation(`default connection ${defaultConnection} not exists`);
       }
 
-      this.Connections.set("default", this.Connections.get(defaultConnection));
+      this.Connections.set('default', this.Connections.get(defaultConnection));
     }
-
   }
 
   private applyModelMixins() {
@@ -219,7 +226,11 @@ export class Orm extends AsyncModule {
     });
   }
 
-  private async executeAvaibleMigrations(name: string, callback: (migration: OrmMigration, driver: OrmDriver) => Promise<void>, down: boolean) {
+  private async executeAvaibleMigrations(
+    name: string,
+    callback: (migration: OrmMigration, driver: OrmDriver) => Promise<void>,
+    down: boolean,
+  ) {
     let migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
 
     if (down) {
@@ -231,7 +242,6 @@ export class Orm extends AsyncModule {
       const cn = this.Connections.get(md.Connection);
       const migrationTableName = cn.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
 
-
       const exists = await cn
         .select()
         .from(migrationTableName)
@@ -239,14 +249,13 @@ export class Orm extends AsyncModule {
         .first();
 
       if (!exists) {
-        const migration = await this.Container.resolve(m.type, [cn]) as OrmMigration;
+        const migration = (await this.Container.resolve(m.type, [cn])) as OrmMigration;
         await callback(migration, cn);
       }
     }
   }
 
   private async prepareMigrations() {
-
     for (const [_, connection] of this.Connections) {
       const migrationTableName = connection.Options.Migration?.Table ?? MIGRATION_TABLE_NAME;
 
@@ -254,16 +263,17 @@ export class Orm extends AsyncModule {
 
       // if there is no info on migraiton table or query throws we assume table not exists
       try {
-
         migrationTable = await connection.tableInfo(migrationTableName);
 
         // tslint:disable-next-line: no-empty
-      } catch{ }
-
+      } catch {}
 
       if (!migrationTable) {
         await connection.schema().createTable(migrationTableName, table => {
-          table.string('Migration').unique().notNull();
+          table
+            .string('Migration')
+            .unique()
+            .notNull();
           table.dateTime('CreatedAt').notNull();
         });
       }

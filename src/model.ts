@@ -18,7 +18,6 @@ import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 export function extractModelDescriptor(target: any): IModelDescrtiptor {
-
   if (!target) {
     return null;
   }
@@ -268,22 +267,20 @@ export abstract class ModelBase<T> {
 
       // ignore fired, we dont have insert ID
       if (insertBehaviour !== InsertBehaviour.None && (id as any) === 0 && !this.PrimaryKeyValue) {
-
         const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
-        const idRes = await query.columns([this.PrimaryKeyName]).where(function () {
-          description.Columns.filter(c => c.Unique).forEach(c => {
-            this.where(c, (self as any)[c.Name]);
-          });
-        }).first();
+        const idRes = await query
+          .columns([this.PrimaryKeyName])
+          .where(function() {
+            description.Columns.filter(c => c.Unique).forEach(c => {
+              this.where(c, (self as any)[c.Name]);
+            });
+          })
+          .first();
 
         this.PrimaryKeyValue = (idRes as any)[this.PrimaryKeyName];
-
-
       } else {
         this.PrimaryKeyValue = id;
       }
-
-
     }
   }
 
@@ -299,11 +296,9 @@ export abstract class ModelBase<T> {
    */
   protected defaults() {
     this.ModelDescriptor.Columns?.forEach(c => {
-      
-      if(c.Uuid){
+      if (c.Uuid) {
         (this as any)[c.Name] = uuidv4();
-      }
-      else{
+      } else {
         (this as any)[c.Name] = c.DefaultValue;
       }
     });
@@ -362,12 +357,9 @@ function _createQuery<T extends QueryBuilder>(model: Class<any>, query: Class<T>
 }
 
 export const MODEL_STATIC_MIXINS = {
-
   query(): SelectQueryBuilder {
-
     const { query } = _createQuery(this as any, SelectQueryBuilder, false);
     return query;
-
   },
 
   where(
@@ -376,7 +368,7 @@ export const MODEL_STATIC_MIXINS = {
     value?: any,
   ): SelectQueryBuilder {
     const { query } = _createQuery(this as any, SelectQueryBuilder);
-    query.select("*");
+    query.select('*');
 
     return query.where(column, operator, value);
   },
@@ -428,7 +420,7 @@ export const MODEL_STATIC_MIXINS = {
   async find(pks: any | any[]): Promise<any> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
-    query.select("*");
+    query.select('*');
 
     return (await Array.isArray(pks)) ? query.whereIn(pkey, pks) : query.where(pkey, pks).first();
   },
@@ -445,13 +437,15 @@ export const MODEL_STATIC_MIXINS = {
         return data;
       },
 
-      modelCreation(_: any): ModelBase<any> { return null; },
+      modelCreation(_: any): ModelBase<any> {
+        return null;
+      },
 
       // tslint:disable-next-line: no-empty
-      async afterHydration(_data: Array<ModelBase<any>>) { }
-    }
+      async afterHydration(_data: Array<ModelBase<any>>) {},
+    };
 
-    query.select("*");
+    query.select('*');
 
     if (Array.isArray(pks)) {
       query.whereIn(pkey, pks);
@@ -522,7 +516,7 @@ export const MODEL_STATIC_MIXINS = {
     }
 
     // check for all unique columns ( unique constrain )
-    description.Columns.filter( c=> c.Unique ).forEach(c => {
+    description.Columns.filter(c => c.Unique).forEach(c => {
       query.orWhere(c, data[c.Name]);
     });
 

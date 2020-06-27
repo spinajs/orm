@@ -17,7 +17,6 @@ export enum QueryContext {
 }
 
 export enum InsertBehaviour {
-
   /**
    * On duplicate entry ignore & fetch only model primary key
    */
@@ -31,18 +30,18 @@ export enum InsertBehaviour {
   /**
    * Throw error if model hits constraint ( primary or unique keys )
    */
-  None
+  None,
 }
 
 /**
- * Foreign key referential actions 
+ * Foreign key referential actions
  */
 export enum ReferentialAction {
-  Cascade = "CASCADE",
-  SetNull = "SET NULL",
-  Restrict = "RESTRICT",
-  NoAction = "NO ACTION",
-  SetDefault = "SET DEFAULT"
+  Cascade = 'CASCADE',
+  SetNull = 'SET NULL',
+  Restrict = 'RESTRICT',
+  NoAction = 'NO ACTION',
+  SetDefault = 'SET DEFAULT',
 }
 
 /**
@@ -64,7 +63,6 @@ export enum MigrationTransactionMode {
  * Configuration options to set in configuration file and used in OrmDriver
  */
 export interface IDriverOptions {
-
   /**
    * Max connections limit
    */
@@ -206,7 +204,7 @@ export interface IModelDescrtiptor {
   /**
    * List of relations in model
    */
-  Relations: Map<string, IRelationDescriptor>
+  Relations: Map<string, IRelationDescriptor>;
 
   /** Name of model */
   Name: string;
@@ -242,36 +240,34 @@ export interface IDiscriminationEntry {
 export enum RelationType {
   One,
   Many,
-  ManyToMany
+  ManyToMany,
 }
 
 export interface IRelationDescriptor {
-
   /**
    * Name of relations, defaults for property name in model that owns relation
    */
-  Name: string,
+  Name: string;
 
   /**
    * Is it one-to-one, one-to-many or many-to-many
    */
-  Type: RelationType,
+  Type: RelationType;
 
   /**
    * Relation model (  foreign )
    */
-  TargetModel: Constructor<ModelBase<any>>,
+  TargetModel: Constructor<ModelBase<any>>;
 
-  /** 
+  /**
    * Relation owner
    */
-  SourceModel: Constructor<ModelBase<any>>,
-
+  SourceModel: Constructor<ModelBase<any>>;
 
   /**
    * Relation foreign key (one to one, one to many)
    */
-  ForeignKey: string,
+  ForeignKey: string;
 
   /**
    * Relation primary key (one to one, one to many)
@@ -373,7 +369,7 @@ export interface IColumnDescriptor {
   /**
    * Is uuid generated column
    */
-  Uuid : boolean;
+  Uuid: boolean;
 }
 
 /**
@@ -422,23 +418,21 @@ export interface IModelSoftDeleteDescriptor {
 
 @NewInstance()
 export abstract class OrmMigration {
-
   /**
-   * 
+   *
    * Migrate up - create tables, indices etc.
-   * Be aware that model function are not avaible yet. To fill tables with 
+   * Be aware that model function are not avaible yet. To fill tables with
    * data use fill function
-   * 
-   * @param connection 
+   *
+   * @param connection
    */
   public abstract up(connection: OrmDriver): Promise<void>;
 
   /**
    * Migrate down - undo changes made in up
-   * @param connection 
+   * @param connection
    */
   public abstract down(connection: OrmDriver): Promise<void>;
-
 }
 
 /**
@@ -485,16 +479,15 @@ export interface IOrderByBuilder {
 }
 
 export interface IColumnsBuilder {
-
   /**
    * clears selected columns
    */
   clearColumns(): this;
 
   /**
-   * 
+   *
    * Select columns from db result ( multiple at once )
-   * 
+   *
    * @param names column names to select
    */
   columns(names: string[]): this;
@@ -507,7 +500,7 @@ export interface IColumnsBuilder {
   /**
    * Selects single column from DB result with optional alias
    * Can be used multiple times
-   * 
+   *
    * @param column column to select
    * @param alias column alias ( optional )
    */
@@ -515,14 +508,14 @@ export interface IColumnsBuilder {
 
   /**
    * Selects custom values from DB. eg. Count(*)
-   * 
+   *
    * @param rawQuery  raw query to be executed
    */
   select(rawQuery: RawQuery): this;
 
   /**
    * Selects multiple columns at once with aliases. Map key property is column name, value is its alias
-   * 
+   *
    * @param columns column list with aliases
    */
   // tslint:disable-next-line: unified-signatures
@@ -568,7 +561,6 @@ export interface IJoinBuilder {
   // tslint:disable-next-line: unified-signatures
   innerJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
-
   leftJoin(query: RawQuery): this;
   leftJoin(table: string, foreignKey: string, primaryKey: string): this;
 
@@ -590,7 +582,6 @@ export interface IJoinBuilder {
   // tslint:disable-next-line: unified-signatures
   rightOuterJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
 
-
   fullOuterJoin(query: RawQuery): this;
   fullOuterJoin(table: string, foreignKey: string, primaryKey: string): this;
   // tslint:disable-next-line: unified-signatures
@@ -600,16 +591,15 @@ export interface IJoinBuilder {
   crossJoin(table: string, foreignKey: string, primaryKey: string): this;
   // tslint:disable-next-line: unified-signatures
   crossJoin(table: string, tableAlias: string, foreignKey: string, primaryKey: string): this;
-
 }
 
 export interface ISelectQueryBuilder
   extends IColumnsBuilder,
-  IOrderByBuilder,
-  ILimitBuilder,
-  IWhereBuilder,
-  IJoinBuilder,
-  IWithRecursiveBuilder {
+    IOrderByBuilder,
+    ILimitBuilder,
+    IWhereBuilder,
+    IJoinBuilder,
+    IWithRecursiveBuilder {
   min(column: string, as?: string): this;
   max(column: string, as?: string): this;
   count(column: string, as?: string): this;
@@ -635,7 +625,6 @@ export interface ILimitCompiler {
 export interface IRecursiveCompiler {
   recursive(builder: IWithRecursiveBuilder): ICompilerOutput;
 }
-
 
 export interface IColumnsCompiler {
   columns(builder: IColumnsBuilder): ICompilerOutput;
@@ -720,12 +709,11 @@ export abstract class OrderByQueryCompiler implements IQueryCompiler {
  * Middlewares for query builders
  */
 export interface IBuilderMiddleware {
-
   /**
-   * 
+   *
    * Executed AFTER query is executed in DB and fetcher raw data
    * Use it to transform DB data before everything else
-   * 
+   *
    * @param data raw data fetched from DB
    */
   afterData(data: any[]): any[];
@@ -734,21 +722,20 @@ export interface IBuilderMiddleware {
    * Executed when model is about to create. Use it to
    * override model creation logic. If null is returned, default model
    * is executed
-   * 
+   *
    * @param data raw data to create
    */
   modelCreation(data: any): ModelBase<any>;
 
   /**
    * executed after model was created ( all returned data by query is executed)
-   * 
+   *
    * @param data hydrated data. Models are created and hydrated with data
    */
   afterHydration(data: Array<ModelBase<any>>): Promise<any[] | void>;
 }
 
 export class ValueConverter implements IValueConverter {
-
   /**
    * Converts value to database type
    *
@@ -771,11 +758,9 @@ export class ValueConverter implements IValueConverter {
 /**
  * Converter for DATETIME field (eg. mysql datetime)
  */
-export class DatetimeValueConverter extends ValueConverter {
-}
+export class DatetimeValueConverter extends ValueConverter {}
 
 /**
  * Converter for set field (eg. mysql SET)
  */
-export class SetValueConverter extends ValueConverter {
-}
+export class SetValueConverter extends ValueConverter {}

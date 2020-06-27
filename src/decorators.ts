@@ -1,5 +1,14 @@
 import { UuidConverter } from './converters';
-import { IModelDescrtiptor, IMigrationDescriptor, RelationType, IRelationDescriptor, IDiscriminationEntry, DatetimeValueConverter, ValueConverter, SetValueConverter } from './interfaces';
+import {
+  IModelDescrtiptor,
+  IMigrationDescriptor,
+  RelationType,
+  IRelationDescriptor,
+  IDiscriminationEntry,
+  DatetimeValueConverter,
+  ValueConverter,
+  SetValueConverter,
+} from './interfaces';
 import 'reflect-metadata';
 import { ModelBase, extractModelDescriptor } from './model';
 import { InvalidOperation, InvalidArgument } from '@spinajs/exceptions';
@@ -51,9 +60,9 @@ export function extractDecoratorDescriptor(
         Name: target.constructor.name,
         JunctionModelProperties: [],
         DiscriminationMap: {
-          Field: "",
-          Models: null
-        }
+          Field: '',
+          Models: null,
+        },
       };
 
       if (!base) {
@@ -201,29 +210,28 @@ export function Uuid() {
     const columnDesc = model.Columns.find(c => c.Name === propertyKey);
     if (!columnDesc) {
       // we dont want to fill all props, they will be loaded from db and mergeg with this
-      model.Columns.push({ Name: propertyKey, Uuid: true, } as any)
+      model.Columns.push({ Name: propertyKey, Uuid: true } as any);
     }
 
     model.Converters.set(propertyKey, UuidConverter);
-
-  },true);
+  }, true);
 }
 
 export function JunctionTable() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
     model.JunctionModelProperties.push({
       Name: propertyKey,
-      Model: Reflect.getMetadata('design:type', target, propertyKey)
+      Model: Reflect.getMetadata('design:type', target, propertyKey),
     });
   });
 }
 
 /**
- * 
- * Marks model to have discrimination map. 
- * 
+ *
+ * Marks model to have discrimination map.
+ *
  * @param fieldName db field name to look for
- * @param discriminationMap field - model mapping 
+ * @param discriminationMap field - model mapping
  */
 export function DiscriminationMap(fieldName: string, discriminationMap: IDiscriminationEntry[]) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
@@ -238,19 +246,22 @@ export function DiscriminationMap(fieldName: string, discriminationMap: IDiscrim
 
 /**
  * Marks relation as recursive. When relation is populated it loads all to the top
- * 
+ *
  */
 export function Recursive() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
-
     if (!model.Relations.has(propertyKey)) {
-      throw new InvalidOperation(`cannot set recursive on not existing relation ( relation ${propertyKey} on model ${model.Name} )`);
+      throw new InvalidOperation(
+        `cannot set recursive on not existing relation ( relation ${propertyKey} on model ${model.Name} )`,
+      );
     }
 
     const relation = model.Relations.get(propertyKey);
 
     if (relation.Type !== RelationType.One) {
-      throw new InvalidOperation(`cannot set recursive on non one-to-one relation ( relation ${propertyKey} on model ${model.Name} )`);
+      throw new InvalidOperation(
+        `cannot set recursive on non one-to-one relation ( relation ${propertyKey} on model ${model.Name} )`,
+      );
     }
 
     relation.Recursive = true;
@@ -259,13 +270,12 @@ export function Recursive() {
 
 /**
  * Creates one to one relation with target model.
- * 
+ *
  * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
  * @param primaryKey - primary key in related model, defaults to primary key taken from db
  */
 export function BelongsTo(foreignKey?: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
-
     model.Relations.set(propertyKey, {
       Name: propertyKey,
       Type: RelationType.One,
@@ -275,18 +285,16 @@ export function BelongsTo(foreignKey?: string, primaryKey?: string) {
       PrimaryKey: primaryKey ?? model.PrimaryKey,
       Recursive: false,
     });
-
   });
 }
 
-
 /**
  * Creates one to many relation with target model.
- * 
+ *
  * @param targetModel - due to limitations of metadata reflection api in typescript target model mus be set explicitly
  * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
- * @param primaryKey 
- * 
+ * @param primaryKey
+ *
  */
 export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
@@ -304,7 +312,7 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
 
 /**
  * Creates many to many relation with separate join table
- * 
+ *
  * @param junctionModel model for junction table
  * @param targetModel  model for related data
  * @param targetModelPKey target model primary key name
@@ -312,9 +320,15 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
  * @param junctionModelTargetPk junction table target primary key name ( foreign key for target model )
  * @param junctionModelSourcePk junction table source primary key name ( foreign key for source model )
  */
-export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, targetModel: Constructor<ModelBase<any>>, targetModelPKey?: string, sourceModelPKey?: string, junctionModelTargetPk?: string, junctionModelSourcePk?: string) {
+export function HasManyToMany(
+  junctionModel: Constructor<ModelBase<any>>,
+  targetModel: Constructor<ModelBase<any>>,
+  targetModelPKey?: string,
+  sourceModelPKey?: string,
+  junctionModelTargetPk?: string,
+  junctionModelSourcePk?: string,
+) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
-
     const targetModelDescriptor = extractModelDescriptor(targetModel);
 
     model.Relations.set(propertyKey, {
@@ -327,13 +341,13 @@ export function HasManyToMany(junctionModel: Constructor<ModelBase<any>>, target
       PrimaryKey: sourceModelPKey ?? model.PrimaryKey,
       JunctionModel: junctionModel,
       JunctionModelTargetModelFKey_Name: junctionModelTargetPk ?? `${targetModelDescriptor.Name.toLowerCase()}_id`,
-      JunctionModelSourceModelFKey_Name: junctionModelSourcePk ?? `${model.Name.toLowerCase()}_id`
+      JunctionModelSourceModelFKey_Name: junctionModelSourcePk ?? `${model.Name.toLowerCase()}_id`,
     });
   });
 }
 
 /**
- * Mark field as datetime type. It will ensure that conversion to & from DB is valid, eg. sqlite DB 
+ * Mark field as datetime type. It will ensure that conversion to & from DB is valid, eg. sqlite DB
  * saves datetime as TEXT and ISO8601 strings
  */
 export function DateTime() {
