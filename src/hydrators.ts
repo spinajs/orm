@@ -72,7 +72,10 @@ export class JunctionModelPropertyHydrator extends ModelHydrator {
     }
 
     for (const jt of descriptor.JunctionModelProperties) {
-      (target as any)[jt.Name] = new jt.Model(values.JunctionModel);
+      const entity = new jt.Model();
+      entity.hydrate(values.JunctionModel);
+
+      (target as any)[jt.Name] = entity;
     }
   }
 
