@@ -68,17 +68,18 @@ export class Builder<T = any> {
   protected _nonSelect: boolean;
   protected _queryContext: QueryContext;
   protected _middlewares: IBuilderMiddleware[] = [];
+  protected _asRaw: boolean;
 
   constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
     this._driver = driver;
     this._container = container;
     this._model = model;
     this._nonSelect = true;
+    this._asRaw = false;
   }
 
   public middleware(middleware: IBuilderMiddleware) {
     this._middlewares.push(middleware);
-
     return this;
   }
 
@@ -91,9 +92,12 @@ export class Builder<T = any> {
 
   public then(resolve: (rows: any[]) => void, reject: (err: Error) => void): Promise<T> {
     const compiled = this.toDB();
-
     return this._driver.execute(compiled.expression, compiled.bindings, this._queryContext).then((result: any[]) => {
       try {
+        if (this._asRaw) {
+          resolve(result);
+          return;
+        }
         if (this._model && !this._nonSelect) {
           let transformedResult = result;
 
@@ -263,7 +267,7 @@ export class LimitBuilder implements ILimitBuilder {
   }
 
   public skip(count: number) {
-    if (count <= 0) {
+    if (count < 0) {
       throw new InvalidArgument(`skip count cannot be negative number`);
     }
 
@@ -809,7 +813,7 @@ export class WhereBuilder implements IWhereBuilder {
 }
 
 // tslint:disable-next-line
-export interface SelectQueryBuilder extends ISelectQueryBuilder {}
+export interface SelectQueryBuilder extends ISelectQueryBuilder { }
 
 export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
   /**
@@ -885,6 +889,11 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
     this._owner = owner;
   }
 
+  public async asRaw<T>(): Promise<T> {
+    this._asRaw = true;
+    return (await this) as any;
+  }
+
   public setAlias(alias: string) {
     this._tableAlias = alias;
 
@@ -946,7 +955,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
             this._container.get(Orm),
             this,
             relDescription,
-            null,
+            this._owner,
           ]);
           break;
         case RelationType.ManyToMany:
@@ -1069,7 +1078,7 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 }
 
 // tslint:disable-next-line
-export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder {}
+export interface DeleteQueryBuilder extends IWhereBuilder, ILimitBuilder { }
 export class DeleteQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -1161,7 +1170,7 @@ export class OnDuplicateQueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface UpdateQueryBuilder extends IWhereBuilder {}
+export interface UpdateQueryBuilder extends IWhereBuilder { }
 export class UpdateQueryBuilder extends QueryBuilder {
   /**
    * where query props
@@ -1206,7 +1215,7 @@ export class UpdateQueryBuilder extends QueryBuilder {
 }
 
 // tslint:disable-next-line
-export interface InsertQueryBuilder extends IColumnsBuilder {}
+export interface InsertQueryBuilder extends IColumnsBuilder { }
 export class InsertQueryBuilder extends QueryBuilder {
   public DuplicateQueryBuilder: OnDuplicateQueryBuilder;
 
@@ -1291,7 +1300,13 @@ export class InsertQueryBuilder extends QueryBuilder {
   }
 
   public onDuplicate(column?: string | string[]): OnDuplicateQueryBuilder {
-    this.DuplicateQueryBuilder = new OnDuplicateQueryBuilder(this._container, this, column);
+
+    let columnToCheck = column;
+    if (!columnToCheck) {
+      columnToCheck = extractModelDescriptor(this._model).Columns.filter(c => c.Unique && !c.PrimaryKey).map(c => c.Name);
+    }
+
+    this.DuplicateQueryBuilder = new OnDuplicateQueryBuilder(this._container, this, columnToCheck);
     return this.DuplicateQueryBuilder;
   }
 
@@ -1606,7 +1621,7 @@ export class TableQueryBuilder extends QueryBuilder {
 @NewInstance()
 @Inject(Container)
 export class SchemaQueryBuilder {
-  constructor(protected container: Container, protected driver: OrmDriver) {}
+  constructor(protected container: Container, protected driver: OrmDriver) { }
 
   public createTable(name: string, callback: (table: TableQueryBuilder) => void) {
     const builder = new TableQueryBuilder(this.container, this.driver, name);
@@ -1617,7 +1632,7 @@ export class SchemaQueryBuilder {
 }
 
 Object.values(ColumnType).forEach(type => {
-  (TableQueryBuilder.prototype as any)[type] = function(name: string, ...args: any[]) {
+  (TableQueryBuilder.prototype as any)[type] = function (name: string, ...args: any[]) {
     const _builder = new ColumnQueryBuilder(name, type, ...args);
     this._columns.push(_builder);
     return _builder;

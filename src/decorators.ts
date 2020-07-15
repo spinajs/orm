@@ -205,12 +205,30 @@ export function Primary() {
 /**
  * Marks columns as UUID. Column will be generated ad creation
  */
+export function Ignore() {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
+    const columnDesc = model.Columns.find(c => c.Name === propertyKey);
+    if (!columnDesc) {
+      // we dont want to fill all props, they will be loaded from db and mergeg with this
+      model.Columns.push({ Name: propertyKey, Ignore: true } as any);
+    } else {
+      columnDesc.Ignore = true;
+    }
+  }, true);
+}
+
+
+/**
+ * Marks columns as UUID. Column will be generated ad creation
+ */
 export function Uuid() {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, propertyKey: string) => {
     const columnDesc = model.Columns.find(c => c.Name === propertyKey);
     if (!columnDesc) {
       // we dont want to fill all props, they will be loaded from db and mergeg with this
       model.Columns.push({ Name: propertyKey, Uuid: true } as any);
+    } else {
+      columnDesc.Uuid = true;
     }
 
     model.Converters.set(propertyKey, UuidConverter);
@@ -268,6 +286,14 @@ export function Recursive() {
   });
 }
 
+export interface IForwardReference<T = any> {
+  forwardRef: T;
+}
+
+export const forwardRef = (fn: () => any): IForwardReference => ({
+  forwardRef: fn,
+});
+
 /**
  * Creates one to one relation with target model.
  *
@@ -287,6 +313,28 @@ export function BelongsTo(foreignKey?: string, primaryKey?: string) {
     });
   });
 }
+
+
+/**
+ * Creates one to one relation with target model.
+ *
+ * @param foreignKey - foreign key name in db, defaults to lowercase property name with _id suffix eg. owner_id
+ * @param primaryKey - primary key in related model, defaults to primary key taken from db
+ */
+export function ForwardBelongsTo(forwardRef: IForwardReference, foreignKey?: string, primaryKey?: string) {
+  return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
+    model.Relations.set(propertyKey, {
+      Name: propertyKey,
+      Type: RelationType.One,
+      SourceModel: target.constructor,
+      TargetModel: forwardRef.forwardRef,
+      ForeignKey: foreignKey ?? `${propertyKey.toLowerCase()}_id`,
+      PrimaryKey: primaryKey ?? model.PrimaryKey,
+      Recursive: false,
+    });
+  });
+}
+
 
 /**
  * Creates one to many relation with target model.

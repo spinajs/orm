@@ -1,6 +1,6 @@
 import { DiscriminationMapMiddleware, OneToManyRelationList, ManyToManyRelationList } from './relations';
 import { MODEL_DESCTRIPTION_SYMBOL } from './decorators';
-import { IModelDescrtiptor, RelationType, InsertBehaviour } from './interfaces';
+import { IModelDescrtiptor, RelationType, InsertBehaviour, DatetimeValueConverter } from './interfaces';
 import { WhereFunction } from './types';
 import {
   RawQuery,
@@ -11,13 +11,16 @@ import {
   InsertQueryBuilder,
 } from './builders';
 import { WhereOperators } from './enums';
-import { DI } from '@spinajs/di';
+import { DI, isConstructor } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
-export function extractModelDescriptor(target: any): IModelDescrtiptor {
+export function extractModelDescriptor(targetOrForward: any): IModelDescrtiptor {
+
+  const target = !isConstructor(targetOrForward) && targetOrForward ? targetOrForward() : targetOrForward
+
   if (!target) {
     return null;
   }
@@ -179,12 +182,15 @@ export abstract class ModelBase<T> {
     throw Error('Not implemented');
   }
 
+
+
   /**
    * Deletes model from db
    *
-   * @param pk
+   * @param pk?
    */
-  public static destroy(_pk: any | any[]): Promise<void> {
+  public static destroy(): DeleteQueryBuilder;
+  public static destroy(_pk?: any | any[]): Promise<void> | DeleteQueryBuilder {
     throw Error('Not implemented');
   }
 
@@ -270,7 +276,7 @@ export abstract class ModelBase<T> {
         const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
         const idRes = await query
           .columns([this.PrimaryKeyName])
-          .where(function() {
+          .where(function () {
             description.Columns.filter(c => c.Unique).forEach(c => {
               this.where(c, (self as any)[c.Name]);
             });
@@ -381,6 +387,7 @@ export const MODEL_STATIC_MIXINS = {
   all(page: number, perPage: number): SelectQueryBuilder {
     const { query } = _createQuery(this as any, SelectQueryBuilder);
 
+    query.select("*");
     if (page >= 0 && perPage > 0) {
       query.take(perPage).skip(page * perPage);
     }
@@ -442,7 +449,7 @@ export const MODEL_STATIC_MIXINS = {
       },
 
       // tslint:disable-next-line: no-empty
-      async afterHydration(_data: Array<ModelBase<any>>) {},
+      async afterHydration(_data: Array<ModelBase<any>>) { },
     };
 
     query.select('*');
@@ -457,23 +464,39 @@ export const MODEL_STATIC_MIXINS = {
     }
   },
 
-  async destroy(pks: any | any[]): Promise<void> {
+  destroy(pks?: any | any[]): Promise<any> | DeleteQueryBuilder | UpdateQueryBuilder{
     const description = _descriptor(this as any);
+    const orm = DI.get<Orm>(Orm);
+    const driver = orm.Connections.get(description.Connection);
+    const converter = driver.Container.resolve(DatetimeValueConverter);
 
+    if (!pks) {
+      if (description.SoftDelete?.DeletedAt) {
+        const { query } = _createQuery(this as any, UpdateQueryBuilder);
+        query.update({
+          [description.SoftDelete.DeletedAt]: converter.toDB(new Date()),
+        });
+        return query;
+      } else {
+        const { query } = _createQuery(this as any, DeleteQueryBuilder);
+        return query;
+      }
+    }
     if (description.SoftDelete?.DeletedAt) {
       const data = Array.isArray(pks) ? pks : [pks];
       const { query } = _createQuery(this as any, UpdateQueryBuilder);
-      await query
+
+      return query
         .whereIn(
           description.PrimaryKey,
-          data.map(d => d.PrimaryKeyValue),
+          data
         )
         .update({
-          [description.SoftDelete.DeletedAt]: new Date(),
+          [description.SoftDelete.DeletedAt]: converter.toDB(new Date()),
         });
     } else {
       const { query } = _createQuery(this as any, DeleteQueryBuilder);
-      await query.whereIn(description.PrimaryKey, Array.isArray(pks) ? pks : [pks]);
+      return query.whereIn(description.PrimaryKey, Array.isArray(pks) ? pks : [pks]);
     }
   },
 

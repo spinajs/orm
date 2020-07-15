@@ -1,4 +1,5 @@
 import { ModelBase } from './model';
+import { isConstructor } from '@spinajs/di';
 
 export abstract class ModelHydrator {
   public abstract hydrate(target: any, values: any): void;
@@ -14,7 +15,7 @@ export class OneToOneRelationHydrator extends ModelHydrator {
     for (const [key, val] of descriptor.Relations) {
       if (values[key] != null) {
         const entity = target as any;
-        entity[key] = new val.TargetModel();
+        entity[key] = !isConstructor(val.TargetModel) ? new ((val.TargetModel as any)())() : new (val.TargetModel as any)();
         entity[key].hydrate(values[key]);
 
         delete (target as any)[val.ForeignKey];

@@ -243,6 +243,8 @@ export enum RelationType {
   ManyToMany,
 }
 
+export type ForwardRefFunction = () => Constructor<ModelBase<any>>;
+
 export interface IRelationDescriptor {
   /**
    * Name of relations, defaults for property name in model that owns relation
@@ -257,7 +259,7 @@ export interface IRelationDescriptor {
   /**
    * Relation model (  foreign )
    */
-  TargetModel: Constructor<ModelBase<any>>;
+  TargetModel: Constructor<ModelBase<any>> | ForwardRefFunction;
 
   /**
    * Relation owner
@@ -370,6 +372,9 @@ export interface IColumnDescriptor {
    * Is uuid generated column
    */
   Uuid: boolean;
+
+  // should be skipped when serializing to json
+  Ignore: boolean;
 }
 
 /**
@@ -595,11 +600,11 @@ export interface IJoinBuilder {
 
 export interface ISelectQueryBuilder
   extends IColumnsBuilder,
-    IOrderByBuilder,
-    ILimitBuilder,
-    IWhereBuilder,
-    IJoinBuilder,
-    IWithRecursiveBuilder {
+  IOrderByBuilder,
+  ILimitBuilder,
+  IWhereBuilder,
+  IJoinBuilder,
+  IWithRecursiveBuilder {
   min(column: string, as?: string): this;
   max(column: string, as?: string): this;
   count(column: string, as?: string): this;
@@ -758,9 +763,9 @@ export class ValueConverter implements IValueConverter {
 /**
  * Converter for DATETIME field (eg. mysql datetime)
  */
-export class DatetimeValueConverter extends ValueConverter {}
+export class DatetimeValueConverter extends ValueConverter { }
 
 /**
  * Converter for set field (eg. mysql SET)
  */
-export class SetValueConverter extends ValueConverter {}
+export class SetValueConverter extends ValueConverter { }
