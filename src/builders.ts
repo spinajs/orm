@@ -303,6 +303,14 @@ export class OrderByBuilder implements IOrderByBuilder {
     };
   }
 
+  public order(column: string, direction: SORT_ORDER) {
+    this._sort = {
+      column,
+      order: direction,
+    };
+    return this;
+  }
+
   public orderBy(column: string) {
     this._sort = {
       column,

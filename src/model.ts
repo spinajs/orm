@@ -187,7 +187,7 @@ export abstract class ModelBase<T> {
   /**
    * Deletes model from db
    *
-   * @param pk?
+   * @param pk? primary key
    */
   public static destroy(): DeleteQueryBuilder;
   public static destroy(_pk?: any | any[]): Promise<void> | DeleteQueryBuilder {

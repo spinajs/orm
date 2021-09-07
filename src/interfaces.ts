@@ -480,6 +480,7 @@ export interface ILimitBuilder {
 export interface IOrderByBuilder {
   orderBy(column: string): this;
   orderByDescending(column: string): this;
+  order(column: string, direction: SORT_ORDER) : this;
   getSort(): ISort;
 }
 
