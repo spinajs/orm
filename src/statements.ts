@@ -63,6 +63,19 @@ export abstract class WithRecursiveStatement extends QueryStatement {
 }
 
 @NewInstance()
+export abstract class GroupByStatement extends QueryStatement {
+  protected _expr: string | RawQuery;
+
+  constructor(expression: string | RawQuery,tableAlias: string) {
+    super(tableAlias);
+
+    this._expr = expression || null;
+  }
+
+  public abstract build() : IQueryStatementResult;
+}
+
+@NewInstance()
 export abstract class BetweenStatement extends QueryStatement {
   protected _val: any[];
   protected _not: boolean;

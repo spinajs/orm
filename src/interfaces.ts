@@ -480,7 +480,7 @@ export interface ILimitBuilder {
 export interface IOrderByBuilder {
   orderBy(column: string): this;
   orderByDescending(column: string): this;
-  order(column: string, direction: SORT_ORDER) : this;
+  order(column: string, direction: SORT_ORDER): this;
   getSort(): ISort;
 }
 
@@ -557,6 +557,13 @@ export interface IWithRecursiveBuilder {
   withRecursive(recKeyName: string, pkKeyName: string): this;
 }
 
+export interface IGroupByBuilder {
+  GroupStatements: IQueryStatement[];
+
+  clearGroupBy(): this;
+  groupBy(expression: RawQuery | string): this;
+}
+
 export interface IJoinBuilder {
   JoinStatements: IQueryStatement[];
 
@@ -605,7 +612,8 @@ export interface ISelectQueryBuilder
   ILimitBuilder,
   IWhereBuilder,
   IJoinBuilder,
-  IWithRecursiveBuilder {
+  IWithRecursiveBuilder,
+  IGroupByBuilder {
   min(column: string, as?: string): this;
   max(column: string, as?: string): this;
   count(column: string, as?: string): this;
@@ -627,6 +635,11 @@ export interface IQueryCompiler {
 export interface ILimitCompiler {
   limit(builder: ILimitBuilder): ICompilerOutput;
 }
+
+export interface IGroupByCompiler {
+  group(builder: IGroupByBuilder): ICompilerOutput;
+}
+
 
 export interface IRecursiveCompiler {
   recursive(builder: IWithRecursiveBuilder): ICompilerOutput;
@@ -704,6 +717,11 @@ export abstract class ColumnQueryCompiler implements IQueryCompiler {
 
 @NewInstance()
 export abstract class OrderByQueryCompiler implements IQueryCompiler {
+  public abstract compile(): ICompilerOutput;
+}
+
+@NewInstance()
+export abstract class GroupByQueryCompiler implements IQueryCompiler {
   public abstract compile(): ICompilerOutput;
 }
 

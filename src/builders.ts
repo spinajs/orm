@@ -25,6 +25,7 @@ import {
   IBuilderMiddleware,
   IWithRecursiveBuilder,
   ReferentialAction,
+  IGroupByBuilder,
 } from './interfaces';
 import {
   BetweenStatement,
@@ -40,6 +41,7 @@ import {
   ColumnRawStatement,
   JoinStatement,
   WithRecursiveStatement,
+  GroupByStatement,
 } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
@@ -431,6 +433,28 @@ export class RawQuery {
     this._query = query;
     this._bindings = bindings;
   }
+}
+
+export class GroupByBuilder implements IGroupByBuilder {
+  protected _container: Container;
+  protected _groupStatements: IQueryStatement[] = [];
+
+  public get GroupStatements(): IQueryStatement[] {
+    return this._groupStatements;
+  }
+
+  public clearGroupBy(): this {
+    this._groupStatements = [];
+    return this;
+  }
+
+  public groupBy(expression: string | RawQuery): this {
+
+    this._groupStatements.push(this._container.resolve<GroupByStatement>(GroupByStatement, [expression]))
+
+    return this;
+  }
+
 }
 
 export class JoinBuilder implements IJoinBuilder {
@@ -851,13 +875,15 @@ export class SelectQueryBuilder<T = any> extends QueryBuilder<T> {
 
   protected _joinStatements: IQueryStatement[] = [];
 
+  protected _groupStatements: IQueryStatement[] = [];
+
   protected _cteStatement: IQueryStatement;
 
   protected _owner: IOrmRelation;
 
   protected _relations: IOrmRelation[] = [];
 
-  @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder, WithRecursiveBuilder)
+  @use(WhereBuilder, LimitBuilder, OrderByBuilder, ColumnsBuilder, JoinBuilder, WithRecursiveBuilder, GroupByBuilder)
   /// @ts-ignore
   private this: this;
 
