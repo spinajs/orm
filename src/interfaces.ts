@@ -1,6 +1,6 @@
 import { RawQuery } from './builders';
 import { SORT_ORDER, WhereBoolean } from './enums';
-import { IQueryStatement } from './statements';
+import { IQueryStatement, WrapStatement } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
 import { NewInstance } from '@spinajs/di';
@@ -533,9 +533,9 @@ export interface IWhereBuilder {
 
   Op: WhereBoolean;
 
-  where(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
-  orWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
-  andWhere(column: string | boolean | {} | WhereFunction, operator?: any, value?: any): this;
+  where(column: string | boolean | {} | WhereFunction | WrapStatement, operator?: any, value?: any): this;
+  orWhere(column: string | boolean | {} | WhereFunction | WrapStatement, operator?: any, value?: any): this;
+  andWhere(column: string | boolean | {} | WhereFunction | WrapStatement, operator?: any, value?: any): this;
   whereObject(obj: any): this;
   whereNotNull(column: string): this;
   whereNull(column: string): this;

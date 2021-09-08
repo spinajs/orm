@@ -42,6 +42,8 @@ import {
   JoinStatement,
   WithRecursiveStatement,
   GroupByStatement,
+  WrapStatement,
+  Wrap,
 } from './statements';
 import { WhereFunction } from './types';
 import { OrmDriver } from './driver';
@@ -642,7 +644,7 @@ export class WhereBuilder implements IWhereBuilder {
   }
 
   public where(
-    column: string | boolean | WhereFunction | RawQuery | {},
+    column: string | boolean | WhereFunction | RawQuery | WrapStatement | {},
     operator?: WhereOperators | any,
     value?: any,
   ): this {
@@ -676,7 +678,7 @@ export class WhereBuilder implements IWhereBuilder {
     }
 
     // handle simple key = object[key] AND ....
-    if (_.isObject(column)) {
+    if (_.isObject(column) && !(column instanceof Wrap)) {
       return this.whereObject(column);
     }
 
@@ -697,8 +699,12 @@ export class WhereBuilder implements IWhereBuilder {
         throw new InvalidArgument(`value cannot be undefined`);
       }
 
-      if (!_.isString(c)) {
+      if (!_.isString(c) && !(c instanceof Wrap)) {
         throw new InvalidArgument(`column is not of type string.`);
+      }
+
+      if (!(c instanceof Wrap)) {
+        throw new InvalidArgument(`column is not wrapped.`);
       }
 
       if (v === null) {
@@ -706,7 +712,7 @@ export class WhereBuilder implements IWhereBuilder {
       }
 
       self._statements.push(
-        self._container.resolve<WhereStatement>(WhereStatement, [c, WhereOperators.EQ, v, self._tableAlias]),
+        self._container.resolve<WhereStatement>(WhereStatement, [c, WhereOperators.EQ, v, self._tableAlias, this._container]),
       );
 
       return self;
@@ -724,16 +730,20 @@ export class WhereBuilder implements IWhereBuilder {
         throw new InvalidArgument(`operator ${o} is invalid`);
       }
 
-      if (!_.isString(c)) {
+      if (!_.isString(c) && !(c instanceof Wrap)) {
         throw new InvalidArgument(`column is not of type string.`);
       }
 
+      if (!(c instanceof Wrap)) {
+        throw new InvalidArgument(`column is not wrapped.`);
+      }
+      
       if (v === null) {
         return o === WhereOperators.NOT_NULL ? this.whereNotNull(c) : this.whereNull(c);
       }
 
       self._statements.push(
-        self._container.resolve<WhereStatement>(WhereStatement, [c, o, v, self._tableAlias]),
+        self._container.resolve<WhereStatement>(WhereStatement, [c, o, v, self._tableAlias, this._container]),
       );
 
       return this;

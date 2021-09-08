@@ -1,6 +1,6 @@
 import { SelectQueryBuilder, WhereBuilder, RawQuery } from './builders';
 import { ColumnMethods, WhereOperators, JoinMethod } from './enums';
-import { NewInstance } from '@spinajs/di';
+import { NewInstance, Container } from '@spinajs/di';
 import _ from 'lodash';
 import { IColumnDescriptor } from './interfaces';
 
@@ -66,13 +66,13 @@ export abstract class WithRecursiveStatement extends QueryStatement {
 export abstract class GroupByStatement extends QueryStatement {
   protected _expr: string | RawQuery;
 
-  constructor(expression: string | RawQuery,tableAlias: string) {
+  constructor(expression: string | RawQuery, tableAlias: string) {
     super(tableAlias);
 
     this._expr = expression || null;
   }
 
-  public abstract build() : IQueryStatementResult;
+  public abstract build(): IQueryStatementResult;
 }
 
 @NewInstance()
@@ -105,18 +105,54 @@ export abstract class WhereQueryStatement extends QueryStatement {
 
 @NewInstance()
 export abstract class WhereStatement extends QueryStatement {
-  protected _column: string;
+  protected _column: string | Wrap
   protected _operator: WhereOperators;
   protected _value: any;
+  protected _container : Container;
 
-  constructor(column: string, operator: WhereOperators, value: any, tableAlias: string) {
+  constructor(column: string, operator: WhereOperators, value: any, tableAlias: string, container: Container) {
     super(tableAlias);
     this._column = column;
     this._operator = operator;
     this._value = value;
+    this._container = container;
   }
 
   public abstract build(): IQueryStatementResult;
+}
+
+export class Wrap {
+  public Column: string;
+  public Wrapper: Class<WrapStatement>
+
+
+  constructor(column: string, wrapper: Class<WrapStatement>) {
+    this.Column = column;
+    this.Wrapper = wrapper;
+  }
+}
+
+@NewInstance()
+export abstract class WrapStatement {
+  protected _value: any;
+  protected _tableAlias : string;
+
+  constructor(value: any, tableAlias: string) {
+    this._tableAlias = tableAlias;
+    this._value = value;
+  }
+
+  public abstract wrap() : string;
+}
+
+@NewInstance()
+export abstract class DateWrapper extends WrapStatement {
+
+}
+
+@NewInstance()
+export abstract class DateTimeWrapper extends WrapStatement {
+
 }
 
 @NewInstance()

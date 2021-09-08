@@ -10,3 +10,4 @@ export * from './decorators';
 export * from './hydrators';
 export * from './driver';
 export * from './converters';
+export * from './wrappers';
