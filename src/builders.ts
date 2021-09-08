@@ -727,11 +727,11 @@ export class WhereBuilder implements IWhereBuilder {
       }
 
       if (!_.isString(c) && !(c instanceof Wrap)) {
-        throw new InvalidArgument(`column is not of type string.`);
+        throw new InvalidArgument(`column is not of type string or wrapped.`);
       }
-
-      if (!(c instanceof Wrap)) {
-        throw new InvalidArgument(`column is not wrapped.`);
+ 
+      if (v === null) {
+        return this.whereNull(c);
       }
 
       if (v === null) {
