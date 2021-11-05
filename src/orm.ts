@@ -15,6 +15,7 @@ import { ModelBase, MODEL_STATIC_MIXINS, extractModelDescriptor } from './model'
 import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decorators';
 import { OrmDriver } from './driver';
 import { InvalidOperation } from '@spinajs/exceptions';
+import moment from "moment";
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -231,7 +232,28 @@ export class Orm extends AsyncModule {
     callback: (migration: OrmMigration, driver: OrmDriver) => Promise<void>,
     down: boolean,
   ) {
-    let migrations = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
+    const toMigrate = name ? this.Migrations.filter(m => m.name === name) : this.Migrations;
+    const reg = /(.*)_([0-9]{4}_[0-9]{2}_[0-9]{2}-[0-9]{2}_[0-9]{2}_[0-9]{2})\.(.*)/;
+
+    let migrations = toMigrate.map(x => {
+      const match = x.file.match(reg);
+      const created = moment(match[2], "YYYY_MM_DD-HH_mm_ss");
+
+      if (!created.isValid()) {
+        this.Log.warn(`Migration file ${x.file} have invalid name format ( invalid migration date )`);
+        return null;
+      }
+
+      return {
+        created,
+        ...x
+      }
+    }).filter(x => x !== null).sort((a, b) => {
+      if (a.created.isBefore(b.created)) {
+        return -1;
+      }
+      return 1;
+    });
 
     if (down) {
       migrations = migrations.reverse();
@@ -266,7 +288,7 @@ export class Orm extends AsyncModule {
         migrationTable = await connection.tableInfo(migrationTableName);
 
         // tslint:disable-next-line: no-empty
-      } catch {}
+      } catch { }
 
       if (!migrationTable) {
         await connection.schema().createTable(migrationTableName, table => {
