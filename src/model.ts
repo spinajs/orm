@@ -246,7 +246,7 @@ export class ModelBase {
    * Save all changes to db. It creates new entry id db or updates existing one if
    * primary key exists
    */
-  public async save(insertBehaviour: InsertBehaviour = InsertBehaviour.None) {
+  public async insert(insertBehaviour: InsertBehaviour = InsertBehaviour.None) {
     const self = this;
 
     const { query, description } = _createQuery(this.constructor, InsertQueryBuilder);

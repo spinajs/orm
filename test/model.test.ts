@@ -482,7 +482,7 @@ describe("General model tests", () => {
         expect(result.PrimaryKeyValue).to.be.undefined;
     })
 
-    it("Model save should set updated_at", async () => {
+    it("Model update should set updated_at", async () => {
 
         // @ts-ignore
         const orm = await db();
@@ -500,10 +500,29 @@ describe("General model tests", () => {
         const model = new Model1();
         model.PrimaryKeyValue = 1;
 
-        await model.save();
+        await model.update();
 
         expect(model.UpdatedAt).to.be.not.null;
     })
+
+    it("Model should insert", async () => {
+
+         
+        expect(false).to.be.true;
+    })
+
+    it("Model should update on duplicate", async () => {
+
+         
+        expect(false).to.be.true;
+    })
+
+    it("Model should insert array at one query", async () => {
+
+         
+        expect(false).to.be.true;
+    })
+
 
     it("destroy should update deleted_at", async () => {
 
@@ -646,7 +665,7 @@ describe("General model tests", () => {
             Property6: "test"
         });
 
-        await model.save(InsertBehaviour.OnDuplicateIgnore);
+        await model.insert(InsertBehaviour.OnDuplicateIgnore);
 
         expect(typeof model.Id).to.eq('string');
     });
