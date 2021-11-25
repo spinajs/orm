@@ -18,7 +18,7 @@ export interface IOrmRelation {
 }
 
 export abstract class OrmRelation implements IOrmRelation {
-  protected _targetModel: Constructor<ModelBase<any>> | ForwardRefFunction;
+  protected _targetModel: Constructor<ModelBase> | ForwardRefFunction;
   protected _targetModelDescriptor: IModelDescrtiptor;
   protected _relationQuery: SelectQueryBuilder;
 
@@ -57,11 +57,11 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
     return data;
   }
 
-  public modelCreation(_: any): ModelBase<any> {
+  public modelCreation(_: any): ModelBase {
     return null;
   }
 
-  public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+  public async afterHydration(data: ModelBase[]): Promise<any[]> {
     const self = this;
     const pks = data.map(d => {
       if (this._path) {
@@ -74,10 +74,10 @@ class HasManyRelationMiddleware implements IBuilderMiddleware {
       afterData(data: any[]) {
         return data;
       },
-      modelCreation(_: any): ModelBase<any> {
+      modelCreation(_: any): ModelBase {
         return null;
       },
-      async afterHydration(relationData: Array<ModelBase<any>>) {
+      async afterHydration(relationData: ModelBase[]) {
         data.forEach(d => {
           const relData = relationData.filter(
             rd => {
@@ -130,21 +130,21 @@ class BelongsToRelationRecursiveMiddleware implements IBuilderMiddleware {
     return data;
   }
 
-  public modelCreation(_: any): ModelBase<any> {
+  public modelCreation(_: any): ModelBase {
     return null;
   }
 
-  public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+  public async afterHydration(data: ModelBase[]): Promise<any[]> {
     const self = this;
     const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
     const hydrateMiddleware = {
       afterData(data: any[]) {
         return data;
       },
-      modelCreation(_: any): ModelBase<any> {
+      modelCreation(_: any): ModelBase {
         return null;
       },
-      async afterHydration(relationData: Array<ModelBase<any>>) {
+      async afterHydration(relationData: ModelBase[]) {
         const roots = relationData.filter(
           rd => (rd as any)[self._description.ForeignKey] === 0 || (rd as any)[self._description.ForeignKey] === null,
         );
@@ -190,11 +190,11 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
     return data;
   }
 
-  public modelCreation(_: any): ModelBase<any> {
+  public modelCreation(_: any): ModelBase {
     return null;
   }
 
-  public async afterHydration(data: Array<ModelBase<any>>): Promise<any[]> {
+  public async afterHydration(data: ModelBase[]): Promise<any[]> {
     const self = this;
     const pks = data.map(d => (d as any)[this._description.PrimaryKey]);
     const hydrateMiddleware = {
@@ -203,10 +203,10 @@ class HasManyToManyRelationMiddleware implements IBuilderMiddleware {
           Object.assign({}, d[self._description.Name], { JunctionModel: self.pickProps(d, [self._description.Name]) }),
         );
       },
-      modelCreation(_: any): ModelBase<any> {
+      modelCreation(_: any): ModelBase {
         return null;
       },
-      async afterHydration(relationData: Array<ModelBase<any>>) {
+      async afterHydration(relationData: ModelBase[]) {
         data.forEach(d => {
           const relData = relationData.filter(
             rd => (rd as any).JunctionModel[self._description.ForeignKey] === (d as any)[self._description.PrimaryKey],
@@ -261,12 +261,12 @@ class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
     });
   }
 
-  public modelCreation(_: any): ModelBase<any> {
+  public modelCreation(_: any): ModelBase {
     return null;
   }
 
   // tslint:disable-next-line: no-empty
-  public async afterHydration(_data: Array<ModelBase<any>>) { }
+  public async afterHydration(_data: Array<ModelBase>) { }
 
   /**
    * Dynamically sets a deeply nested value in an object.
@@ -313,7 +313,7 @@ export class DiscriminationMapMiddleware implements IBuilderMiddleware {
     return data;
   }
 
-  public modelCreation(data: any): ModelBase<any> {
+  public modelCreation(data: any): ModelBase {
     if (this._description.DiscriminationMap && this._description.DiscriminationMap.Field) {
       const distValue = data[this._description.DiscriminationMap.Field];
       if (distValue && this._description.DiscriminationMap.Models.has(distValue)) {
@@ -328,12 +328,12 @@ export class DiscriminationMapMiddleware implements IBuilderMiddleware {
   }
 
   // tslint:disable-next-line: no-empty
-  public async afterHydration(_data: Array<ModelBase<any>>) { }
+  public async afterHydration(_data: ModelBase[]) { }
 }
 
 @NewInstance()
 export class BelongsToRelation extends OrmRelation {
-  protected _targetModel: Constructor<ModelBase<any>>;
+  protected _targetModel: Constructor<ModelBase>;
   protected _targetModelDescriptor: IModelDescrtiptor;
   protected _relationQuery: SelectQueryBuilder;
 
@@ -389,7 +389,7 @@ export class BelongsToRelation extends OrmRelation {
 
 @NewInstance()
 export class BelongsToRecursiveRelation extends OrmRelation {
-  protected _targetModel: Constructor<ModelBase<any>>;
+  protected _targetModel: Constructor<ModelBase>;
   protected _targetModelDescriptor: IModelDescrtiptor;
   protected _relationQuery: SelectQueryBuilder;
 
@@ -462,7 +462,7 @@ export class OneToManyRelation extends OrmRelation {
 
 @NewInstance()
 export class ManyToManyRelation extends OrmRelation {
-  protected _joinModel: Constructor<ModelBase<any>>;
+  protected _joinModel: Constructor<ModelBase>;
   protected _joinModelDescriptor: IModelDescrtiptor;
   protected _joinQuery: SelectQueryBuilder;
 
@@ -548,13 +548,13 @@ export class ManyToManyRelation extends OrmRelation {
  *
  * It allows to add / remove objects to relation
  */
-export abstract class Relation<R extends ModelBase<any>> extends Array<R> {
+export abstract class Relation<R extends ModelBase> extends Array<R> {
   protected TargetModelDescriptor: IModelDescrtiptor;
 
   protected Orm: Orm;
 
   constructor(
-    protected owner: ModelBase<any>,
+    protected owner: ModelBase,
     protected model: Constructor<R> | ForwardRefFunction,
     protected Relation: IRelationDescriptor,
     objects?: R[],
@@ -613,10 +613,10 @@ export abstract class Relation<R extends ModelBase<any>> extends Array<R> {
   }
 }
 
-export class ManyToManyRelationList<T extends ModelBase<any>> extends Relation<T> {
+export class ManyToManyRelationList<T extends ModelBase> extends Relation<T> {
   public async remove(obj: T | T[]): Promise<void> {
     const self = this;
-    const data = (Array.isArray(obj) ? obj : [obj]).map(d => (d as ModelBase<any>).PrimaryKeyValue);
+    const data = (Array.isArray(obj) ? obj : [obj]).map(d => (d as ModelBase).PrimaryKeyValue);
     const driver = this.Orm.Connections.get(this.TargetModelDescriptor.Connection);
     const jmodelDescriptor = extractModelDescriptor(this.Relation.JunctionModel);
 
@@ -650,16 +650,16 @@ export class ManyToManyRelationList<T extends ModelBase<any>> extends Relation<T
     });
 
     for (const m of relEntities) {
-      await m.save(mode);
+      await m.insert(mode);
     }
 
     this.push(...data);
   }
 }
 
-export class OneToManyRelationList<T extends ModelBase<any>> extends Relation<T> {
+export class OneToManyRelationList<T extends ModelBase> extends Relation<T> {
   public async remove(obj: T | T[]): Promise<void> {
-    const data = (Array.isArray(obj) ? obj : [obj]).map(d => (d as ModelBase<any>).PrimaryKeyValue);
+    const data = (Array.isArray(obj) ? obj : [obj]).map(d => (d as ModelBase).PrimaryKeyValue);
     const driver = this.Orm.Connections.get(this.TargetModelDescriptor.Connection);
 
     if (!driver) {
@@ -682,7 +682,7 @@ export class OneToManyRelationList<T extends ModelBase<any>> extends Relation<T>
     });
 
     for (const m of data) {
-      await m.save(mode);
+      await m.insert(mode);
     }
 
     this.push(...data);
