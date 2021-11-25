@@ -837,12 +837,15 @@ describe("General model tests", () => {
         };
         const spy = sinon.spy(middleware, "afterData");
         const spy2 = sinon.spy(middleware, "afterHydration");
+        const spy3 = sinon.spy(middleware, "modelCreation");
 
 
         await Model1.where({ Id: 1 }).middleware(middleware);
 
         expect(spy.calledOnce).to.be.true;
         expect(spy2.calledOnce).to.be.true;
+        expect(spy3.calledOnce).to.be.true;
+
 
     });
 });

@@ -6,7 +6,7 @@ export abstract class ModelHydrator {
 }
 
 export class OneToOneRelationHydrator extends ModelHydrator {
-  public hydrate<T>(target: ModelBase<T>, values: any): void {
+  public hydrate(target: ModelBase, values: any): void {
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
@@ -25,7 +25,7 @@ export class OneToOneRelationHydrator extends ModelHydrator {
 }
 
 export class DbPropertyHydrator extends ModelHydrator {
-  public hydrate<T>(target: ModelBase<T>, values: any): void {
+  public hydrate(target: ModelBase, values: any): void {
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
@@ -42,7 +42,7 @@ export class DbPropertyHydrator extends ModelHydrator {
 }
 
 export class NonDbPropertyHydrator extends ModelHydrator {
-  public hydrate<T>(target: ModelBase<T>, values: any): void {
+  public hydrate(target: ModelBase, values: any): void {
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
@@ -57,7 +57,7 @@ export class NonDbPropertyHydrator extends ModelHydrator {
 }
 
 export class JunctionModelPropertyHydrator extends ModelHydrator {
-  public hydrate<T>(target: ModelBase<T>, values: any): void {
+  public hydrate(target: ModelBase, values: any): void {
     const descriptor = target.ModelDescriptor;
     if (!descriptor) {
       throw new Error(`cannot hydrate model ${target.constructor.name}, no model descriptor found`);
