@@ -55,7 +55,7 @@ export function extractModelDescriptor(targetOrForward: any): IModelDescrtiptor 
   }
 }
 
-export abstract class ModelBase<T> {
+export class ModelBase {
   /**
    * Gets descriptor for this model. It contains information about relations, orm driver, connection properties,
    * db table attached, column information and others.
@@ -84,20 +84,11 @@ export abstract class ModelBase<T> {
   }
 
   /**
-   * Inserts data to DB
+   * Inserts data to DB.
    *
    * @param _data data to insert
    */
-  public static insert<T extends ModelBase<T>>(_data: T | object): InsertQueryBuilder {
-    throw Error('Not implemented');
-  }
-
-  /**
-   * Inserts multiple data at once to DB
-   *
-   * @param _data data to insert
-   */
-  public static insertBulk<T extends ModelBase<T>>(_data: T[] | object[]): Promise<void> {
+  public static insert<T extends ModelBase>(_data: T | object | T[] | object[]): Promise<void> {
     throw Error('Not implemented');
   }
 
@@ -293,7 +284,7 @@ export abstract class ModelBase<T> {
   /**
    * Gets model data from database and returns as fresh instance.
    */
-  public async fresh(): Promise<T> {
+  public async fresh(): Promise<this> {
     return (this.constructor as any).find(this.PrimaryKeyValue);
   }
 
@@ -394,45 +385,46 @@ export const MODEL_STATIC_MIXINS = {
 
     return query;
   },
-
-  insertBulk<T>(data: Array<ModelBase<T> | object>) {
-    const { query } = _createQuery(this, InsertQueryBuilder);
-
-    return query.values(
-      data.map(d => {
-        if (d instanceof ModelBase) {
-          return d.dehydrate();
-        }
-
-        return d;
-      }),
-    );
-  },
-
+  
   /**
    * Try to insert new value
    */
-  insert<T>(data: ModelBase<T> | object) {
+  insert<T extends typeof ModelBase>(this: T, data: InstanceType<T> | Partial<InstanceType<T>> | Array<InstanceType<T>> | Array<Partial<InstanceType<T>>>) {
     const { query } = _createQuery(this, InsertQueryBuilder);
 
-    if (data instanceof ModelBase) {
-      query.values(data.dehydrate());
+    if (Array.isArray(data)) {
+      query.values((data as Array<InstanceType<T>>).map(d => {
+        if (d instanceof ModelBase) {
+          return d.dehydrate();
+        }
+        return d;
+      }));
     } else {
-      query.values(data);
+      if (data instanceof ModelBase) {
+        query.values(data.dehydrate());
+      } else {
+        query.values(data);
+      }
     }
 
     return query;
   },
 
-  async find(pks: any | any[]): Promise<any> {
+  async find<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
     query.select('*');
 
-    return (await Array.isArray(pks)) ? query.whereIn(pkey, pks) : query.where(pkey, pks).first();
+    if (Array.isArray(pks)) {
+      query.whereIn(pkey, pks);
+    } else {
+      query.where(pkey, pks)
+    }
+
+    return await query;
   },
 
-  async findOrFail<T>(pks: any | any[]): Promise<T | T[]> {
+  async findOrFail<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
     const middleware = {
@@ -444,49 +436,37 @@ export const MODEL_STATIC_MIXINS = {
         return data;
       },
 
-      modelCreation(_: any): ModelBase<any> {
+      modelCreation(_: any): ModelBase {
         return null;
       },
 
       // tslint:disable-next-line: no-empty
-      async afterHydration(_data: Array<ModelBase<any>>) { },
+      async afterHydration(_data: ModelBase[]) { },
     };
 
     query.select('*');
 
     if (Array.isArray(pks)) {
       query.whereIn(pkey, pks);
-      query.middleware(middleware);
-
-      return await query;
     } else {
-      return await query.where(pkey, pks).firstOrFail<T>();
+      query.where(pkey, pks);
     }
+
+    query.middleware(middleware);
+    return await query;
   },
 
-  destroy(pks?: any | any[]): Promise<any> | DeleteQueryBuilder | UpdateQueryBuilder{
+  async destroy(pks: any | any[]): Promise<void> {
     const description = _descriptor(this as any);
     const orm = DI.get<Orm>(Orm);
     const driver = orm.Connections.get(description.Connection);
     const converter = driver.Container.resolve(DatetimeValueConverter);
+    const data = Array.isArray(pks) ? pks : [pks];
 
-    if (!pks) {
-      if (description.SoftDelete?.DeletedAt) {
-        const { query } = _createQuery(this as any, UpdateQueryBuilder);
-        query.update({
-          [description.SoftDelete.DeletedAt]: converter.toDB(new Date()),
-        });
-        return query;
-      } else {
-        const { query } = _createQuery(this as any, DeleteQueryBuilder);
-        return query;
-      }
-    }
     if (description.SoftDelete?.DeletedAt) {
-      const data = Array.isArray(pks) ? pks : [pks];
       const { query } = _createQuery(this as any, UpdateQueryBuilder);
 
-      return query
+      await query
         .whereIn(
           description.PrimaryKey,
           data
@@ -496,51 +476,51 @@ export const MODEL_STATIC_MIXINS = {
         });
     } else {
       const { query } = _createQuery(this as any, DeleteQueryBuilder);
-      return query.whereIn(description.PrimaryKey, Array.isArray(pks) ? pks : [pks]);
+      await query.whereIn(description.PrimaryKey, data);
     }
   },
 
-  async create(data?: any): Promise<any> {
+  async create<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const entity = new (Function.prototype.bind.apply(this))(data);
-    await (entity as ModelBase<any>).save();
+    await (entity as ModelBase).save();
     return entity;
   },
 
-  async firstOrCreate(data?: any): Promise<any> {
+  async firstOrCreate<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain
-    if (data[description.PrimaryKey]) {
-      query.where(description.PrimaryKey, data[description.PrimaryKey]);
+    if ((data as any)[description.PrimaryKey]) {
+      query.where(description.PrimaryKey, (data as any)[description.PrimaryKey]);
     }
 
     // check for all unique columns ( unique constrain )
     description.Columns.filter(c => c.Unique).forEach(c => {
-      query.orWhere(c, data[c.Name]);
+      query.andWhere(c, (data as any)[c.Name]);
     });
 
     let entity = (await query.first()) as any;
 
     if (!entity) {
       entity = new (Function.prototype.bind.apply(this))(data);
-      await (entity as ModelBase<any>).save();
+      await (entity as ModelBase).save();
       return entity;
     }
 
     return entity;
   },
 
-  async firstOrNew(data?: any): Promise<any> {
+  async firstOrNew<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain
-    if (data[description.PrimaryKey]) {
-      query.where(description.PrimaryKey, data[description.PrimaryKey]);
+    if ((data as any)[description.PrimaryKey]) {
+      query.where(description.PrimaryKey, (data as any)[description.PrimaryKey]);
     }
 
     // check for all unique columns ( unique constrain )
     description.Columns.filter(c => c.Unique).forEach(c => {
-      query.orWhere(c, data[c.Name]);
+      query.andWhere(c, (data as any)[c.Name]);
     });
 
     let entity = (await query.first()) as any;
