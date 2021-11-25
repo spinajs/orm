@@ -4,7 +4,7 @@ import { ModelBase } from "../../../src/model";
 @Connection("SampleConnection1")
 @Model("TestTable2")
 // @ts-ignore
-export class Model2 extends ModelBase<Model2>
+export class Model2 extends ModelBase
 {
     @Primary()
     public Id: number;

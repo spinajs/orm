@@ -5,7 +5,7 @@ import { ModelBase } from "../../../src/model";
 @Connection("sqlite")
 @Model("RelationRecursive")
 // @ts-ignore
-export class RelationRecursive extends ModelBase<RelationModel2>
+export class RelationRecursive extends ModelBase
 {
     @Primary()
     public Id: number;

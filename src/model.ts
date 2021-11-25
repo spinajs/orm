@@ -11,7 +11,7 @@ import {
   InsertQueryBuilder,
 } from './builders';
 import { WhereOperators } from './enums';
-import { DI, isConstructor } from '@spinajs/di';
+import { DI, isConstructor, AsyncModule } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
@@ -79,7 +79,7 @@ export class ModelBase {
   /**
    * Get all data from db
    */
-  public static all<T>(_page?: number, _perPage?: number): SelectQueryBuilder<T> {
+  public static all<T extends typeof ModelBase>(this: T, _page?: number, _perPage?: number): SelectQueryBuilder<Array<InstanceType<T>>> {
     throw Error('Not implemented');
   }
 
@@ -88,7 +88,7 @@ export class ModelBase {
    *
    * @param _data data to insert
    */
-  public static insert<T extends ModelBase>(_data: T | object | T[] | object[]): Promise<void> {
+  public static insert<T extends typeof ModelBase>(this: T, _data: InstanceType<T> | Partial<InstanceType<T>> | Array<InstanceType<T>> | Array<Partial<InstanceType<T>>>): Promise<void> {
     throw Error('Not implemented');
   }
 
@@ -101,11 +101,11 @@ export class ModelBase {
    *
    * @returns {SelectQueryBuilder} fluent query builder to add more conditions if needed
    */
-  public static where<T>(
+  public static where<T extends typeof ModelBase>(this: T,
     _column: string | boolean | WhereFunction | RawQuery | {},
     _operator?: WhereOperators | any,
     _value?: any,
-  ): SelectQueryBuilder<T> {
+  ): SelectQueryBuilder<Array<InstanceType<T>>> {
     throw Error('Not implemented');
   }
 
@@ -114,14 +114,12 @@ export class ModelBase {
    *
    * @param _data data to set
    */
-  public static update(_data: object): UpdateQueryBuilder {
+  public static update<T extends typeof ModelBase>(this: T, _data: Partial<InstanceType<T>>): UpdateQueryBuilder {
     throw Error('Not implemented');
   }
 
-  public static find<T>(pks: any[]): Promise<T[]>;
-  public static find<T>(pks: any): Promise<T>;
   // @ts-ignore
-  public static find<T>(pks: any | any[]): Promise<T> {
+  public static find<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
     throw Error('Not implemented');
   }
 
@@ -130,7 +128,7 @@ export class ModelBase {
    *
    * @param _pk pk to find
    */
-  public static findOrFail<T>(_pk: any): Promise<T> {
+  public static findOrFail<T extends typeof ModelBase>(this: T, _pk: any): Promise<Array<InstanceType<T>>> {
     throw Error('Not implemented');
   }
 
@@ -138,7 +136,7 @@ export class ModelBase {
    * Creates raw query on this model. used for quering db for partial data or to perform some kind of operations
    * that dont need full ORM model to involve
    */
-  public static query<T>(): SelectQueryBuilder<T> {
+  public static query<T>(this: T): SelectQueryBuilder<T> {
     throw Error('Not implemented');
   }
 
@@ -149,7 +147,7 @@ export class ModelBase {
    *
    * @param {any} data - model width data to check
    */
-  public static firstOrCreate<T>(_pk: any, _data?: any): Promise<T> {
+  public static firstOrCreate<T extends typeof ModelBase>(this: T, _pk: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -158,7 +156,7 @@ export class ModelBase {
    *
    * @param {any} data - initial model data
    */
-  public static create<T>(_data?: any): Promise<T> {
+  public static create<T extends typeof ModelBase>(this: T, _data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -169,7 +167,7 @@ export class ModelBase {
    *
    * @param {any} data - model to check
    */
-  public static firstOrNew<T>(_data?: any): Promise<T> {
+  public static firstOrNew<T extends typeof ModelBase>(this: T, pk?: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -180,13 +178,13 @@ export class ModelBase {
    *
    * @param pk? primary key
    */
-  public static destroy(): DeleteQueryBuilder;
-  public static destroy(_pk?: any | any[]): Promise<void> | DeleteQueryBuilder {
+
+  public static destroy(_pk?: any | any[]): Promise<void> {
     throw Error('Not implemented');
   }
 
   constructor(data?: any) {
-    this.defaults();
+    this.setDefaults();
 
     if (data) {
       Object.assign(this, data);
@@ -198,14 +196,14 @@ export class ModelBase {
    *
    * @param data data to fill
    */
-  public hydrate(data: any) {
+  public hydrate(data: Partial<this>) {
     DI.resolve(Array.ofType(ModelHydrator)).forEach(h => h.hydrate(this, data));
   }
 
   /**
    * Extracts all data from model. It takes only properties that exists in DB
    */
-  public dehydrate() {
+  public dehydrate(): Partial<this> {
     const obj = {};
 
     this.ModelDescriptor.Columns?.forEach(c => {
@@ -234,50 +232,51 @@ export class ModelBase {
     await (this.constructor as any).destroy(this.PrimaryKeyValue);
   }
 
+  public async update() {
+    const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
+
+    if (this.ModelDescriptor.Timestamps.UpdatedAt) {
+      (this as any)[this.ModelDescriptor.Timestamps.UpdatedAt] = new Date();
+    }
+
+    await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
+  }
+
   /**
    * Save all changes to db. It creates new entry id db or updates existing one if
    * primary key exists
    */
   public async save(insertBehaviour: InsertBehaviour = InsertBehaviour.None) {
     const self = this;
-    if (this.PrimaryKeyValue) {
-      const { query } = _createQuery(this.constructor, UpdateQueryBuilder);
 
-      if (this.ModelDescriptor.Timestamps.UpdatedAt) {
-        (this as any)[this.ModelDescriptor.Timestamps.UpdatedAt] = new Date();
-      }
+    const { query, description } = _createQuery(this.constructor, InsertQueryBuilder);
 
-      await query.update(this.dehydrate()).where(this.PrimaryKeyName, this.PrimaryKeyValue);
+    switch (insertBehaviour) {
+      case InsertBehaviour.OnDuplicateIgnore:
+        query.ignore();
+        break;
+      case InsertBehaviour.OnDuplicateUpdate:
+        query.onDuplicate().update(description.Columns.filter(c => !c.PrimaryKey).map(c => c.Name));
+        break;
+    }
+
+    const id = await query.values(this.dehydrate());
+
+    // ignore fired, we dont have insert ID
+    if (insertBehaviour !== InsertBehaviour.None && (id as any) === 0 && !this.PrimaryKeyValue) {
+      const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
+      const idRes = await query
+        .columns([this.PrimaryKeyName])
+        .where(function () {
+          description.Columns.filter(c => c.Unique).forEach(c => {
+            this.where(c, (self as any)[c.Name]);
+          });
+        })
+        .first();
+
+      this.PrimaryKeyValue = (idRes as any)[this.PrimaryKeyName];
     } else {
-      const { query, description } = _createQuery(this.constructor, InsertQueryBuilder);
-
-      switch (insertBehaviour) {
-        case InsertBehaviour.OnDuplicateIgnore:
-          query.ignore();
-          break;
-        case InsertBehaviour.OnDuplicateUpdate:
-          query.onDuplicate().update(description.Columns.filter(c => !c.PrimaryKey).map(c => c.Name));
-          break;
-      }
-
-      const id = await query.values(this.dehydrate());
-
-      // ignore fired, we dont have insert ID
-      if (insertBehaviour !== InsertBehaviour.None && (id as any) === 0 && !this.PrimaryKeyValue) {
-        const { query, description } = _createQuery(this.constructor, SelectQueryBuilder, false);
-        const idRes = await query
-          .columns([this.PrimaryKeyName])
-          .where(function () {
-            description.Columns.filter(c => c.Unique).forEach(c => {
-              this.where(c, (self as any)[c.Name]);
-            });
-          })
-          .first();
-
-        this.PrimaryKeyValue = (idRes as any)[this.PrimaryKeyName];
-      } else {
-        this.PrimaryKeyValue = id;
-      }
+      this.PrimaryKeyValue = id;
     }
   }
 
@@ -291,7 +290,7 @@ export class ModelBase {
   /**
    * sets default values for model. values are taken from DB default column prop
    */
-  protected defaults() {
+  protected setDefaults() {
     this.ModelDescriptor.Columns?.forEach(c => {
       if (c.Uuid) {
         (this as any)[c.Name] = uuidv4();
@@ -370,7 +369,7 @@ export const MODEL_STATIC_MIXINS = {
     return query.where(column, operator, value);
   },
 
-  update(data: object): UpdateQueryBuilder {
+  update<T extends typeof ModelBase>(data: Partial<InstanceType<T>>): UpdateQueryBuilder {
     const { query } = _createQuery(this as any, UpdateQueryBuilder);
     return query.update(data);
   },
@@ -385,7 +384,7 @@ export const MODEL_STATIC_MIXINS = {
 
     return query;
   },
-  
+
   /**
    * Try to insert new value
    */
@@ -486,13 +485,12 @@ export const MODEL_STATIC_MIXINS = {
     return entity;
   },
 
-  async firstOrCreate<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  async firstOrCreate<T extends typeof ModelBase>(this: T, pk: any, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain
-    if ((data as any)[description.PrimaryKey]) {
-      query.where(description.PrimaryKey, (data as any)[description.PrimaryKey]);
-    }
+    query.where(description.PrimaryKey, pk);
+
 
     // check for all unique columns ( unique constrain )
     description.Columns.filter(c => c.Unique).forEach(c => {
@@ -510,13 +508,11 @@ export const MODEL_STATIC_MIXINS = {
     return entity;
   },
 
-  async firstOrNew<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  async firstOrNew<T extends typeof ModelBase>(this: T, pk: any, data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain
-    if ((data as any)[description.PrimaryKey]) {
-      query.where(description.PrimaryKey, (data as any)[description.PrimaryKey]);
-    }
+    query.where(description.PrimaryKey, pk);
 
     // check for all unique columns ( unique constrain )
     description.Columns.filter(c => c.Unique).forEach(c => {

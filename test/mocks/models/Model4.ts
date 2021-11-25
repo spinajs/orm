@@ -7,7 +7,7 @@ import { Relation } from "../../../src/relations";
 @Connection("sqlite")
 @Model("TestTable4")
 // @ts-ignore
-export class Model4 extends ModelBase<Model4>
+export class Model4 extends ModelBase
 {
     @Primary()
     public Id: number;

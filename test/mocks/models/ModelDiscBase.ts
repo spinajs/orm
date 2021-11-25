@@ -8,7 +8,7 @@ import { ModelDisc2 } from "./ModelDisc2";
 @Model("Discrimination")
 @DiscriminationMap("disc_key", [{ Key: "base", Value: ModelDiscBase }, { Key: "one", Value: ModelDisc1 }, { Key: "two", Value: ModelDisc2 }])
 // @ts-ignore
-export class ModelDiscBase extends ModelBase<ModelDiscBase>
+export class ModelDiscBase extends ModelBase
 {
     @Primary()
     public Id: number;

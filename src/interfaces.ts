@@ -229,12 +229,12 @@ export interface IDiscriminationMap {
   /**
    * Field values mapped for proper models
    */
-  Models: Map<string, Constructor<ModelBase<any>>>;
+  Models: Map<string, Constructor<ModelBase>>;
 }
 
 export interface IDiscriminationEntry {
   Key: string;
-  Value: Constructor<ModelBase<any>>;
+  Value: Constructor<ModelBase>;
 }
 
 export enum RelationType {
@@ -243,7 +243,7 @@ export enum RelationType {
   ManyToMany,
 }
 
-export type ForwardRefFunction = () => Constructor<ModelBase<any>>;
+export type ForwardRefFunction = () => Constructor<ModelBase>;
 
 export interface IRelationDescriptor {
   /**
@@ -259,12 +259,12 @@ export interface IRelationDescriptor {
   /**
    * Relation model (  foreign )
    */
-  TargetModel: Constructor<ModelBase<any>> | ForwardRefFunction;
+  TargetModel: Constructor<ModelBase> | ForwardRefFunction;
 
   /**
    * Relation owner
    */
-  SourceModel: Constructor<ModelBase<any>>;
+  SourceModel: Constructor<ModelBase>;
 
   /**
    * Relation foreign key (one to one, one to many)
@@ -279,7 +279,7 @@ export interface IRelationDescriptor {
   /**
    * Used in many to many relations, model for join table
    */
-  JunctionModel?: Constructor<ModelBase<any>>;
+  JunctionModel?: Constructor<ModelBase>;
 
   /**
    * Join table foreign keys, defaults to auto generated field names. Can be override.
@@ -296,7 +296,7 @@ export interface IRelationDescriptor {
 export interface IJunctionProperty {
   Name: string;
 
-  Model: Constructor<ModelBase<any>>;
+  Model: Constructor<ModelBase>;
 }
 
 /**
@@ -735,7 +735,7 @@ export abstract class GroupByQueryCompiler implements IQueryCompiler {
 export interface IBuilderMiddleware {
   /**
    *
-   * Executed AFTER query is executed in DB and fetcher raw data
+   * Executed AFTER query is executed in DB and raw data is fetched
    * Use it to transform DB data before everything else
    *
    * @param data raw data fetched from DB
@@ -749,14 +749,14 @@ export interface IBuilderMiddleware {
    *
    * @param data raw data to create
    */
-  modelCreation(data: any): ModelBase<any>;
+  modelCreation(data: any): ModelBase;
 
   /**
    * executed after model was created ( all returned data by query is executed)
    *
    * @param data hydrated data. Models are created and hydrated with data
    */
-  afterHydration(data: Array<ModelBase<any>>): Promise<any[] | void>;
+  afterHydration(data: ModelBase[]): Promise<any[] | void>;
 }
 
 export class ValueConverter implements IValueConverter {

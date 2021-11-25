@@ -166,7 +166,7 @@ export class Orm extends AsyncModule {
    *
    * @param model model to register
    */
-  protected registerModel<T extends ModelBase<any>>(model: Class<T>) {
+  protected registerModel<T extends ModelBase>(model: Class<T>) {
     this.Models.push({
       file: `${model.name}.registered`,
       name: model.name,

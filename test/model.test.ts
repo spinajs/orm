@@ -148,7 +148,7 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.all<Model1>();
+        const result = await Model1.all();
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnceWith("SELECT * FROM model1", [])).to.be.true;
@@ -175,7 +175,8 @@ describe("General model tests", () => {
                     Converter: null,
                     Schema: "sqlite",
                     Unique: false,
-                    Uuid: false
+                    Uuid: false,
+                    Ignore: false
                 }
             ]);
         }));
@@ -217,7 +218,8 @@ describe("General model tests", () => {
                     Converter: null,
                     Schema: "sqlite",
                     Unique: false,
-                    Uuid: false
+                    Uuid: false,
+                    Ignore: false
                 }
             ]);
         }));
@@ -237,7 +239,7 @@ describe("General model tests", () => {
 
         const fromDb = sinon.spy(FakeConverter.prototype, "fromDB");
 
-        await Model1.find<Model1>(1);
+        await Model1.find(1);
 
         expect(fromDb.called).to.be.true;
         expect(fromDb.returnValues[0]).to.be.not.null;
@@ -259,7 +261,7 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.find<Model1>(1);
+        const result = await Model1.find(1);
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnce).to.be.true;
@@ -284,7 +286,7 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.find<Model1>([1, 2]);
+        const result = await Model1.find([1, 2]);
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnce).to.be.true;
@@ -310,7 +312,7 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.findOrFail<Model1>(1);
+        const result = await Model1.findOrFail(1);
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnce).to.be.true;
@@ -332,7 +334,7 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        expect(Model1.findOrFail<Model1>(1)).to.be.rejected;
+        expect(Model1.findOrFail(1)).to.be.rejected;
     })
 
     it("destroy mixin should work", async () => {
@@ -398,7 +400,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate<Model1>(1);
+        const result = await Model1.firstOrCreate(1);
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -428,7 +430,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate<Model1>({ Bar: "hello" });
+        const result = await Model1.firstOrCreate(1, { Bar: "hello" });
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -451,10 +453,12 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        const result = await Model1.firstOrNew<Model1>({ Id: 666 });
+        const result = await Model1.firstOrNew(666, { Bar: "hello" });
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
-        expect(result.PrimaryKeyValue).to.eq(666);;
+        expect(result.PrimaryKeyValue).to.eq(666);
+        expect(result.Bar).to.eq("hello");
+
     });
 
     it("firstOrNew should work", async () => {
@@ -471,7 +475,7 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        const result = await Model1.firstOrNew<Model1>(1);
+        const result = await Model1.firstOrNew(1);
         expect(execute.calledOnce).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -547,7 +551,8 @@ describe("General model tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             },
             {
                 Type: "VARCHAR",
@@ -563,7 +568,8 @@ describe("General model tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: true,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             }]);
         }));
 
@@ -594,7 +600,8 @@ describe("General model tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             },
             {
                 Type: "VARCHAR",
@@ -610,7 +617,8 @@ describe("General model tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: true,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             }]);
         }));
 
@@ -780,7 +788,7 @@ describe("General model tests", () => {
         @Connection("sqlite")
         @Model("TestTable1")
         // @ts-ignore
-        class Test extends ModelBase<Test>{
+        class Test extends ModelBase{
 
         }
 
@@ -822,10 +830,10 @@ describe("General model tests", () => {
             afterData(data: any[]) {
                 return data;
             },
-            modelCreation(_: any): ModelBase<any> { return null; },
+            modelCreation(_: any): ModelBase { return null; },
 
             // tslint:disable-next-line: no-empty
-            async afterHydration(_data: Array<ModelBase<any>>) { }
+            async afterHydration(_data: ModelBase[]) { }
         };
         const spy = sinon.spy(middleware, "afterData");
         const spy2 = sinon.spy(middleware, "afterHydration");
@@ -880,7 +888,8 @@ describe("Model discrimination tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             },
             {
                 Type: "VARCHAR",
@@ -896,7 +905,8 @@ describe("Model discrimination tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             }, {
                 Type: "VARCHAR",
                 MaxLength: 0,
@@ -911,7 +921,8 @@ describe("Model discrimination tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             }]);
         }));
     });
