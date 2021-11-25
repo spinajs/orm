@@ -67,14 +67,14 @@ function isWhereOperator(val: any) {
 export class Builder<T = any> {
   protected _driver: OrmDriver;
   protected _container: Container;
-  protected _model?: Constructor<ModelBase<any>>;
+  protected _model?: Constructor<ModelBase>;
 
   protected _nonSelect: boolean;
   protected _queryContext: QueryContext;
   protected _middlewares: IBuilderMiddleware[] = [];
   protected _asRaw: boolean;
 
-  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
+  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase>) {
     this._driver = driver;
     this._container = container;
     this._model = model;
@@ -161,7 +161,7 @@ export class QueryBuilder<T = any> extends Builder<T> implements IQueryBuilder {
   protected _tableAlias: string;
   protected _schema: string;
 
-  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase<any>>) {
+  constructor(container: Container, driver: OrmDriver, model?: Constructor<ModelBase>) {
     super(container, driver, model);
   }
 
@@ -341,7 +341,7 @@ export class ColumnsBuilder implements IColumnsBuilder {
   protected _container: Container;
   protected _columns: IQueryStatement[];
   protected _tableAlias: string;
-  protected _model?: Constructor<ModelBase<any>>;
+  protected _model?: Constructor<ModelBase>;
 
   constructor() {
     this._columns = [];

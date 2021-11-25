@@ -25,7 +25,7 @@ const MIGRATION_TABLE_NAME = 'spinajs_migration';
 
 export class Orm extends AsyncModule {
   @ListFromFiles('/**/!(*.d).{ts,js}', 'system.dirs.models')
-  public Models: Array<ClassInfo<ModelBase<any>>>;
+  public Models: Array<ClassInfo<ModelBase>>;
 
   @ListFromFiles('/**/!(*.d).{ts,js}', 'system.dirs.migrations')
   public Migrations: Array<ClassInfo<OrmMigration>>;
