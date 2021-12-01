@@ -16,6 +16,7 @@ import { MIGRATION_DESCRIPTION_SYMBOL, MODEL_DESCTRIPTION_SYMBOL } from './decor
 import { OrmDriver } from './driver';
 import { InvalidOperation } from '@spinajs/exceptions';
 import moment from "moment";
+import { OrmException } from './exceptions';
 
 /**
  * Used to exclude sensitive data to others. eg. removed password field from cfg
@@ -237,11 +238,15 @@ export class Orm extends AsyncModule {
 
     let migrations = toMigrate.map(x => {
       const match = x.file.match(reg);
+
+      if (match.length !== 2) {
+        throw new OrmException(`Migration file name have invalid format ( expected: some_name_YYYY_MM_DD-HH_mm_ss got ${x.file})`);
+      }
+
       const created = moment(match[2], "YYYY_MM_DD-HH_mm_ss");
 
       if (!created.isValid()) {
-        this.Log.warn(`Migration file ${x.file} have invalid name format ( invalid migration date )`);
-        return null;
+        throw new OrmException(`Migration file ${x.file} have invalid name format ( invalid migration date )`)
       }
 
       return {
