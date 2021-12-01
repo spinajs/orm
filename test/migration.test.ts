@@ -10,7 +10,8 @@ import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, DbPropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1_2021_12_01-12_00_00";
-import { OrmDriver} from "../src/driver";
+import { Migration2 } from "./mocks/migrations/Migration1_2021_12_02-12_00_00";
+import { OrmDriver } from "../src/driver";
 
 const expect = chai.expect;
 
@@ -87,7 +88,7 @@ describe("Orm migrations", () => {
                     }
                 },
                 db: {
-                    Migration:{
+                    Migration: {
                         Startup: true,
                     },
                     Connections: [
@@ -122,9 +123,36 @@ describe("Orm migrations", () => {
         const orm = await db();
 
         const up = sinon.stub(Migration1.prototype, "up");
+        const up2 = sinon.stub(Migration2.prototype, "up");
         await orm.migrateUp();
 
         expect(up.calledOnceWith(orm.Connections.get("sqlite"))).to.be.true;
+        expect(up2.calledOnceWith(orm.Connections.get("sqlite"))).to.be.true;
+
+    })
+
+    it("Should run migration in proper order up", async () => {
+        // @ts-ignore
+        const orm = await db();
+
+        const spy1 = sinon.spy(Migration1.prototype, "up");
+        const spy2 = sinon.spy(Migration2.prototype, "up");
+
+        await orm.migrateUp();
+
+        expect(spy1.calledBefore(spy2));
+    })
+
+    it("Should run migration in proper order down", async() =>{
+        // @ts-ignore
+        const orm = await db();
+
+        const spy1 = sinon.spy(Migration1.prototype, "up");
+        const spy2 = sinon.spy(Migration2.prototype, "up");
+
+        await orm.migrateDown();
+
+        expect(spy1.calledAfter(spy2));
     })
 
     it("Should register migration programatically", async () => {
@@ -146,7 +174,7 @@ describe("Orm migrations", () => {
                     }
                 },
                 db: {
-                    Migration:{
+                    Migration: {
                         Startup: true,
                     },
                     Connections: [
@@ -167,12 +195,12 @@ describe("Orm migrations", () => {
         @Migration("sqlite")
         // @ts-ignore
         class Test extends OrmMigration {
-           
-            // tslint:disable-next-line: no-empty
-            public async up(_: OrmDriver) {} 
 
             // tslint:disable-next-line: no-empty
-            public async down(_: OrmDriver) {} 
+            public async up(_: OrmDriver) { }
+
+            // tslint:disable-next-line: no-empty
+            public async down(_: OrmDriver) { }
 
         }
 
