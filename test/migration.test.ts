@@ -9,8 +9,8 @@ import { FakeSqliteDriver, FakeSelectQueryCompiler, FakeDeleteQueryCompiler, Fak
 import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, DbPropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
-import { Migration1 } from "./mocks/migrations/Migration1_2021_12_01-12_00_00";
-import { Migration2 } from "./mocks/migrations/Migration1_2021_12_02-12_00_00";
+import { Migration1 } from "./mocks/migrations/Migration1_2021_12_01_12_00_00";
+import { Migration2 } from "./mocks/migrations/Migration1_2021_12_02_12_00_00";
 import { OrmDriver } from "../src/driver";
 
 const expect = chai.expect;
