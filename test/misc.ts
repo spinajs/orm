@@ -94,7 +94,12 @@ export class FakeSqliteDriver extends OrmDriver {
         this.Container = _container;
     }
 
-    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
+    public transaction(queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
+
+        if(queryOrCallback instanceof Function){
+            queryOrCallback(this);
+        }
+        
         return;
     }
 }
@@ -130,7 +135,12 @@ export class FakeMysqlDriver extends OrmDriver {
         this.Container = container;
     }
 
-    public transaction(_queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
+    public transaction(queryOrCallback?: QueryBuilder[] | TransactionCallback): Promise<void> {
+        
+        if(queryOrCallback instanceof Function){
+            queryOrCallback(this);
+        }
+        
         return;
     }
 }

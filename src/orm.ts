@@ -23,16 +23,17 @@ import { OrmException } from './exceptions';
  */
 const CFG_PROPS = ['Database', 'User', 'Host', 'Port', 'Filename', 'Driver', 'Name'];
 const MIGRATION_TABLE_NAME = 'spinajs_migration';
-const MIGRATION_FILE_REGEXP = /(.*)_([0-9]{4}_[0-9]{2}_[0-9]{2}-[0-9]{2}_[0-9]{2}_[0-9]{2})\.(.*)/;
+const MIGRATION_FILE_REGEXP = /(.*)_([0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]{2})\.(.*)/;
+const MIGRATION_TYPE_REGEXP = /(.*)_([0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]{2})/;
 
 function migrationFileTypeMatcher(name: string) {
-  const match = name.match(MIGRATION_FILE_REGEXP);
+  const match = name.match(MIGRATION_TYPE_REGEXP);
 
-  if (match.length !== 2) {
+  if (match === null || match.length !== 3) {
     throw new OrmException(`Invalid migration file name ${name}, expected: ${name}_YYYY_MM_DD_HH_mm_ss`);
   }
 
-  return match[0];
+  return match[1];
 }
 
 export class Orm extends AsyncModule {
@@ -196,9 +197,12 @@ export class Orm extends AsyncModule {
    * @param model model to register
    */
   protected registerMigration<T extends OrmMigration>(migration: Class<T>) {
+
+    const date = moment().format("YYYY_MM_DD_HH_mm_ss");
+
     this.Migrations.push({
-      file: `${migration.name}.registered`,
-      name: migration.name,
+      file: `${migration.name}_${date}.registered`,
+      name: `${migration.name}_${date}`,
       type: migration,
     });
   }
@@ -249,11 +253,11 @@ export class Orm extends AsyncModule {
     let migrations = toMigrate.map(x => {
       const match = x.file.match(MIGRATION_FILE_REGEXP);
 
-      if (match.length !== 2) {
-        throw new OrmException(`Migration file name have invalid format ( expected: some_name_YYYY_MM_DD-HH_mm_ss got ${x.file})`);
+      if (match === null || match.length !== 4) {
+        throw new OrmException(`Migration file name have invalid format ( expected: some_name_YYYY_MM_DD_HH_mm_ss got ${x.file})`);
       }
 
-      const created = moment(match[2], "YYYY_MM_DD-HH_mm_ss");
+      const created = moment(match[2], "YYYY_MM_DD_HH_mm_ss");
 
       if (!created.isValid()) {
         throw new OrmException(`Migration file ${x.file} have invalid name format ( invalid migration date )`)

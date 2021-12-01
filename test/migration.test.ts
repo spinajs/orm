@@ -10,7 +10,7 @@ import sinon from 'sinon';
 import { SpinaJsDefaultLog, LogModule } from "@spinajs/log";
 import { SelectQueryCompiler, DeleteQueryCompiler, UpdateQueryCompiler, InsertQueryCompiler, DbPropertyHydrator, ModelHydrator, OrmMigration, Migration, TableQueryCompiler, ColumnQueryCompiler, MigrationTransactionMode } from "../src";
 import { Migration1 } from "./mocks/migrations/Migration1_2021_12_01_12_00_00";
-import { Migration2 } from "./mocks/migrations/Migration1_2021_12_02_12_00_00";
+import { Migration2 } from "./mocks/migrations/Migration2_2021_12_02_12_00_00";
 import { OrmDriver } from "../src/driver";
 
 const expect = chai.expect;
@@ -54,7 +54,7 @@ describe("Orm migrations", () => {
         // @ts-ignore
         const orm = await db();
 
-        expect(orm.Migrations).to.be.an("array").with.length(1);
+        expect(orm.Migrations).to.be.an("array").with.length(2);
         expect(orm.Migrations[0].type.name).to.eq("Migration1");
     })
 
@@ -63,7 +63,7 @@ describe("Orm migrations", () => {
         const orm = await db();
 
         const up = sinon.stub(Migration1.prototype, "up");
-        await orm.migrateUp("Migration1");
+        await orm.migrateUp("Migration1_2021_12_01_12_00_00");
 
         expect(up.calledOnceWith(orm.Connections.get("sqlite"))).to.be.true;
     })
@@ -115,7 +115,7 @@ describe("Orm migrations", () => {
         const tr = sinon.stub(FakeSqliteDriver.prototype, "transaction");
         await orm.migrateUp();
 
-        expect(tr.calledOnce).to.be.true;
+        expect(tr.called).to.be.true;
     })
 
     it("ORM should run all migrations", async () => {

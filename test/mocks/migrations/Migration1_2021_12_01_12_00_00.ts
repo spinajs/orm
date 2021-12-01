@@ -7,7 +7,6 @@ export class Migration1 extends OrmMigration {
 
     // tslint:disable-next-line: no-empty
     public async up(_connection: OrmDriver): Promise<void> {
-
     }
 
     // tslint:disable-next-line: no-empty
