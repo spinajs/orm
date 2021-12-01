@@ -70,7 +70,7 @@
     "@spinajs/di": "^1.0.19",
     "@spinajs/exceptions": "^1.0.3",
     "@spinajs/log": "^1.0.8",
-    "@spinajs/reflection": "^1.0.7",
+    "@spinajs/reflection": "^1.0.10",
     "@types/uuid": "^8.0.0",
     "lodash": "^4.17.14",
     "typescript-mix": "^3.1.3",
