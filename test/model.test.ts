@@ -15,6 +15,7 @@ import { IModelDescrtiptor, SelectQueryCompiler, DeleteQueryCompiler, UpdateQuer
 import { SpinaJsDefaultLog, LogModule } from '@spinajs/log';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import chaiSubset from "chai-subset";
 import { RawModel } from './mocks/models/RawModel';
 import { Model, Connection } from '../src/decorators';
 import { ModelBase } from "./../src/model";
@@ -26,6 +27,7 @@ import { Model6 } from './mocks/models/Model6';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
+chai.use(chaiSubset);
 
 
 async function db() {
@@ -83,8 +85,9 @@ describe("General model tests", () => {
         expect(Model1.destroy).to.be.an("function");
         expect(Model1.find).to.be.an("function");
         expect(Model1.findOrFail).to.be.an("function");
-        expect(Model1.firstOrCreate).to.be.an("function");
-        expect(Model1.firstOrNew).to.be.an("function");
+        expect(Model1.getOrFail).to.be.an("function");
+        expect(Model1.getOrCreate).to.be.an("function");
+        expect(Model1.getOrNew).to.be.an("function");
         expect(Model1.where).to.be.an("function");
     })
 
@@ -115,7 +118,7 @@ describe("General model tests", () => {
 
         let query = Model1.where("id", 1);
         expect(query instanceof SelectQueryBuilder).to.be.true;
-        expect(query.Statements).to.be.an("array").with.length(1).to.deep.include.members([{
+        expect(query.Statements).to.be.an("array").with.length(1).to.containSubset([{
             _column: "id",
             _operator: "=",
             _value: 1,
@@ -124,7 +127,7 @@ describe("General model tests", () => {
 
         query = Model1.where("id", ">", 1);
         expect(query instanceof SelectQueryBuilder).to.be.true;
-        expect(query.Statements).to.be.an("array").with.length(1).to.deep.include.members([{
+        expect(query.Statements).to.be.an("array").with.length(1).to.containSubset([{
             _column: "id",
             _operator: ">",
             _value: 1,
@@ -239,16 +242,15 @@ describe("General model tests", () => {
 
         const fromDb = sinon.spy(FakeConverter.prototype, "fromDB");
 
-        await Model1.find(1);
+        await Model1.get(1);
 
         expect(fromDb.called).to.be.true;
         expect(fromDb.returnValues[0]).to.be.not.null;
     });
 
-    it("Find mixin should work for single val", async () => {
+    it("Get should work", async () => {
 
-        // @ts-ignore
-        const orm = await db();
+        await db();
 
         const compile = sinon.stub(FakeSelectQueryCompiler.prototype, "compile").returns({
             expression: "",
@@ -261,14 +263,14 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.find(1);
+        const result = await Model1.get(1);
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnce).to.be.true;
         expect(result).instanceof(Model1);
     })
 
-    it("Find mixin should work for multiple vals", async () => {
+    it("Find mixin should work", async () => {
 
         // @ts-ignore
         const orm = await db();
@@ -312,11 +314,12 @@ describe("General model tests", () => {
             }]);
         }));
 
-        const result = await Model1.findOrFail(1);
+        const result = await Model1.findOrFail([1]);
 
         expect(compile.calledOnce).to.be.true;
         expect(execute.calledOnce).to.be.true;
-        expect(result).instanceof(Model1);
+        expect(result).to.be.an("array").with.lengthOf(1);
+        expect(result[0]).instanceof(Model1);
     })
 
     it("FindOrFail mixin should fail", async () => {
@@ -334,7 +337,7 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        expect(Model1.findOrFail(1)).to.be.rejected;
+        expect(Model1.findOrFail([1])).to.be.rejected;
     })
 
     it("destroy mixin should work", async () => {
@@ -378,7 +381,7 @@ describe("General model tests", () => {
     })
 
 
-    it("firstOrCreate mixin should work", async () => {
+    it("getOrCreate mixin should work", async () => {
 
         // @ts-ignore
         const orm = await db();
@@ -400,7 +403,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate(1);
+        const result = await Model1.getOrCreate(1);
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -408,7 +411,7 @@ describe("General model tests", () => {
     })
 
 
-    it("firstOrCreate should work with data", async () => {
+    it("getOrCreate should work with data", async () => {
 
         // @ts-ignore
         const orm = await db();
@@ -430,7 +433,7 @@ describe("General model tests", () => {
             res(1);
         }));
 
-        const result = await Model1.firstOrCreate(1, { Bar: "hello" });
+        const result = await Model1.getOrCreate(1, { Bar: "hello" });
         expect(execute.calledTwice).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -439,7 +442,7 @@ describe("General model tests", () => {
 
     })
 
-    it("firstOrNew with data should work", async () => {
+    it("getOrNew with data should work", async () => {
         // @ts-ignore
         const orm = await db();
 
@@ -453,15 +456,14 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        const result = await Model1.firstOrNew(666, { Bar: "hello" });
+        const result = await Model1.getOrNew(666, { Bar: "hello" });
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
-        expect(result.PrimaryKeyValue).to.eq(666);
         expect(result.Bar).to.eq("hello");
 
     });
 
-    it("firstOrNew should work", async () => {
+    it("getOrNew should work", async () => {
 
         // @ts-ignore
         const orm = await db();
@@ -475,7 +477,7 @@ describe("General model tests", () => {
             res([]);
         }));
 
-        const result = await Model1.firstOrNew(1);
+        const result = await Model1.getOrNew(1);
         expect(execute.calledOnce).to.be.true;
         expect(result).to.be.not.null;
         expect(result).instanceOf(Model1);
@@ -603,48 +605,6 @@ describe("General model tests", () => {
 
     it("Model should get id when save with ignore", async () => {
 
-        const tableInfoStub = sinon.stub(FakeSqliteDriver.prototype, "tableInfo");
-        tableInfoStub.withArgs("TestTable6", undefined).returns(new Promise(res => {
-            res([{
-                Type: "INT",
-                MaxLength: 0,
-                Comment: "",
-                DefaultValue: null,
-                NativeType: "INT",
-                Unsigned: false,
-                Nullable: true,
-                PrimaryKey: true,
-                AutoIncrement: true,
-                Name: "Id",
-                Converter: null,
-                Schema: "sqlite",
-                Unique: false,
-                Uuid: false,
-                Ignore: false
-            },
-            {
-                Type: "VARCHAR",
-                MaxLength: 0,
-                Comment: "",
-                DefaultValue: null,
-                NativeType: "VARCHAR",
-                Unsigned: false,
-                Nullable: true,
-                PrimaryKey: true,
-                AutoIncrement: true,
-                Name: "Property6",
-                Converter: null,
-                Schema: "sqlite",
-                Unique: true,
-                Uuid: false,
-                Ignore: false
-            }]);
-        }));
-
-
-
-
-
         await db();
 
         sinon.stub(FakeSqliteDriver.prototype, "execute")
@@ -652,7 +612,7 @@ describe("General model tests", () => {
                 res(0)
             })).onCall(1).returns(new Promise((res) => {
                 res([{
-                    Id: 1
+                    Id: 666
                 }]);
             }));
 
@@ -661,13 +621,13 @@ describe("General model tests", () => {
             bindings: []
         });
 
-        const model = new Model6({
-            Property6: "test"
+        const model = new RawModel({
+            Bar: "test"
         });
 
         await model.insert(InsertBehaviour.OnDuplicateIgnore);
 
-        expect(typeof model.Id).to.eq('string');
+        expect(model.Id).to.eq(666);
     });
 
 

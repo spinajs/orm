@@ -299,9 +299,7 @@ class BelongsToRelationResultTransformMiddleware implements IBuilderMiddleware {
 
 class BelongsToRelationResultTransformOneToManyMiddleware extends BelongsToRelationResultTransformMiddleware {
   protected keyTransform(key: string) {
-    const path = key.replace(/\$+/g, '').split('.');
-    path.shift();
-    return path;
+    return  key.replace(/\$+/g, '').split('.');
   }
 
 }

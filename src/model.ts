@@ -55,6 +55,8 @@ export function extractModelDescriptor(targetOrForward: any): IModelDescrtiptor 
   }
 }
 
+ 
+
 export class ModelBase {
   /**
    * Gets descriptor for this model. It contains information about relations, orm driver, connection properties,
@@ -118,17 +120,51 @@ export class ModelBase {
     throw Error('Not implemented');
   }
 
-  // @ts-ignore
-  public static find<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
+  /**
+   * Tries to find all models with given primary keys
+   * 
+   * @param this 
+   * @param _pks pkeys to find
+   */
+  public static find<T extends typeof ModelBase>(this: T, _pks: any[]): Promise<Array<InstanceType<T>>> {
     throw Error('Not implemented');
   }
 
   /**
-   * Finds model by specified pk
+   * Tries to find all models in db. If not all exists, throws exception
+   * @param this 
+   * @param _pks pkeys to find
+   */
+  public static findOrFail<T extends typeof ModelBase>(this: T, _pks: any[]): Promise<Array<InstanceType<T>>> {
+    throw Error('Not implemented');
+  }
+
+  /**
+   * gets model by specified pk, if not exists, returns null
    *
    * @param _pk pk to find
    */
-  public static findOrFail<T extends typeof ModelBase>(this: T, _pk: any): Promise<Array<InstanceType<T>>> {
+  public static get<T extends typeof ModelBase>(this: T, _pk: any): Promise<Array<InstanceType<T>>> {
+    throw Error('Not implemented');
+  }
+
+  /**
+   * Finds model by specified pk. If model not exists in db throws exception
+   *
+   * @param _pk pk to find
+   */
+  public static getOrFail<T extends typeof ModelBase>(this: T, _pk: any): Promise<Array<InstanceType<T>>> {
+    throw Error('Not implemented');
+  }
+
+  /**
+   *
+   * Checks if model with pk key or unique fields exists and if not creates one AND NOT save in db
+   * NOTE: it checks for unique fields constraint
+   *
+   * @param {any} data - model to check
+   */
+  public static getOrNew<T extends typeof ModelBase>(this: T, _pk?: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -147,7 +183,7 @@ export class ModelBase {
    *
    * @param {any} data - model width data to check
    */
-  public static firstOrCreate<T extends typeof ModelBase>(this: T, _pk: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  public static getOrCreate<T extends typeof ModelBase>(this: T, _pk: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -159,19 +195,6 @@ export class ModelBase {
   public static create<T extends typeof ModelBase>(this: T, _data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
-
-  /**
-   *
-   * Checks if model with pk key or unique fields exists and if not creates one AND NOT save in db
-   * NOTE: it checks for unique fields constraint
-   *
-   * @param {any} data - model to check
-   */
-  public static firstOrNew<T extends typeof ModelBase>(this: T, _pk?: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
-    throw Error('Not implemented');
-  }
-
-
 
   /**
    * Deletes model from db
@@ -284,7 +307,7 @@ export class ModelBase {
    * Gets model data from database and returns as fresh instance.
    */
   public async fresh(): Promise<this> {
-    return (this.constructor as any).find(this.PrimaryKeyValue);
+    return (this.constructor as any).get(this.PrimaryKeyValue);
   }
 
   /**
@@ -409,50 +432,62 @@ export const MODEL_STATIC_MIXINS = {
     return query;
   },
 
-  async find<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
+  async find<T extends typeof ModelBase>(this: T, pks: any[]): Promise<Array<InstanceType<T>>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
     query.select('*');
-
-    if (Array.isArray(pks)) {
-      query.whereIn(pkey, pks);
-    } else {
-      query.where(pkey, pks)
-    }
-
+    query.whereIn(pkey, pks);
     return await query;
   },
 
-  async findOrFail<T extends typeof ModelBase>(this: T, pks: any | any[]): Promise<Array<InstanceType<T>>> {
+  async findOrFail<T extends typeof ModelBase>(this: T, pks: any[]): Promise<Array<InstanceType<T>>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
     const pkey = description.PrimaryKey;
+    
     const middleware = {
       afterData(data: any[]) {
         if (data.length !== pks.length) {
           throw new Error(`could not find all of pkeys in model ${this.model.name}`);
         }
-
+    
         return data;
       },
-
+    
       modelCreation(_: any): ModelBase {
         return null;
       },
-
+    
       // tslint:disable-next-line: no-empty
       async afterHydration(_data: ModelBase[]) { },
     };
 
     query.select('*');
-
-    if (Array.isArray(pks)) {
-      query.whereIn(pkey, pks);
-    } else {
-      query.where(pkey, pks);
-    }
-
+    query.whereIn(pkey, pks);
     query.middleware(middleware);
+
     return await query;
+  },
+
+  async get<T extends typeof ModelBase>(this: T, pk: any): Promise<InstanceType<T>> {
+    const { query, description } = _createQuery(this as any, SelectQueryBuilder);
+    const pkey = description.PrimaryKey;
+
+    query.select('*');
+    query.where(pkey, pk);
+    
+
+    return await query.first();
+  },
+
+  async getOrFail<T extends typeof ModelBase>(this: T, pk: any): Promise<InstanceType<T>> {
+    const { query, description } = _createQuery(this as any, SelectQueryBuilder);
+    const pkey = description.PrimaryKey;
+
+    query.select('*');
+    query.where(pkey, pk);
+   
+
+    return await query.firstOrFail();
   },
 
   async destroy(pks: any | any[]): Promise<void> {
@@ -485,7 +520,7 @@ export const MODEL_STATIC_MIXINS = {
     return entity;
   },
 
-  async firstOrCreate<T extends typeof ModelBase>(this: T, pk: any, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  async getOrCreate<T extends typeof ModelBase>(this: T, pk: any, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain
@@ -508,7 +543,7 @@ export const MODEL_STATIC_MIXINS = {
     return entity;
   },
 
-  async firstOrNew<T extends typeof ModelBase>(this: T, pk: any, data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  async getOrNew<T extends typeof ModelBase>(this: T, pk: any, data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const { query, description } = _createQuery(this as any, SelectQueryBuilder);
 
     // pk constrain

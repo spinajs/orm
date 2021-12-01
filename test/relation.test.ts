@@ -800,7 +800,7 @@ describe("Orm relations tests", () => {
         const result = await query;
 
         expect(result.Many[0].Owner).to.be.not.null;
-        expect(result.Many[0].Owner).to.be.not.null;
+        expect(result.Many[1].Owner).to.be.not.null;
 
         callback.restore();
 

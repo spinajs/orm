@@ -141,18 +141,23 @@ describe("Orm migrations", () => {
         await orm.migrateUp();
 
         expect(spy1.calledBefore(spy2));
+        expect(spy1.calledOnce);
+        expect(spy2.calledOnce);
     })
 
     it("Should run migration in proper order down", async() =>{
         // @ts-ignore
         const orm = await db();
 
-        const spy1 = sinon.spy(Migration1.prototype, "up");
-        const spy2 = sinon.spy(Migration2.prototype, "up");
+        const spy1 = sinon.spy(Migration1.prototype, "down");
+        const spy2 = sinon.spy(Migration2.prototype, "down");
 
         await orm.migrateDown();
 
         expect(spy1.calledAfter(spy2));
+        expect(spy1.calledOnce);
+        expect(spy2.calledOnce);
+
     })
 
     it("Should register migration programatically", async () => {
