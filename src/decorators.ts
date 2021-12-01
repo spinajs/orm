@@ -254,7 +254,7 @@ export function JunctionTable() {
 export function DiscriminationMap(fieldName: string, discriminationMap: IDiscriminationEntry[]) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, _target: any, _propertyKey: string) => {
     model.DiscriminationMap.Field = fieldName;
-    model.DiscriminationMap.Models = new Map<string, Constructor<ModelBase<any>>>();
+    model.DiscriminationMap.Models = new Map<string, Constructor<ModelBase>>();
 
     discriminationMap.forEach(d => {
       model.DiscriminationMap.Models.set(d.Key, d.Value);
@@ -344,7 +344,7 @@ export function ForwardBelongsTo(forwardRef: IForwardReference, foreignKey?: str
  * @param primaryKey
  *
  */
-export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: string, primaryKey?: string) {
+export function HasMany(targetModel: Constructor<ModelBase>, foreignKey?: string, primaryKey?: string) {
   return extractDecoratorDescriptor((model: IModelDescrtiptor, target: any, propertyKey: string) => {
     model.Relations.set(propertyKey, {
       Name: propertyKey,
@@ -369,8 +369,8 @@ export function HasMany(targetModel: Constructor<ModelBase<any>>, foreignKey?: s
  * @param junctionModelSourcePk junction table source primary key name ( foreign key for source model )
  */
 export function HasManyToMany(
-  junctionModel: Constructor<ModelBase<any>>,
-  targetModel: Constructor<ModelBase<any>>,
+  junctionModel: Constructor<ModelBase>,
+  targetModel: Constructor<ModelBase>,
   targetModelPKey?: string,
   sourceModelPKey?: string,
   junctionModelTargetPk?: string,

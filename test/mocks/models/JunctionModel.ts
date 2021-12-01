@@ -6,7 +6,7 @@ import { Model5 } from "./Model5";
 @Connection("sqlite")
 @Model("JunctionTable")
 // @ts-ignore
-export class JunctionModel extends ModelBase<JoinModel>
+export class JunctionModel extends ModelBase
 {
     @Primary()
     public Id: number;

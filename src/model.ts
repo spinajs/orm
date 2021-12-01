@@ -11,7 +11,7 @@ import {
   InsertQueryBuilder,
 } from './builders';
 import { WhereOperators } from './enums';
-import { DI, isConstructor, AsyncModule } from '@spinajs/di';
+import { DI, isConstructor } from '@spinajs/di';
 import { Orm } from './orm';
 import { ModelHydrator } from './hydrators';
 import * as _ from 'lodash';
@@ -167,7 +167,7 @@ export class ModelBase {
    *
    * @param {any} data - model to check
    */
-  public static firstOrNew<T extends typeof ModelBase>(this: T, pk?: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
+  public static firstOrNew<T extends typeof ModelBase>(this: T, _pk?: any, _data?: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     throw Error('Not implemented');
   }
 
@@ -481,7 +481,7 @@ export const MODEL_STATIC_MIXINS = {
 
   async create<T extends typeof ModelBase>(this: T, data: Partial<InstanceType<T>>): Promise<InstanceType<T>> {
     const entity = new (Function.prototype.bind.apply(this))(data);
-    await (entity as ModelBase).save();
+    await (entity as ModelBase).insert();
     return entity;
   },
 
@@ -501,7 +501,7 @@ export const MODEL_STATIC_MIXINS = {
 
     if (!entity) {
       entity = new (Function.prototype.bind.apply(this))(data);
-      await (entity as ModelBase).save();
+      await (entity as ModelBase).insert();
       return entity;
     }
 

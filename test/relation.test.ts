@@ -70,7 +70,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
             }, {
                 Type: "INT",
                 MaxLength: 0,
@@ -85,7 +86,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -102,7 +104,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -122,7 +125,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }, {
                 Type: "INT",
@@ -138,7 +142,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -155,7 +160,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -174,7 +180,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -193,7 +200,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -210,7 +218,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -227,7 +236,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -246,7 +256,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -263,7 +274,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -282,7 +294,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -299,7 +312,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -318,7 +332,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -335,7 +350,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -354,7 +370,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -371,7 +388,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));
@@ -391,7 +409,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             },
             {
@@ -408,7 +427,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }, {
                 Type: "INT",
@@ -424,7 +444,8 @@ describe("Orm relations tests", () => {
                 Converter: null,
                 Schema: "sqlite",
                 Unique: false,
-                Uuid: false
+                Uuid: false,
+                Ignore: false
 
             }]);
         }));

@@ -194,7 +194,7 @@ describe("General model tests", () => {
             ArchivedAt: new Date()
         });
 
-        await model.save();
+        await model.insert();
 
         expect(toDb.called).to.be.true;
         expect(toDb.args[0]).to.be.not.null;
